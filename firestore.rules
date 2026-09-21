@@ -13,7 +13,7 @@ service cloud.firestore {
     // uid de la cuenta creada a mano en la consola. El registro está desactivado; esta lista es la
     // segunda barrera. Los tests la reemplazan por usuarios de prueba.
     function allowedUids() {
-      return [];
+      return ['nv1VALclfEPlJN1Y8dxNOplr9zw1'];
     }
 
     function isOwner(userId) {

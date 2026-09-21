@@ -91,14 +91,14 @@ Decisiones de diseño derivadas (no requieren confirmación, pero no cambiarlas 
 | 00 | **hecha** | unida a `main` | Esqueleto completo, lint/tipos/tests en verde, logins y EAS listos, verificada en el navegador. Expo Go → fase 05; emuladores → fase 03; APK y deploy web → fase 06 |
 | 01 | **hecha** | — | Sistema "Brasa Viva" aprobado: https://claude.ai/artifact/R4ajRu7oMWUMzasdS317Fm |
 | 02 | **hecha** | unida a `main` | 63 tests, cobertura 100%. Converters movidos a la app |
-| 03 | **tests en verde** | `feat/03-security-rules` | 110 tests de reglas. Falta: uid real en la lista de permitidos y `npm run deploy:rules` |
+| 03 | **hecha** | unida a `main` | 110 tests de reglas, verificadas con mutaciones. Desplegadas en `ascua-a9e27` con el uid real en `allowedUids()` |
 | 04–10 | pendiente | — | — |
 
 ## Bitácora
 
 Lo más reciente arriba. Una línea por sesión: fecha, máquina (oficina/casa), qué se hizo y qué queda a medias.
 
-- **21-09-2026 · oficina** — Fase 03 con TDD en `feat/03-security-rules`: `firestore.rules` completas y 110 tests contra el emulador (acceso, forma, entries solo hoy, cierre, compra, canje, inmutabilidad, límite de lecturas). Verificadas con mutaciones. Nuevo campo `lastSpendTransactionId` (E10). A medias: poner el uid real en `allowedUids()`, desplegar y unir a `main`.
+- **21-09-2026 · oficina** — Fase 03 con TDD en `feat/03-security-rules`: `firestore.rules` completas y 110 tests contra el emulador (acceso, forma, entries solo hoy, cierre, compra, canje, inmutabilidad, límite de lecturas). Verificadas con mutaciones. Nuevo campo `lastSpendTransactionId` (E10). Uid real en `allowedUids()`, reglas desplegadas y rama unida a `main`. Siguiente: fase 04 (login e `initializeAccount`).
 - **21-09-2026 · oficina** — Java portable (Temurin 25) en `D:\jdk-portable`; los emuladores de Auth y Firestore arrancan. Siguiente: fase 03.
 - **21-09-2026 · oficina** — Fase 02 hecha con TDD: fechas de Bolivia, programación de hábitos, `evaluateDay` (racha, protectores, bonos, día perfecto) y gasto de puntos. 63 tests, 100% de cobertura. Siguiente: fase 03 (reglas de seguridad), que necesita Java 21 portable para los emuladores.
 - **21-09-2026 · oficina** — Fase 00 cerrada y unida a `main`. La app se ve en el navegador; en el celular (Expo Go) no conectó desde la red de la oficina: queda como primera tarea de la fase 05. Siguiente: fase 02 (núcleo compartido con TDD).

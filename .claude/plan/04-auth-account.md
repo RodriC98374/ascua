@@ -11,11 +11,11 @@
 - [ ] Sesión persistente: `AsyncStorage` en Android, persistencia del navegador en web (ya configurado en `src/lib/firebase*.ts`).
 - [ ] Operación `initializeAccount` (idempotente): si no existen, crea `users/{uid}` y `meta/gamification` con los valores iniciales (`lastClosedDateKey` = ayer en Bolivia, todo en 0). Se llama después de cada inicio de sesión.
 - [ ] Test de `initializeAccount` contra el emulador, incluido llamarla dos veces.
-- [ ] Lista de `uid` permitidos en las reglas, con el `uid` del usuario.
+- [x] Lista de `uid` permitidos en las reglas, con el `uid` del usuario (hecho en la fase 03).
 
 ## Pasos manuales del usuario
 
-1. Pasar tu `uid` (Firebase Console → Authentication → Users, columna "UID de usuario") para ponerlo en la lista de permitidos.
+1. ~~Pasar tu `uid`~~ (hecho en la fase 03).
 2. Probar que la recuperación de contraseña llega a tu correo.
 
 ## Definición de terminado
