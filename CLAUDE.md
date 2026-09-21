@@ -41,4 +41,26 @@ Firebase en plan **Spark**: Firestore (`southamerica-east1`), Auth por email y H
 
 ## Comandos
 
-Todavía no hay código. La fase 00 crea los scripts `dev`, `build`, `lint`, `typecheck`, `test` y `emulators`, y los documenta aquí, incluido cómo correr un solo test.
+Desde la raíz (en la oficina, con el Node portable antepuesto al PATH):
+
+| Comando | Qué hace |
+|---|---|
+| `npm run dev` | Servidor de desarrollo de Expo (Android y web) |
+| `npm run web` / `npm run android` | Abre directamente en el navegador / en el celular o emulador |
+| `npm run lint` | ESLint + Prettier (config de Expo) |
+| `npm run typecheck` | TypeScript en todos los paquetes |
+| `npm test` | Vitest en `shared` + Jest en `client` |
+| `npm run emulators` | Emuladores de Auth y Firestore (requiere Java 21+) |
+| `npm run build:web` | Exporta la web a `apps/client/dist` |
+| `npm run deploy:web` / `npm run deploy:rules` | Publica la web en Hosting / las reglas de Firestore |
+| `npm run build:apk` | APK con EAS Build (perfil `preview`) |
+
+Un solo test:
+- `shared`: `npm test -w @ascua/shared -- src/constants.test.ts` o `-- -t "nombre del test"`.
+- `client`: `npm test -w @ascua/client -- src/config/firebase.test.ts` o `-- -t "nombre del test"`.
+
+Dependencias de la app: instalar con `npx expo install <paquete>` **desde `apps/client`** (elige versiones compatibles con el SDK). En este monorepo `expo install` ignora `--dev`: si el paquete es de desarrollo, moverlo a mano a `devDependencies`.
+
+Expo cambia en cada SDK: antes de usar una API de Expo, leer `apps/client/AGENTS.md` y la documentación de la versión instalada (hoy SDK 57).
+
+En desarrollo, la app usa los emuladores si `EXPO_PUBLIC_USE_EMULATORS=true` (y `EXPO_PUBLIC_EMULATOR_HOST=<IP de la PC>` si se prueba en un celular físico).

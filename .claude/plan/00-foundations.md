@@ -39,5 +39,5 @@ Claude no puede hacerlos; los guía paso a paso en el chat. Todo en el plan **Sp
 ## Riesgos
 
 - **Región equivocada:** es irreversible. Verificar `southamerica-east1` antes de confirmar la creación de Firestore.
-- Los emuladores requieren Java 11+ instalado en cada máquina.
+- Los emuladores requieren **Java 21+** en cada máquina (`firebase-tools` 15 ya no acepta versiones anteriores).
 - El plan gratuito de EAS Build tiene un límite mensual de builds y una cola de espera. Alternativa: compilar la APK localmente con Android Studio.

@@ -15,13 +15,14 @@
     "lint": "npm run lint --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
-    "emulators": "firebase emulators:start --project demo-ascua",
+    "emulators": "firebase emulators:start",
     "build:web": "npm run build:web -w @ascua/client",
     "build:apk": "npm run build:apk -w @ascua/client",
     "deploy:web": "npm run build:web && firebase deploy --only hosting",
     "deploy:rules": "firebase deploy --only firestore:rules"
   },
   "devDependencies": {
+    "eas-cli": "^24.7.0",
     "firebase-tools": "^15.30.2"
   }
 }

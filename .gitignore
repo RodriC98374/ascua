@@ -1,12 +1,8 @@
 # Dependencies
 node_modules/
 
-# Build output
+# Build output (dist/ de la exportación web de Expo)
 dist/
-build/
-lib/
-.angular/
-.vite/
 
 # Firebase
 .firebase/

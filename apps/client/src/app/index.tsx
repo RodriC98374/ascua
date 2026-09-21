@@ -1,14 +1,19 @@
 import { APP_TIME_ZONE } from '@ascua/shared';
-import { Text, View } from 'react-native';
+import { ScrollView, Text } from 'react-native';
 
+import { ChartsSpike } from '@/components/charts-spike';
 import { app } from '@/lib/firebase';
 
 export default function Index() {
   return (
-    <View className="flex-1 items-center justify-center gap-2 bg-violet-600 px-4">
+    <ScrollView
+      className="flex-1 bg-violet-600"
+      contentContainerClassName="items-center gap-2 px-4 py-16"
+    >
       <Text className="text-3xl font-bold text-white">Ascua</Text>
       <Text className="text-base text-violet-100">Zona horaria: {APP_TIME_ZONE}</Text>
-      <Text className="text-base text-violet-100">Firebase: {app.options.projectId}</Text>
-    </View>
+      <Text className="mb-4 text-base text-violet-100">Firebase: {app.options.projectId}</Text>
+      <ChartsSpike />
+    </ScrollView>
   );
 }
