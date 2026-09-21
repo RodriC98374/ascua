@@ -26,6 +26,11 @@ Toda la documentación vive en `.claude/` y **se versiona en git**: el trabajo c
 
 En una máquina nueva, después de clonar: `git config user.email` con el correo **personal** del usuario, solo en este repo (no el del trabajo).
 
+Cuentas del usuario (no son intercambiables; los correos no se escriben en el repo):
+- **git / GitHub:** su cuenta personal de GitHub.
+- **Firebase / Google Cloud:** una cuenta de Google **distinta** de la de git. `npx firebase login` con la cuenta que es dueña del proyecto `ascua-a9e27`.
+- **Expo:** cuenta propia en expo.dev (`npx eas login`).
+
 ## Stack
 
 Monorepo con npm workspaces:
