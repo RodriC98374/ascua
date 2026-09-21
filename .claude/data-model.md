@@ -1,22 +1,22 @@
 # Modelo de datos — Firestore
 
-Estado: **aprobado**, con decisiones de negocio confirmadas (sección 11). Plan de implementación en [plan/README.md](plan/README.md).
+Estado: **aprobado**. Decisiones de negocio en la sección 11. Plan de implementación en [plan/README.md](plan/README.md).
+
+**Arquitectura sin servidor propio:** Firebase en el plan gratuito **Spark** (sin tarjeta, sin Cloud Functions). La app (Expo: Android + web) hace todas las operaciones y las **reglas de seguridad de Firestore** validan que sean correctas. No hay backend, scripts programados ni claves de servicio.
 
 ## 1. Vista general
 
 Todo cuelga de `users/{userId}`. Cada funcionalidad es una subcolección independiente.
 
 ```
-users/{userId}                             UserProfile         escribe: cliente
-├── devices/{deviceId}                     Device              escribe: cliente
-├── habits/{habitId}                       Habit               escribe: cliente
-├── dailyLogs/{dateKey}                    DailyLog            escribe: cliente (entries de hoy) + servidor (cierre)
-├── monthlySummaries/{monthKey}            MonthlySummary      escribe: solo servidor
-├── serverState/gamification               GamificationState   escribe: solo servidor
-├── serverState/reminders                  ReminderState       escribe: solo servidor
-├── pointTransactions/{transactionId}      PointTransaction    escribe: solo servidor
-├── rewards/{rewardId}                     Reward              escribe: cliente
-└── rewardRedemptions/{redemptionId}       RewardRedemption    escribe: solo servidor
+users/{userId}                             UserProfile         libre (campos permitidos)
+├── habits/{habitId}                       Habit               libre (forma validada)
+├── dailyLogs/{dateKey}                    DailyLog            entries: solo hoy · summary: solo al cerrar
+├── monthlySummaries/{monthKey}            MonthlySummary      solo al cerrar, compra o canje
+├── meta/gamification                      GamificationState   solo al cerrar, compra o canje
+├── pointTransactions/{transactionId}      PointTransaction    solo crear; nunca editar ni borrar
+├── rewards/{rewardId}                     Reward              libre (forma validada)
+└── rewardRedemptions/{redemptionId}       RewardRedemption    solo crear, junto con su cobro
 
 Futuro (sin tocar lo anterior):
 ├── tasks/{taskId}                         task tracker
@@ -24,7 +24,7 @@ Futuro (sin tocar lo anterior):
 └── dailyLogs/{dateKey}.checkIn            ánimo / energía / foco / motivación
 ```
 
-"Servidor" = Cloud Functions (Admin SDK), que ignoran las reglas de seguridad. Todo documento que solo escribe el servidor vive en una colección que las reglas bloquean por completo para escritura del cliente. `serverState` agrupa los documentos únicos de ese tipo; si en el futuro aparece otro estado interno, va ahí.
+La columna derecha resume qué permiten las reglas de seguridad (sección 10). Las escrituras "sensibles" (saldo, racha, ledger) solo se aceptan dentro de las tres operaciones de la sección 7, y las reglas comprueban que cuadren.
 
 ## 2. Tipos y constantes compartidos
 
@@ -59,7 +59,7 @@ type PointTransactionType =
   // futuro: 'task_completion', ...
 ```
 
-Constantes de negocio, en un único módulo compartido por frontend y functions:
+Constantes de negocio en un único módulo (`packages/shared`). Las reglas de seguridad repiten los valores de puntos para validarlos; un test comprueba que ambos coincidan.
 
 ```ts
 const APP_TIME_ZONE = 'America/La_Paz';
@@ -72,7 +72,7 @@ const STREAK_BONUSES = [
 ] as const;
 const STREAK_FREEZE_COST = 150;
 const MAX_STREAK_FREEZES = 2;
-// Solo sugerencia para la UI; no se valida en servidor (ver sección 11).
+// Solo sugerencia para la UI; no se valida (ver sección 11).
 const REWARD_TIER_COST_RANGES: Record<RewardTier, { min: number; max: number }> = {
   small: { min: 50, max: 80 },
   medium: { min: 150, max: 250 },
@@ -85,7 +85,7 @@ Todo documento lleva `createdAt: Timestamp`, `updatedAt: Timestamp` y `schemaVer
 ## 3. Colecciones
 
 ### `users/{userId}` — UserProfile
-`userId` = `uid` de Firebase Auth. Lo crea la función `onUserCreated` (sección 7).
+`userId` = `uid` de Firebase Auth. Lo crea la app en el primer inicio de sesión (sección 7).
 
 ```ts
 interface UserProfile {
@@ -94,24 +94,12 @@ interface UserProfile {
   reminderSettings: {
     enabled: boolean;
     dailyReminderTime: string;         // 'HH:mm' hora Bolivia; recordatorio general del día
-    streakRiskReminderTime: string;    // 'HH:mm'; solo se envía si la meta de hoy no está cumplida
+    streakRiskReminderTime: string;    // 'HH:mm'; se cancela si la meta de hoy ya está cumplida
   };
 }
 ```
 
-La zona horaria no se guarda aquí: es la constante `APP_TIME_ZONE`. Un campo que el sistema ignora sería una trampa.
-
-### `users/{userId}/devices/{deviceId}` — Device
-Registro de los dispositivos que reciben notificaciones push (sección 8). `deviceId` = hash SHA-256 del token, para no duplicarlo.
-
-```ts
-interface Device {
-  fcmToken: string;
-  platform: 'android' | 'desktop' | 'other';
-  userAgent: string;                   // para identificar el dispositivo en ajustes
-  lastSeenAt: Timestamp;               // se actualiza al abrir la app; permite limpiar tokens viejos
-}
-```
+Los horarios viven en el perfil para que se puedan editar desde cualquier dispositivo; el celular los lee y programa las notificaciones localmente (sección 8).
 
 ### `users/{userId}/habits/{habitId}` — Habit
 
@@ -132,8 +120,8 @@ interface Habit {
 
 - **Cuándo cuenta un hábito:** en el día `D` si `startDateKey <= D` y (`archivedDateKey` es `null` o `D <= archivedDateKey`). Archivar un hábito hoy **no lo saca del día de hoy**: así no se puede esquivar una racha rota archivando a las 23:59.
 - **Valor en puntos:** sale de `tier` vía `HABIT_POINTS`; no se guarda en el hábito. El monto acreditado queda fijo en cada `PointTransaction`, así que cambiar las reglas o el tier nunca reescribe el historial.
-- **Nunca se borra**, solo se archiva. Así se conservan las estadísticas y las referencias.
-- **Máximo 3 principales:** se valida en la UI con la constante compartida. No se valida en el servidor (ver deudas aceptadas, sección 10).
+- **Nunca se borra**, solo se archiva.
+- **Máximo 3 principales:** se valida en la UI (sección 10, deudas aceptadas).
 
 ### `users/{userId}/dailyLogs/{dateKey}` — DailyLog
 Un documento por día. El ID es la fecha (`'2026-09-21'`).
@@ -142,14 +130,14 @@ Un documento por día. El ID es la fecha (`'2026-09-21'`).
 interface DailyLog {
   dateKey: DateKey;                    // repetido del ID para poder consultar por rango
 
-  // Escribe el cliente, solo si dateKey es el día de hoy en Bolivia
+  // Se escribe solo mientras dateKey es hoy en Bolivia
   entries: Record<string /* habitId */, {
     completed: boolean;
     updatedAt: Timestamp;
   }>;
 
-  // Escribe el servidor al cerrar el día
-  status: DayStatus;                   // el cliente solo puede crear el doc con 'open'
+  // Se escribe solo al cerrar el día
+  status: DayStatus;                   // al crear el documento: 'open'
   summary: DailySummary | null;        // null mientras el día está abierto
 }
 
@@ -159,7 +147,7 @@ interface DailySummary {
   completedHabitIds: string[];         // cumplidos y además programados (ignora IDs inválidos)
   completionRate: number;              // 0..1 sobre scheduledHabitIds
   isPerfectDay: boolean;               // 100% de scheduledHabitIds cumplidos
-  pointsEarned: number;                // suma de los movimientos positivos de ese día
+  pointsEarned: number;                // suma de los movimientos de ese día
   streakAfterClose: number;            // racha resultante; alimenta la gráfica de racha
   closedAt: Timestamp;
 }
@@ -171,10 +159,10 @@ interface DailySummary {
 - El ID determinista hace que las escrituras sean idempotentes y que las consultas por rango sean triviales.
 - `summary` congela la foto del día: si mañana se archiva, se agrega o cambia de tier un hábito, el historial no cambia.
 - El cierre crea el documento **aunque no haya habido actividad**, para que las gráficas no tengan huecos.
-- Separar `summary` en un objeto simplifica las reglas: el cliente nunca puede tocar esa clave.
+- Separar `summary` en un objeto simplifica las reglas: `entries` y `summary` tienen permisos distintos.
 
 ### `users/{userId}/monthlySummaries/{monthKey}` — MonthlySummary
-Agregado mensual que actualiza `closeDay` en la misma transacción en que cierra cada día. Sirve para que las vistas anuales no lean 365 documentos (sección 9).
+Agregado mensual que se actualiza en la misma transacción que cierra cada día. Sirve para que las vistas anuales no lean 365 documentos (sección 9).
 
 ```ts
 interface MonthlySummary {
@@ -185,7 +173,7 @@ interface MonthlySummary {
   frozenDays: number;
   missedDays: number;
   pointsEarned: number;
-  pointsSpent: number;                 // también lo actualizan purchaseStreakFreeze y redeemReward
+  pointsSpent: number;                 // también lo actualizan la compra de protector y el canje
   habitStats: Record<string /* habitId */, {
     scheduledDays: number;
     completedDays: number;
@@ -194,12 +182,12 @@ interface MonthlySummary {
 }
 ```
 
-### `users/{userId}/serverState/gamification` — GamificationState
-Documento único con el saldo y la racha. Solo lectura para el cliente. Lo crea `onUserCreated`.
+### `users/{userId}/meta/gamification` — GamificationState
+Documento único con el saldo y la racha. Lo crea la app en el primer inicio de sesión.
 
 ```ts
 interface GamificationState {
-  pointsBalance: number;               // caché de la suma del ledger
+  pointsBalance: number;               // caché de la suma del ledger; nunca negativo
   lifetimePointsEarned: number;
   lifetimePointsSpent: number;
 
@@ -210,22 +198,12 @@ interface GamificationState {
   streakFreezesAvailable: number;      // 0..MAX_STREAK_FREEZES
   totalStreakFreezesUsed: number;
 
-  lastClosedDateKey: DateKey;          // último día procesado por closeDay; al crear la cuenta = ayer
-}
-```
-
-### `users/{userId}/serverState/reminders` — ReminderState
-Evita enviar el mismo recordatorio dos veces el mismo día (la función que envía corre varias veces al día).
-
-```ts
-interface ReminderState {
-  lastDailyReminderDateKey: DateKey | null;
-  lastStreakRiskReminderDateKey: DateKey | null;
+  lastClosedDateKey: DateKey;          // último día cerrado; al crear la cuenta = ayer
 }
 ```
 
 ### `users/{userId}/pointTransactions/{transactionId}` — PointTransaction
-Ledger **append-only**: nunca se edita ni se borra; las correcciones se hacen con un `manual_adjustment`. Cada movimiento se escribe en la misma transacción que actualiza `pointsBalance`, así que el saldo y el ledger nunca se desincronizan.
+Ledger **append-only**: nunca se edita ni se borra (las reglas lo impiden); las correcciones se hacen con un `manual_adjustment` desde la consola de Firebase. Cada movimiento se escribe en la misma transacción que actualiza `pointsBalance`.
 
 ```ts
 interface PointTransaction {
@@ -239,7 +217,7 @@ interface PointTransaction {
 }
 ```
 
-Todos los `transactionId` son deterministas, así que reintentar una operación nunca acredita dos veces:
+Todos los `transactionId` son deterministas. Crear dos veces el mismo ID es imposible (las reglas solo permiten crear), así que un reintento o un doble toque nunca cobra ni acredita dos veces:
 
 | Movimiento | `transactionId` |
 |---|---|
@@ -249,7 +227,7 @@ Todos los `transactionId` son deterministas, así que reintentar una operación 
 | Compra de protector | `freeze_{requestId}` |
 | Canje | `redemption_{requestId}` |
 
-`requestId` es un UUID que genera el cliente por cada intento de compra o canje. Si el usuario toca dos veces o la red reintenta, el servidor detecta el ID repetido y no cobra dos veces.
+`requestId` es un UUID que la app genera **una vez por intento** de compra o canje y reutiliza si reintenta.
 
 ### `users/{userId}/rewards/{rewardId}` — Reward
 
@@ -266,7 +244,7 @@ interface Reward {
 ```
 
 ### `users/{userId}/rewardRedemptions/{redemptionId}` — RewardRedemption
-`redemptionId` = `requestId` del cliente.
+`redemptionId` = `requestId`.
 
 ```ts
 interface RewardRedemption {
@@ -293,12 +271,10 @@ Las referencias se guardan como IDs `string`, no como `DocumentReference`: son m
 
 ```mermaid
 erDiagram
-    USER ||--o{ DEVICE : has
     USER ||--o{ HABIT : has
     USER ||--o{ DAILY_LOG : has
     USER ||--o{ MONTHLY_SUMMARY : has
     USER ||--|| GAMIFICATION_STATE : has
-    USER ||--|| REMINDER_STATE : has
     USER ||--o{ POINT_TRANSACTION : has
     USER ||--o{ REWARD : has
     USER ||--o{ REWARD_REDEMPTION : has
@@ -318,14 +294,6 @@ erDiagram
         string email
         string displayName
         map reminderSettings
-    }
-
-    DEVICE {
-        string deviceId PK "SHA-256 del token"
-        string fcmToken
-        string platform
-        string userAgent
-        timestamp lastSeenAt
     }
 
     HABIT {
@@ -385,11 +353,6 @@ erDiagram
         string lastClosedDateKey
     }
 
-    REMINDER_STATE {
-        string lastDailyReminderDateKey
-        string lastStreakRiskReminderDateKey
-    }
-
     POINT_TRANSACTION {
         string transactionId PK "determinista"
         string type
@@ -411,7 +374,7 @@ erDiagram
     }
 
     REWARD_REDEMPTION {
-        string redemptionId PK "requestId del cliente"
+        string redemptionId PK "requestId"
         string rewardId FK
         string pointTransactionId FK
         string dateKey
@@ -427,86 +390,94 @@ Nota: `DAILY_LOG_ENTRY` y `DAILY_SUMMARY` no son colecciones: viven como los cam
 - Dos tipos de tiempo, nunca mezclados:
   - **Instantes** (`createdAt`, `redeemedAt`…) → `Timestamp` de Firestore (UTC).
   - **Días y meses de calendario** → `DateKey` / `MonthKey`, calculados en `APP_TIME_ZONE`.
-- Un único helper compartido entre frontend y functions, por ejemplo `toDateKey(instant)`, que usa `Intl.DateTimeFormat('en-CA', { timeZone: APP_TIME_ZONE })`. Prohibido usar `new Date().getDate()` o `toISOString().slice(0, 10)` para obtener "hoy".
+- Un único helper en `packages/shared`, por ejemplo `toDateKey(instant)`, que usa `Intl.DateTimeFormat('en-CA', { timeZone: APP_TIME_ZONE })`. Prohibido usar `new Date().getDate()` o `toISOString().slice(0, 10)` para obtener "hoy".
 - Se usa el identificador IANA y no un offset fijo `-4`: es igual de correcto hoy y resiste cambios de política horaria.
 - Las reglas de seguridad no tienen `Intl`: calculan el día de hoy restando 4 horas a `request.time` (Bolivia no tiene horario de verano). Es el único lugar donde se acepta el offset fijo, documentado en las propias reglas.
-- Las funciones programadas se configuran con `timeZone: APP_TIME_ZONE`.
+- **La hora que manda es la del servidor** (`request.time` en las reglas), no la del dispositivo. Si el reloj del celular está mal, las escrituras sobre un día incorrecto se rechazan; la app muestra el error en vez de fallar en silencio.
 - Semanas: lunes a domingo, calculadas a partir de `DateKey`.
-- La hora que manda es siempre la del **servidor** (`request.time`), nunca la del dispositivo: cambiar la hora del celular no permite marcar días pasados.
 
 ## 6. Ciclo de un día
 
-1. **Durante el día (cliente):** el usuario marca hábitos → se escribe `dailyLogs/{hoy}.entries`. Funciona offline gracias a la caché de Firestore. La UI muestra los **puntos del día como provisionales** (calculados con `HABIT_POINTS`) y la racha como "`currentStreak` + 1 si la meta de hoy ya está cumplida", estilo Duolingo.
+1. **Durante el día:** el usuario marca hábitos → se escribe `dailyLogs/{hoy}.entries`. La UI muestra al instante la racha, los puntos del día y la celebración de día perfecto, calculados con `evaluateDay` de `packages/shared`: los **mismos números** que dará el cierre. Si se desmarca algo, se recalculan solos.
 2. **A las 00:00 Bolivia:** las reglas dejan de aceptar escrituras sobre ese día (sin margen de gracia).
-3. **A las 00:05 Bolivia (`closeDay`):** se cierra el día, se acreditan los puntos de verdad, se evalúa la racha y se actualizan los agregados.
+3. **La próxima vez que se abre la app** (o al pasar la medianoche con la app abierta): la app **cierra los días pendientes** (sección 7). Los puntos pasan al saldo oficial y desde ese momento se pueden gastar.
 
-**Por qué los puntos se acreditan al cierre y no al marcar cada hábito:**
+**Por qué los puntos pasan al saldo al cierre y no al marcar cada hábito:**
 - Marcar y desmarcar no genera movimientos en el ledger (sin reversos ni ruido).
-- No hay carreras entre un trigger tardío y el cierre del día.
-- Todos los puntos del día se calculan con la misma foto de hábitos y tiers, así que son siempre coherentes con el resumen.
-- Se evita un trigger por cada toque: menos costo y menos piezas.
+- Todos los puntos del día se calculan con la misma foto de hábitos y tiers, siempre coherentes con el resumen.
 - Consecuencia: los puntos de hoy se pueden gastar desde mañana. Encaja con la idea de "me lo gané".
 
-## 7. Cloud Functions
+## 7. Operaciones de la app
 
-| Función | Tipo | Responsabilidad |
+No hay servidor: estas operaciones las ejecuta la app como **transacciones de Firestore**, y las reglas (sección 10) validan cada escritura. La lógica de negocio vive en funciones puras de `packages/shared`; las operaciones solo leen, llaman a esa lógica y escriben.
+
+| Operación | Cuándo | Qué hace |
 |---|---|---|
-| `onUserCreated` | Trigger de Auth | Crea `users/{uid}`, `serverState/gamification` (con `lastClosedDateKey` = ayer) y `serverState/reminders`. |
-| `closeDay` | Programada 00:05 `APP_TIME_ZONE` | Cierra cada día pendiente (ver abajo). |
-| `purchaseStreakFreeze` | Callable | Transacción: saldo ≥ `STREAK_FREEZE_COST` y protectores < `MAX_STREAK_FREEZES` → movimiento, estado y `pointsSpent` del mes. |
-| `redeemReward` | Callable | Transacción: recompensa activa y saldo ≥ costo → movimiento, canje con foto de la recompensa y `pointsSpent` del mes. |
-| `sendReminders` | Programada cada 15 min | Envía push si coincide con la hora configurada y no se envió hoy (`serverState/reminders`). Borra de `devices` los tokens que FCM reporta como inválidos. |
+| `initializeAccount` | Primer inicio de sesión (idempotente) | Crea `users/{uid}` y `meta/gamification` con valores iniciales (`lastClosedDateKey` = ayer, todo en 0). |
+| `closePendingDays` | Al abrir la app, al volver a primer plano y al pasar la medianoche con la app abierta | Cierra cada día desde `lastClosedDateKey + 1` hasta ayer (ver abajo). |
+| `purchaseStreakFreeze` | El usuario compra un protector | Transacción: saldo ≥ `STREAK_FREEZE_COST` y protectores < `MAX_STREAK_FREEZES` → movimiento, estado y `pointsSpent` del mes. |
+| `redeemReward` | El usuario canjea una recompensa | Transacción: recompensa activa y saldo ≥ costo → movimiento, canje con foto de la recompensa y `pointsSpent` del mes. |
+| `scheduleReminders` | Solo Android: al abrir la app, al cambiar los horarios y al marcar hábitos | Reprograma las notificaciones locales (sección 8). |
 
-**`closeDay`**: por cada día `D` desde `lastClosedDateKey + 1` hasta ayer, **una transacción por día**. Si la función falla o no corre un día, la siguiente ejecución se pone al día y ningún día se procesa dos veces, porque `lastClosedDateKey` avanza en la misma transacción. En cada transacción:
+**`closePendingDays`**: **una transacción por día**, en orden. Como `lastClosedDateKey` avanza en la misma transacción, ningún día se procesa dos veces, aunque la app esté abierta en el celular y en la PC al mismo tiempo: la segunda transacción ve el estado actualizado y no hace nada. Sin conexión no cierra; lo intenta la próxima vez. Por cada día `D`:
 
-1. Determina los hábitos programados en `D` (regla de la sección 3, con el tier actual) y los cumplidos según `entries` (ignora IDs que no estén programados).
-2. **Meta de racha** = todos los principales programados. Si no hay principales, la meta pasa a ser todos los programados. Si no hay ningún hábito programado → `inactive` y termina.
-3. Resultado:
-   - Meta cumplida → `completed`, `currentStreak++`, `daysWithoutFreeze++`. Bono de racha por cada regla de `STREAK_BONUSES` donde `daysWithoutFreeze` sea múltiplo de `everyDays` (el día 210 da ambos bonos). Si además `isPerfectDay`, suma `PERFECT_DAY_BONUS`.
+1. Lee los hábitos **antes** de la transacción (las transacciones del SDK cliente no admiten consultas). Dentro, lee `meta/gamification`, `dailyLogs/{D}` y `monthlySummaries/{mes de D}`, y confirma que `lastClosedDateKey + 1 == D`.
+2. Llama a `evaluateDay`:
+   - **Meta de racha** = todos los principales programados. Si no hay principales, la meta son todos los programados. Si no hay ningún hábito programado → `inactive`.
+   - Meta cumplida → `completed`, `currentStreak++`, `daysWithoutFreeze++`. Un bono de racha por cada regla de `STREAK_BONUSES` donde `daysWithoutFreeze` sea múltiplo de `everyDays` (el día 210 da ambos). Si además `isPerfectDay`, suma `PERFECT_DAY_BONUS`.
    - Meta no cumplida, `currentStreak > 0` y hay protector → `frozen`, `streakFreezesAvailable--`, la racha se mantiene sin sumar, `daysWithoutFreeze = 0`.
    - Cualquier otro caso → `missed`, `currentStreak = 0`, `daysWithoutFreeze = 0`. **No se gasta un protector si no hay racha que proteger.**
-4. Un `habit_completion` por cada hábito programado y cumplido, más los bonos, con ID determinista.
-5. Escribe `status` y `summary`, actualiza `serverState/gamification` (saldo, racha, `longestStreak`, `lastClosedDateKey`) y suma en `monthlySummaries/{mes de D}`.
+3. Escribe `dailyLogs/{D}` (`status`, `summary`), un `habit_completion` por hábito programado y cumplido, los bonos, `meta/gamification` y `monthlySummaries`.
 
-Requiere el plan **Blaze**, porque las funciones programadas y las callables no existen en el plan gratuito. Con un solo usuario el consumo queda dentro de la cuota gratuita (Cloud Scheduler incluye 3 jobs gratis y aquí se usan 2). Configurar una alerta de presupuesto.
+## 8. Notificaciones (solo Android)
 
-## 8. Notificaciones push y `devices`
-
-- Para mandar un push, el servidor necesita el **token FCM** de cada navegador o app instalada. Sin guardarlo no hay forma de enviar recordatorios.
-- Cada instalación tiene su propio token (la PWA del celular y el navegador de la PC son dos tokens distintos) y los tokens cambian o expiran.
-- Por eso es una subcolección y no un solo campo: permite varios dispositivos, actualizar el token cuando cambia, borrar los inválidos (`sendReminders`) y mostrar en ajustes qué dispositivos reciben avisos.
-- El cliente registra o refresca su token al abrir la app, si el usuario dio permiso de notificaciones.
+- Son **notificaciones locales**: las programa la propia app en el celular, como una alarma (`expo-notifications`). No hay servidor ni push, funcionan sin internet y llegan a la hora exacta configurada.
+- **Recordatorio diario:** se repite todos los días a `dailyReminderTime`.
+- **Racha en riesgo:** se programa para `streakRiskReminderTime`. Al cumplirse la meta del día en el celular, se cancela la de hoy y queda programada la de mañana.
+- Los horarios se editan en Ajustes desde cualquier dispositivo; el celular los aplica la próxima vez que se abre la app.
+- En la web no hay notificaciones (decisión del usuario).
+- **Limitación conocida:** si la meta se cumple desde la PC y el celular no se abre antes de la hora del aviso, el aviso de racha en riesgo llega igual. Es aceptable porque completar el día desde la PC es poco frecuente.
 
 ## 9. Estadísticas y rendimiento
 
-Calcular en el cliente **no** hace lenta la app: el cuello de botella en apps así no es el cálculo, sino cuántos documentos se descargan. El diseño limita eso:
+Calcular en el cliente **no** hace lenta la app: el cuello de botella no es el cálculo, sino cuántos documentos se descargan. El diseño limita eso:
 
 | Vista | Qué se lee | Documentos |
 |---|---|---|
 | Hoy / semana | `dailyLogs` del rango | 1–7 |
 | Mes (grilla, % por día, % por hábito) | `dailyLogs` del mes | ≤ 31 |
 | Año (tendencia, % por hábito) | `monthlySummaries` del año | ≤ 12 |
-| Totales históricos (saldo, racha más larga) | `serverState/gamification` | 1 |
+| Totales históricos (saldo, racha más larga) | `meta/gamification` | 1 |
 
-- El cálculo más pesado (un mes: ~31 días × ~10 hábitos ≈ 300 operaciones) le toma al celular menos de un milisegundo.
-- Con la caché persistente de Firestore (`persistentLocalCache`), al volver a abrir la app los datos salen del dispositivo y solo se descarga lo que cambió.
-- Sin `monthlySummaries`, la vista anual leería 365 documentos, y a los 3 años la vista "todo el historial", más de 1000. El agregado evita esa deuda desde el inicio.
+- El cálculo más pesado (un mes: ~31 días × ~10 hábitos ≈ 300 operaciones) toma menos de un milisegundo.
+- **Web:** caché persistente de Firestore (`persistentLocalCache`); al volver a abrir, los datos salen del dispositivo.
+- **Android:** el SDK JavaScript de Firebase solo tiene caché en memoria dentro de React Native. Las marcas hechas sin conexión se sincronizan al volver la red **mientras la app siga abierta**; si se cierra antes, se pierden. Es una limitación aceptada (sección 10).
+- La cuota gratuita de Spark (50.000 lecturas y 20.000 escrituras diarias) queda muy por encima del uso de un solo usuario.
 
 ## 10. Reglas de seguridad
 
-- **Acceso:** todo bajo `users/{userId}` requiere `request.auth.uid == userId`.
-- **Registro:** el requerimiento es un solo usuario, pero Firebase Auth permite por defecto que cualquiera se registre y use la app con sus propios datos. Tras crear la cuenta propia: desactivar el registro en la consola (*Authentication → Settings → User actions*) y, como segunda barrera, limitar las reglas a una lista de `uid` permitidos.
-- **El cliente escribe:**
-  - `users/{userId}` (solo `displayName` y `reminderSettings`).
-  - `devices`, `habits`, `rewards`.
-  - `dailyLogs/{dateKey}` solo si `dateKey` es **hoy** en Bolivia según `request.time`, solo las claves `dateKey`, `entries`, `status == 'open'` y metadatos, nunca `summary`.
-- **El cliente solo lee:** `serverState`, `monthlySummaries`, `pointTransactions`, `rewardRedemptions`.
-- **Validación de forma** (tipos, enums, longitudes) en las reglas y en los converters tipados (`withConverter`) del cliente.
+Sin servidor, las reglas son la única barrera: validan que cada operación de la sección 7 sea coherente, usando `getAfter()` para comparar el estado antes y después de la transacción.
+
+- **Acceso:** todo bajo `users/{userId}` requiere `request.auth.uid == userId` y que el `uid` esté en la lista de permitidos.
+- **Registro cerrado:** tras crear la cuenta propia, se desactiva el registro en la consola (*Authentication → Settings → User actions*). La lista de permitidos es la segunda barrera.
+- **Libre, con forma validada** (tipos, enums, longitudes): `users/{userId}` (solo `displayName` y `reminderSettings` después de crearlo), `habits`, `rewards`. Hábitos y recompensas no se pueden borrar.
+- **`dailyLogs/{D}.entries`:** solo si `D` es hoy en Bolivia según `request.time`. Al crear el documento, `status == 'open'` y `summary == null`.
+- **Cierre de un día** (`status`/`summary` de `dailyLogs/{D}`, movimientos de cierre, `meta/gamification`, `monthlySummaries`):
+  - `D` es estrictamente anterior a hoy (según `request.time`).
+  - `lastClosedDateKey` avanza **exactamente un día**, hasta `D`.
+  - Los movimientos tienen el ID determinista del día y un monto válido para su tipo (10 o 5 por hábito, 5, 20, 100).
+  - `pointsBalance >= 0` y `streakFreezesAvailable` entre 0 y 2, y no sube durante un cierre.
+- **Compra de protector:** existe tras la transacción el movimiento `freeze_{requestId}` con −150; el saldo baja exactamente 150 y los protectores suben exactamente 1, sin pasar de 2.
+- **Canje:** existe tras la transacción el movimiento `redemption_{requestId}` con −`cost` de la recompensa (leída con `get()`); el saldo baja exactamente ese costo y el canje referencia a ese movimiento.
+- **`pointTransactions` y `rewardRedemptions`:** solo crear, nunca editar ni borrar.
 
 **Deudas aceptadas** (conscientes, por ser una app de un solo usuario):
-- **Máximo de 3 principales:** se valida solo en la UI. Las reglas no pueden contar documentos, y forzarlo en servidor requeriría pasar toda edición de hábitos por una callable. El único que podría saltárselo es el propio dueño.
+- **Las reglas validan la forma, no la matemática del cierre.** No pueden comprobar que la racha o los puntos calculados sean los correctos; eso lo garantizan los tests de `evaluateDay` (fase 02). El único que podría escribir datos incoherentes sería el propio dueño, a propósito.
+- **Máximo de 3 principales:** se valida solo en la UI; las reglas no pueden contar documentos.
 - **Tier al cierre:** si se cambia el tier de un hábito durante el día, el cierre usa el tier nuevo.
-- **Marcas offline tardías:** si se marca un hábito offline a las 23:58 y el celular sincroniza después de medianoche, las reglas rechazan la escritura (es la política sin gracia). La UI debe mostrar un indicador de "pendiente de sincronizar" para que no pase desapercibido.
+- **Marcas offline tardías:** una marca hecha sin conexión a las 23:58 que se sincroniza después de medianoche es rechazada (política sin gracia). La app muestra un indicador de "pendiente de sincronizar".
+- **Offline en Android:** las marcas pendientes se pierden si se cierra la app antes de recuperar la conexión (sección 9).
+- **Límite de las reglas:** Firestore permite hasta 20 llamadas `get()`/`getAfter()` por transacción. El cierre de un día debe diseñarse para respetarlo; se verifica con los tests de la fase 03.
 
 ## 11. Decisiones confirmadas
 
@@ -514,11 +485,14 @@ Calcular en el cliente **no** hace lenta la app: el cuello de botella en apps as
 2. **Bonos de 7/30 días:** recurrentes en cada múltiplo.
 3. **Día protegido:** conserva la racha sin sumarla (`frozen`). El protector solo se usa si hay una racha activa.
 4. **Sin margen de gracia:** solo se edita el día de hoy; a las 00:00 Bolivia el día se bloquea.
-5. **Costos de recompensas:** los rangos son una sugerencia. Pendiente calibrar con datos reales de puntos ganados por semana antes de cerrar el MVP, para mantener el equilibrio.
+5. **Costos de recompensas:** los rangos son una sugerencia. Pendiente calibrar con datos reales antes de cerrar el MVP.
+6. **Costo cero:** Firebase Spark sin tarjeta; sin Cloud Functions ni servidores propios. Todo lo ejecuta la app, validado por las reglas.
+7. **Notificaciones locales solo en Android**; la web no notifica.
 
 ## 12. Extensibilidad
 
 - Una funcionalidad nueva = una subcolección nueva + nuevos valores en los enums (`PointTransactionType`, `sourceType`). Nada existente cambia de forma.
 - `schemaVersion` en cada documento permite migraciones graduales.
-- El task tracker (`tasks/{taskId}` con `dueDateKey`, `completedAt`, `points`) reutiliza `DateKey`, el ledger y `closeDay` para acreditar puntos.
+- El task tracker (`tasks/{taskId}` con `dueDateKey`, `completedAt`, `points`) reutiliza `DateKey`, el ledger y `closePendingDays` para acreditar puntos.
 - El check-in de ánimo va dentro de `DailyLog` (misma granularidad diaria) y sus promedios, en `MonthlySummary`.
+- Si algún día se necesitara un servidor (por ejemplo, para varios usuarios reales), las operaciones de la sección 7 se mueven a Cloud Functions sin cambiar el modelo, porque la lógica ya vive en `packages/shared`.

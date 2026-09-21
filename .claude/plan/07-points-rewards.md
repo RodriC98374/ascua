@@ -4,10 +4,11 @@
 
 ## Tareas
 
-**Servidor**
-- [ ] Callable `purchaseStreakFreeze({ requestId })`: transacción con `canPurchaseFreeze`, movimiento `freeze_{requestId}`, estado y `pointsSpent` del mes.
-- [ ] Callable `redeemReward({ requestId, rewardId, note })`: transacción con `canRedeem`, movimiento `redemption_{requestId}`, canje con `rewardSnapshot` y `pointsSpent` del mes.
-- [ ] Tests en el emulador: saldo insuficiente, máximo de protectores, recompensa archivada, **mismo `requestId` dos veces = un solo cobro**.
+**Operaciones** (transacciones de la app, validadas por las reglas de la fase 03)
+- [ ] `purchaseStreakFreeze(requestId)`: comprueba con `canPurchaseFreeze`; escribe el movimiento `freeze_{requestId}`, el estado y `pointsSpent` del mes.
+- [ ] `redeemReward(requestId, rewardId, note)`: comprueba con `canRedeem`; escribe el movimiento `redemption_{requestId}`, el canje con `rewardSnapshot` y `pointsSpent` del mes.
+- [ ] El `requestId` se genera **una vez al abrir la confirmación** y se reutiliza si hay reintento.
+- [ ] Tests contra el emulador: saldo insuficiente, máximo de protectores, recompensa archivada, **mismo `requestId` dos veces = un solo cobro**.
 
 **UI**
 - [ ] Saldo y protectores visibles (0–2).

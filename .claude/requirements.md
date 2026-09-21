@@ -1,5 +1,7 @@
 # Habit Tracker PWA — Contexto del Proyecto
 
+> **Nota (21-09-2026):** este es el documento original. Algunas decisiones técnicas cambiaron después: en lugar de una PWA se hace una app **Expo** (APK de Android + web), sin Cloud Functions ni push desde servidor (Firebase Spark, costo cero), con notificaciones locales solo en el celular. Ver `plan/README.md`, decisiones D2 y D12–D15. Los requerimientos funcionales y de negocio siguen vigentes.
+
 ## Objetivo
 Crear una app web (PWA) para el seguimiento de hábitos personales, instalable en el celular como si fuera una app nativa y accesible también desde computadora. El propósito es ayudarme a ser más organizado y a mantener mis hábitos en el tiempo mediante gamificación (rachas y puntos).
 

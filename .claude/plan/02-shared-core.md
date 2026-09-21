@@ -33,7 +33,7 @@ Método: **TDD**. Por cada módulo, primero la tabla de casos (test en rojo), lu
   - `daysWithoutFreeze` llega a 7, 14, 30 y 210 → bonos correctos (210 da los dos).
   - `longestStreak` se actualiza solo al superarlo.
   - `entries` con un ID de hábito inexistente o archivado → se ignora.
-  - Puntos provisionales de hoy = puntos que acreditará el cierre (la UI y `closeDay` usan la misma función).
+  - Racha y puntos que la UI muestra hoy = lo que acreditará el cierre (la pantalla "Hoy" y `closePendingDays` usan la misma función).
 
 ### `points.ts`
 - `applyTransaction(state, transaction)` → nuevo saldo y totales; saldo negativo imposible.

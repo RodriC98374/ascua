@@ -12,15 +12,16 @@ Fuente completa: [../data-model.md](../data-model.md). Decisiones con fecha: [..
 ## Datos
 
 - Todo vive bajo `users/{userId}/…`. Las funcionalidades nuevas se agregan como subcolecciones nuevas, sin cambiar la forma de las existentes.
-- Solo el servidor (Cloud Functions) escribe: `serverState/*`, `pointTransactions`, `monthlySummaries`, `rewardRedemptions` y `dailyLogs.summary`/`status` al cierre.
-- El cliente solo puede escribir `dailyLogs/{dateKey}.entries` si `dateKey` es hoy en Bolivia. No hay margen de gracia.
+- **No hay servidor** (Firebase Spark, costo cero). La app ejecuta todas las operaciones y las reglas de Firestore validan cada escritura. No proponer Cloud Functions, GitHub Actions ni otros servidores sin que el usuario lo pida.
+- `meta/gamification`, `pointTransactions`, `monthlySummaries`, `rewardRedemptions` y `dailyLogs.summary`/`status` solo se escriben dentro de las operaciones `initializeAccount`, `closePendingDays`, `purchaseStreakFreeze` y `redeemReward`.
+- `dailyLogs/{dateKey}.entries` solo se escribe si `dateKey` es hoy en Bolivia según la hora del servidor. No hay margen de gracia.
 - `pointTransactions` es append-only con IDs deterministas. Todo cambio de saldo va en la misma transacción que su movimiento.
 - Hábitos y recompensas nunca se borran, se archivan.
 
 ## Reglas de negocio
 
 - Puntos: hábito principal 10, secundario 5, día perfecto +5, cada 7 días sin protector +20, cada 30 días sin protector +100 (recurrentes).
-- Los puntos se acreditan al **cierre del día** (`closeDay`, 00:05 Bolivia). Durante el día la UI los muestra como provisionales.
+- La racha y los puntos de hoy se ven **al instante** al marcar. Pasan al saldo oficial cuando la app cierra el día (`closePendingDays`, al abrirse al día siguiente); desde ahí se pueden gastar.
 - Meta de racha = todos los hábitos principales programados del día. Día perfecto = 100% de los programados.
 - Protector: cuesta 150, máximo 2, se aplica automáticamente **solo si hay una racha activa**. Congela la racha sin sumarla.
 - El canje de recompensas es manual. Los rangos de costo por nivel son una sugerencia, no un límite.

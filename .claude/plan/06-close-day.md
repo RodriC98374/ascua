@@ -1,27 +1,30 @@
-# 06 — Cierre del día
+# 06 — Cierre de días pendientes
 
-**Objetivo:** que cada medianoche se acrediten los puntos, se evalúe la racha y se generen los resúmenes, sin intervención y sin errores de doble conteo.
+**Objetivo:** que al abrir la app se cierren solos los días anteriores (puntos al saldo, racha, protectores y resúmenes), sin duplicar nada aunque la app esté abierta en dos dispositivos.
 
 ## Tareas
 
-- [ ] Función programada `closeDay` (00:05, `timeZone: 'America/La_Paz'`, región `southamerica-east1`).
-- [ ] Por cada usuario, por cada día pendiente (`lastClosedDateKey + 1` hasta ayer), **una transacción por día**:
-  1. Leer `serverState/gamification`, `dailyLogs/{D}` (puede no existir) y los hábitos.
-  2. Llamar a `evaluateDay` de `shared`. Nada de lógica de negocio aquí.
-  3. Escribir `dailyLogs/{D}` (`status`, `summary`), los `pointTransactions`, `serverState/gamification` y `monthlySummaries/{mes}`.
-- [ ] Logs estructurados por día cerrado (fecha, estado, puntos).
-- [ ] Reintentos habilitados en la función programada.
+- [ ] Operación `closePendingDays` según `data-model.md` §7: por cada día desde `lastClosedDateKey + 1` hasta ayer, **una transacción por día**, en orden.
+  1. Leer los hábitos fuera de la transacción.
+  2. Dentro: leer `meta/gamification`, `dailyLogs/{D}` y `monthlySummaries/{mes}`; confirmar que `lastClosedDateKey + 1 == D` (si no, otro dispositivo ya lo cerró: salir sin hacer nada).
+  3. Llamar a `evaluateDay` de `shared`. **Nada de lógica de negocio aquí.**
+  4. Escribir `dailyLogs/{D}`, los `pointTransactions`, `meta/gamification` y `monthlySummaries`.
+- [ ] Disparadores: al abrir la app, al volver a primer plano y al pasar la medianoche de Bolivia con la app abierta.
+- [ ] Mientras cierra, la UI muestra un estado breve ("Actualizando tus días…") y después el resultado: puntos acreditados y cambios de racha, incluido si se usó un protector.
+- [ ] Sin conexión: no intenta cerrar; reintenta al recuperar la red.
+- [ ] Si las reglas rechazan un cierre (por ejemplo, reloj del dispositivo mal configurado), mostrar el error; no reintentar en bucle.
 
 ## Tests (emulador)
 
 - Día normal: los documentos quedan exactamente como predice `evaluateDay`.
 - **Puesta al día:** con `lastClosedDateKey` 3 días atrás, cierra los 3 en orden.
-- **Idempotencia:** ejecutar `closeDay` dos veces seguidas no duplica nada.
+- **Idempotencia:** ejecutar `closePendingDays` dos veces seguidas no duplica nada.
+- **Concurrencia:** dos ejecuciones en paralelo (simulando celular y PC) cierran cada día una sola vez.
 - Día sin documento `dailyLogs` → se crea con `missed`, `frozen` o `inactive`.
 - Cambio de mes: el resumen va al `monthlySummaries` correcto.
 
 ## Definición de terminado
 
 - Tests en verde.
-- Desplegada y verificada en el proyecto real al menos 3 noches seguidas (revisar los logs).
+- Usada en el celular real al menos 3 días seguidos, con el saldo y la racha correctos cada mañana.
 - **Hito: uso diario.** A partir de aquí la app se usa todos los días. Anotar en la Bitácora la fecha de inicio: sus datos calibran los puntos en la fase 10.
