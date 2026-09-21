@@ -42,6 +42,7 @@ Firebase en plan **Spark**: Firestore (`southamerica-east1`), Auth por email y H
 ## Entorno por máquina
 
 - **Oficina:** usar el Node portable `D:\node-portable-2` (v22). `C:\Program Files\nodejs` apunta a la instalación de otro usuario de Windows y `npm` falla con `EPERM`; no hay permisos de administrador. En cada comando de PowerShell, anteponerlo al PATH: `$env:Path = "D:\node-portable-2;" + $env:Path; npm ...`
+  - Java portable (Temurin 25, sirve como 21+) en `D:\jdk-portable\jdk-25.0.4.1+1`, necesario para los emuladores y los tests de reglas: `$env:JAVA_HOME = "D:\jdk-portable\jdk-25.0.4.1+1"; $env:Path = "$env:JAVA_HOME\bin;D:\node-portable-2;" + $env:Path; npm ...`
 - **Casa:** por documentar en la primera sesión allí.
 
 ## Comandos

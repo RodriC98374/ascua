@@ -4,7 +4,7 @@
 
 Método: **TDD** con `@firebase/rules-unit-testing` + Vitest contra el emulador. Por cada regla, al menos un caso permitido y uno denegado.
 
-**Requisito previo:** Java 21+ para los emuladores. Sin permisos de administrador: JDK 21 portable (Eclipse Temurin, zip) en una carpeta de `D:\`, antepuesto al PATH como el Node portable. Documentar la ruta en CLAUDE.md (Entorno por máquina) y verificar que `npm run emulators` arranque.
+**Requisito previo:** Java 21+ para los emuladores. Oficina: listo (Temurin 25 portable, ruta en CLAUDE.md; Auth y Firestore arrancan). Casa: por verificar.
 
 ## Casos a cubrir
 

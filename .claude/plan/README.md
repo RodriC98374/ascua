@@ -88,12 +88,13 @@ Decisiones de diseño derivadas (no requieren confirmación, pero no cambiarlas 
 | 00 | **hecha** | unida a `main` | Esqueleto completo, lint/tipos/tests en verde, logins y EAS listos, verificada en el navegador. Expo Go → fase 05; emuladores → fase 03; APK y deploy web → fase 06 |
 | 01 | **hecha** | — | Sistema "Brasa Viva" aprobado: https://claude.ai/artifact/R4ajRu7oMWUMzasdS317Fm |
 | 02 | **hecha** | unida a `main` | 63 tests, cobertura 100%. Converters movidos a la app |
-| 03–10 | pendiente | — | 03 requiere Java 21 portable |
+| 03–10 | pendiente | — | Java portable listo en la oficina |
 
 ## Bitácora
 
 Lo más reciente arriba. Una línea por sesión: fecha, máquina (oficina/casa), qué se hizo y qué queda a medias.
 
+- **21-09-2026 · oficina** — Java portable (Temurin 25) en `D:\jdk-portable`; los emuladores de Auth y Firestore arrancan. Siguiente: fase 03.
 - **21-09-2026 · oficina** — Fase 02 hecha con TDD: fechas de Bolivia, programación de hábitos, `evaluateDay` (racha, protectores, bonos, día perfecto) y gasto de puntos. 63 tests, 100% de cobertura. Siguiente: fase 03 (reglas de seguridad), que necesita Java 21 portable para los emuladores.
 - **21-09-2026 · oficina** — Fase 00 cerrada y unida a `main`. La app se ve en el navegador; en el celular (Expo Go) no conectó desde la red de la oficina: queda como primera tarea de la fase 05. Siguiente: fase 02 (núcleo compartido con TDD).
 - **21-09-2026 · oficina** — Fase 01 hecha: sistema de diseño "Brasa Viva" en Claude Design, revisado y aprobado. Quedan 4 pendientes de implementación para la fase 05 (navegación, modo oscuro con variables, sombras en Android, redacción de la regla de racha).
