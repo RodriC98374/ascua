@@ -16,6 +16,8 @@ export const app = initializeApp(firebaseConfig);
 export const auth = initializeAuth(app, {
   persistence: getReactNativePersistence(AsyncStorage),
 });
+// Correos de Firebase (recuperación de contraseña) en español.
+auth.languageCode = 'es';
 
 // En React Native el SDK JS no tiene caché en disco: solo memoria (limitación aceptada, data-model §9).
 export const db = initializeFirestore(app, { localCache: memoryLocalCache() });

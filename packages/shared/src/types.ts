@@ -54,6 +54,22 @@ export interface Habit {
 /** Marcas del día por hábito, tal como las escribe el usuario. */
 export type DailyEntries = Readonly<Record<string, { completed: boolean }>>;
 
+/** Horarios de los recordatorios, 'HH:mm' en hora de Bolivia. */
+export interface ReminderSettings {
+  enabled: boolean;
+  /** Recordatorio general del día. */
+  dailyReminderTime: string;
+  /** Aviso de racha en riesgo; se cancela si la meta de hoy ya está cumplida. */
+  streakRiskReminderTime: string;
+}
+
+/** Perfil del usuario (documento `users/{uid}`). */
+export interface UserProfile {
+  email: string;
+  displayName: string;
+  reminderSettings: ReminderSettings;
+}
+
 /** Saldo y racha del usuario (documento `meta/gamification`). */
 export interface GamificationState {
   pointsBalance: number;

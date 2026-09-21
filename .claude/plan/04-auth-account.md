@@ -6,11 +6,13 @@
 
 ## Tareas
 
-- [ ] Pantallas de inicio de sesión y recuperación de contraseña (no hay registro).
-- [ ] Rutas protegidas con Expo Router: sin sesión → login.
-- [ ] Sesión persistente: `AsyncStorage` en Android, persistencia del navegador en web (ya configurado en `src/lib/firebase*.ts`).
-- [ ] Operación `initializeAccount` (idempotente): si no existen, crea `users/{uid}` y `meta/gamification` con los valores iniciales (`lastClosedDateKey` = ayer en Bolivia, todo en 0). Se llama después de cada inicio de sesión.
-- [ ] Test de `initializeAccount` contra el emulador, incluido llamarla dos veces.
+- [x] Pantallas de inicio de sesión y recuperación de contraseña (no hay registro): `src/app/sign-in.tsx`, `src/app/forgot-password.tsx`.
+- [x] Rutas protegidas con `Stack.Protected` en `src/app/_layout.tsx`: sin sesión → login; con sesión → grupo `(app)`.
+- [x] Sesión persistente: `AsyncStorage` en Android, persistencia del navegador en web (`src/lib/firebase*.ts`). Correos de Firebase en español (`auth.languageCode = 'es'`).
+- [x] Operación `initializeAccount` (`src/operations/initialize-account.ts`): transacción que crea solo lo que falte. `src/app/(app)/_layout.tsx` no muestra la app hasta que termina; si falla, pantalla con "Reintentar".
+- [x] Tests de `initializeAccount` contra el emulador (`packages/firestore-rules/src/operations/`): primera vez, segunda vez, dos dispositivos a la vez, cuenta a medias, no pisa un estado existente, usuario no permitido.
+- [x] Mensajes de error de login y recuperación en español, sin revelar qué correos existen (`src/features/auth/auth-errors.ts`, con tests).
+- [x] Tokens del sistema de diseño (tema claro) en `tailwind.config.js` y fuentes Baloo 2 / Nunito con `@expo-google-fonts`.
 - [x] Lista de `uid` permitidos en las reglas, con el `uid` del usuario (hecho en la fase 03).
 
 ## Pasos manuales del usuario

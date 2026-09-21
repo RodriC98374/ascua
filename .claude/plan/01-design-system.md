@@ -20,4 +20,6 @@ Para leerlo desde Claude Code: `Artifact` con `action: "read"` y `paths: ["proje
 1. **Navegación:** el diseño tiene 3 pestañas (Hoy, Mes, Recompensas). Propuesta: **Hoy / Progreso (mes + estadísticas) / Recompensas**; Ajustes y Gestión de hábitos desde un ícono en el encabezado. Confirmar con el usuario al empezar la fase 05.
 2. **Modo oscuro:** el bloque del README duplica cada color (`bg-surface-100 dark:bg-surface-100-dark`). Antes de copiarlo, verificar en la documentación de NativeWind 4.2 si se pueden usar variables CSS por tema en `global.css`, para que cada clase cambie sola de tema. Si no es posible, usar los pares tal como vienen.
 3. **Sombras en Android:** `boxShadow` funciona en web; en Android revisar el soporte de NativeWind o usar `elevation`.
+Hecho en la fase 04: los tokens del **tema claro** ya están en `apps/client/tailwind.config.js` (sin los pares `-dark`, que dependen del punto 2) y las fuentes se cargan en `src/theme/fonts.ts`. **Ojo:** el README del diseño llama a la fuente `BalooTwo_*`, pero el paquete la exporta como `Baloo2_*`; en el código manda `Baloo2_*`.
+
 4. **Regla de racha:** el README del diseño dice "los 3 principales"; la regla real es **todos los principales programados** (pueden ser menos de 3). En el código manda `data-model.md`.

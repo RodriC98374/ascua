@@ -13,6 +13,8 @@ import { emulatorConfig, firebaseConfig } from '@/config/firebase';
 export const app = initializeApp(firebaseConfig);
 
 export const auth = initializeAuth(app, { persistence: browserLocalPersistence });
+// Correos de Firebase (recuperación de contraseña) en español.
+auth.languageCode = 'es';
 
 // Caché persistente en IndexedDB: la app abre rápido y funciona sin conexión, incluso con varias pestañas.
 export const db = initializeFirestore(app, {

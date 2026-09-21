@@ -72,6 +72,7 @@ Decisiones de diseño derivadas (no requieren confirmación, pero no cambiarlas 
 | E10 | `meta/gamification.lastSpendTransactionId`: ID del movimiento del último gasto | Las reglas exigen que cada descuento del saldo tenga su movimiento nuevo en el historial |
 | E11 | Un hábito archivado **no se reactiva** (se crea uno nuevo) y un hábito nuevo empieza hoy o después | Ambos cambiarían el resultado de días pasados todavía sin cerrar |
 | E12 | Tests de reglas en `packages/firestore-rules`, con las escrituras generadas por `evaluateDay` real | Prueban que lo que calcula la app pasa las reglas. Las funciones de fecha de las reglas se prueban con sondas, porque el emulador no permite fijar `request.time` |
+| E13 | Las operaciones de la app (`src/operations/`) y `src/data/` usan solo imports relativos y se prueban contra el emulador desde `packages/firestore-rules/src/operations/` | Un solo lugar con emulador y reglas reales; Jest en la app queda para lógica de UI sin Firebase |
 
 ## Alcance
 
@@ -92,12 +93,14 @@ Decisiones de diseño derivadas (no requieren confirmación, pero no cambiarlas 
 | 01 | **hecha** | — | Sistema "Brasa Viva" aprobado: https://claude.ai/artifact/R4ajRu7oMWUMzasdS317Fm |
 | 02 | **hecha** | unida a `main` | 63 tests, cobertura 100%. Converters movidos a la app |
 | 03 | **hecha** | unida a `main` | 110 tests de reglas, verificadas con mutaciones. Desplegadas en `ascua-a9e27` con el uid real en `allowedUids()` |
-| 04–10 | pendiente | — | — |
+| 04 | **código listo** | `feat/04-auth-account` | Falta la prueba manual del usuario: login en web, sesión persistente y correo de recuperación |
+| 05–10 | pendiente | — | — |
 
 ## Bitácora
 
 Lo más reciente arriba. Una línea por sesión: fecha, máquina (oficina/casa), qué se hizo y qué queda a medias.
 
+- **21-09-2026 · oficina** — Fase 04 en `feat/04-auth-account`: login, recuperación de contraseña, rutas protegidas, `initializeAccount` (6 tests contra el emulador), tokens claros y fuentes del diseño. `shared` suma `initialUserProfile` y `DEFAULT_REMINDER_SETTINGS`. A medias: prueba manual del usuario y unir a `main`.
 - **21-09-2026 · oficina** — Fase 03 con TDD en `feat/03-security-rules`: `firestore.rules` completas y 110 tests contra el emulador (acceso, forma, entries solo hoy, cierre, compra, canje, inmutabilidad, límite de lecturas). Verificadas con mutaciones. Nuevo campo `lastSpendTransactionId` (E10). Uid real en `allowedUids()`, reglas desplegadas y rama unida a `main`. Siguiente: fase 04 (login e `initializeAccount`).
 - **21-09-2026 · oficina** — Java portable (Temurin 25) en `D:\jdk-portable`; los emuladores de Auth y Firestore arrancan. Siguiente: fase 03.
 - **21-09-2026 · oficina** — Fase 02 hecha con TDD: fechas de Bolivia, programación de hábitos, `evaluateDay` (racha, protectores, bonos, día perfecto) y gasto de puntos. 63 tests, 100% de cobertura. Siguiente: fase 03 (reglas de seguridad), que necesita Java 21 portable para los emuladores.
