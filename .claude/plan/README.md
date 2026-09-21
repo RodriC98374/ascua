@@ -83,7 +83,7 @@ Decisiones de diseño derivadas (no requieren confirmación, pero no cambiarlas 
 
 | Fase | Estado | Rama | Notas |
 |---|---|---|---|
-| 00 | en curso | — | §A hecho (proyecto, Firestore, Auth, app web). Bloqueado: Node/npm de esta PC (ver Bitácora) |
+| 00 | en curso | `feat/00-foundations` | Esqueleto completo, lint/tipos/tests en verde. Falta: Java 21 (emuladores), login en Firebase CLI y EAS, primer deploy web y primera APK |
 | 01 | pendiente | — | |
 | 02–10 | pendiente | — | |
 
@@ -91,6 +91,7 @@ Decisiones de diseño derivadas (no requieren confirmación, pero no cambiarlas 
 
 Lo más reciente arriba. Una línea por sesión: fecha, máquina (oficina/casa), qué se hizo y qué queda a medias.
 
+- **21-09-2026 · oficina** — Fase 00 en `feat/00-foundations`: monorepo, Expo SDK 57, `shared`, NativeWind, Firebase por plataforma, gifted-charts, EAS, ESLint/Prettier, Vitest/Jest. Se usa el Node portable `D:\node-portable-2` (v22). Corregido un `.gitignore` que ignoraba `src/lib`. Pendiente: Java 21, logins de Firebase CLI/EAS, deploy web y APK.
 - **21-09-2026 · oficina** — Firebase configurado (`ascua-a9e27`, Spark, Firestore en `southamerica-east1`, login con correo, app web registrada). Bloqueo en la PC de la oficina: `C:\Program Files\nodejs` apunta al nvm de otro usuario de Windows (`jtapiab`, Node 21); `npm` falla con `EPERM`. Hace falta Node 22 propio del usuario.
 - **21-09-2026 · oficina** — Se descarta el plan Blaze (costo). Nueva arquitectura sin servidor: Expo (Android + web), Firebase Spark, cierre del día en la app, notificaciones locales (D2, D12–D15). Documentación y plan actualizados. Siguiente: crear el proyecto de Firebase (guía en el chat) y empezar la fase 00.
 - **21-09-2026 · oficina** — Requerimientos, modelo de datos, stack y plan definidos. Repo en GitHub con `.claude/` versionada.

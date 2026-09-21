@@ -14,20 +14,25 @@ Claude no puede hacerlos; los guía paso a paso en el chat. Todo en el plan **Sp
 
 ## B. Tareas
 
-- [ ] Root: `package.json` con npm workspaces (`apps/*`, `packages/*`), `.nvmrc` (22), `engines`.
-- [ ] `packages/shared`: paquete TypeScript que compila y se importa desde la app.
-- [ ] `apps/client`: Expo (TypeScript strict) con Expo Router y soporte web. Una pantalla "hola" que muestra un valor importado de `shared`.
-- [ ] NativeWind configurado y funcionando en Android y web.
-- [ ] **Prueba de la librería de gráficas:** una barra y una línea con datos falsos, en Android y en web. Candidata inicial: `react-native-gifted-charts`. Registrar la elección como decisión en el README.
-- [ ] Firebase JS SDK: Auth con persistencia (`AsyncStorage` en Android, la del navegador en web) y Firestore conectado al emulador en desarrollo.
-- [ ] ESLint + Prettier compartidos en la raíz.
-- [ ] Vitest en `packages/shared`; Jest (`jest-expo`) en `apps/client`. Un test trivial en cada uno.
-- [ ] `firebase-tools` como devDependency; `firebase.json`, `.firebaserc`, `firestore.rules` (todo denegado), `firestore.indexes.json`, Hosting apuntando a la exportación web de Expo.
-- [ ] Emulator Suite (Auth, Firestore) con `npm run emulators`.
-- [ ] `eas-cli` como devDependency; `eas.json` con un perfil `preview` que genera **APK** (no AAB).
-- [ ] Scripts raíz: `dev`, `android`, `web`, `build:web`, `build:apk`, `lint`, `typecheck`, `test`, `emulators`, `deploy:web`, `deploy:rules`.
-- [ ] Primer APK instalado en el celular y primer deploy web en Firebase Hosting.
-- [ ] `CLAUDE.md`: sección de comandos con los reales, incluido cómo correr un solo test.
+- [x] Root: `package.json` con npm workspaces (`apps/*`, `packages/*`), `.nvmrc` (22), `engines`.
+- [x] `packages/shared`: paquete TypeScript que compila y se importa desde la app (Metro lo consume como código fuente, sin compilar).
+- [x] `apps/client`: Expo SDK 57 (TypeScript strict) con Expo Router y soporte web. Pantalla "hola" que muestra un valor importado de `shared`.
+- [x] NativeWind 4.2.7 configurado; verificado en el bundle web (clases generadas en el CSS).
+- [~] **Prueba de gráficas:** `react-native-gifted-charts` compila para Android y web, y la web pre-renderizada incluye los SVG. Falta verla en el celular (APK) para registrarla como decisión.
+- [x] Firebase JS SDK: persistencia por plataforma (`firebase.ts` con `AsyncStorage` para Android, `firebase.web.ts` con `browserLocalPersistence` + IndexedDB para web), verificada en ambos bundles. Conexión a emuladores con `EXPO_PUBLIC_USE_EMULATORS`.
+- [x] ESLint (config de Expo) + Prettier (config en la raíz, con plugin de Tailwind).
+- [x] Vitest en `packages/shared`; Jest (`jest-expo`) en `apps/client`. Un test en cada uno.
+- [x] `firebase-tools` como devDependency; `firebase.json`, `.firebaserc`, `firestore.rules` (todo denegado), `firestore.indexes.json`, Hosting apuntando a `apps/client/dist`.
+- [ ] Emulator Suite (Auth, Firestore) con `npm run emulators`. **Bloqueado:** requiere Java 21+ (la oficina tiene Java 11).
+- [x] `eas-cli` como devDependency; `eas.json` con perfiles `development`, `preview` y `production`, todos APK.
+- [x] Scripts raíz: `dev`, `android`, `web`, `build:web`, `build:apk`, `lint`, `typecheck`, `test`, `emulators`, `deploy:web`, `deploy:rules`.
+- [ ] Primer APK instalado en el celular y primer deploy web en Firebase Hosting. **Requiere que el usuario inicie sesión** en Firebase CLI y en EAS.
+- [x] `CLAUDE.md`: sección de comandos con los reales, incluido cómo correr un solo test.
+
+Notas de la implementación:
+- `expo install` ignora `--dev` dentro de un workspace: los paquetes de desarrollo se mueven a mano a `devDependencies`.
+- TypeScript 6 exige declarar los imports de CSS (`apps/client/css-modules.d.ts`).
+- Los tipos públicos de `firebase/auth` no declaran `getReactNativePersistence`, aunque el bundle de React Native sí lo exporta: se declara en `apps/client/src/types/firebase-auth-react-native.d.ts`.
 
 ## Definición de terminado
 
