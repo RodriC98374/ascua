@@ -459,7 +459,8 @@ Calcular en el cliente **no** hace lenta la app: el cuello de botella no es el c
 Sin servidor, las reglas son la única barrera: validan que cada operación de la sección 7 sea coherente, usando `getAfter()` para comparar el estado antes y después de la transacción.
 
 - **Acceso:** todo bajo `users/{userId}` requiere `request.auth.uid == userId` y que el `uid` esté en la lista de permitidos.
-- **Registro cerrado:** tras crear la cuenta propia, se desactiva el registro en la consola (*Authentication → Settings → User actions*). La lista de permitidos es la segunda barrera.
+- **Registro cerrado:** la cuenta del usuario se creó a mano en la consola y el registro está desactivado (*Authentication → Settings → User actions*). La app no tiene pantalla de registro. La lista de permitidos es la segunda barrera.
+- **Clave de API restringida** (Google Cloud → Credenciales → "Browser key (auto created by Firebase)"): sin restricción de aplicación (Android con el SDK JS no envía los datos que esa restricción verifica) y **solo** Identity Toolkit API, Token Service API y Cloud Firestore API. La clave es pública por diseño; si se agrega otro servicio de Firebase, sumarlo a esa lista o fallará con un error 403.
 - **Libre, con forma validada** (tipos, enums, longitudes): `users/{userId}` (solo `displayName` y `reminderSettings` después de crearlo), `habits`, `rewards`. Hábitos y recompensas no se pueden borrar.
 - **`dailyLogs/{D}.entries`:** solo si `D` es hoy en Bolivia según `request.time`. Al crear el documento, `status == 'open'` y `summary == null`.
 - **Cierre de un día** (`status`/`summary` de `dailyLogs/{D}`, movimientos de cierre, `meta/gamification`, `monthlySummaries`):

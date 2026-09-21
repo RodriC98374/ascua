@@ -23,7 +23,7 @@ En orden. Cada fase es autocontenida, pero asume las decisiones de este README. 
 | 01 | [01-design-system.md](01-design-system.md) | Sistema de diseño (paleta, tipografía, componentes) y pantallas clave, aprobados | — (paralelo a 00) |
 | 02 | [02-shared-core.md](02-shared-core.md) | Tipos, constantes, fechas Bolivia y lógica pura del cierre, con TDD | 00 |
 | 03 | [03-security-rules.md](03-security-rules.md) | `firestore.rules` completas y probadas, incluidas las operaciones sensibles | 02 |
-| 04 | [04-auth-account.md](04-auth-account.md) | Login, inicialización de la cuenta, registro cerrado | 03 |
+| 04 | [04-auth-account.md](04-auth-account.md) | Login e inicialización de la cuenta (el registro ya está cerrado) | 03 |
 | 05 | [05-habits-today.md](05-habits-today.md) | CRUD de hábitos y pantalla "Hoy" en Android y web | 01, 04 |
 | 06 | [06-close-day.md](06-close-day.md) | Cierre de días pendientes al abrir la app | 05 |
 | — | **Hito: uso diario** | La app se usa todos los días desde el celular y empieza a juntar datos reales | 06 |
@@ -91,6 +91,7 @@ Decisiones de diseño derivadas (no requieren confirmación, pero no cambiarlas 
 
 Lo más reciente arriba. Una línea por sesión: fecha, máquina (oficina/casa), qué se hizo y qué queda a medias.
 
+- **21-09-2026 · oficina** — GitHub marcó la `apiKey` de Firebase como secreto: es pública por diseño; alerta cerrada como "won't fix", clave restringida a Identity Toolkit, Token Service y Firestore. Usuario creado a mano en la consola y registro desactivado (la fase 04 ya no tiene pantalla de registro).
 - **21-09-2026 · oficina** — Fase 00 en `feat/00-foundations`: monorepo, Expo SDK 57, `shared`, NativeWind, Firebase por plataforma, gifted-charts, EAS, ESLint/Prettier, Vitest/Jest. Se usa el Node portable `D:\node-portable-2` (v22). Corregido un `.gitignore` que ignoraba `src/lib`. Pendiente: Java 21, logins de Firebase CLI/EAS, deploy web y APK.
 - **21-09-2026 · oficina** — Firebase configurado (`ascua-a9e27`, Spark, Firestore en `southamerica-east1`, login con correo, app web registrada). Bloqueo en la PC de la oficina: `C:\Program Files\nodejs` apunta al nvm de otro usuario de Windows (`jtapiab`, Node 21); `npm` falla con `EPERM`. Hace falta Node 22 propio del usuario.
 - **21-09-2026 · oficina** — Se descarta el plan Blaze (costo). Nueva arquitectura sin servidor: Expo (Android + web), Firebase Spark, cierre del día en la app, notificaciones locales (D2, D12–D15). Documentación y plan actualizados. Siguiente: crear el proyecto de Firebase (guía en el chat) y empezar la fase 00.
