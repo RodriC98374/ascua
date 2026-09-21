@@ -67,6 +67,7 @@ Decisiones de diseño derivadas (no requieren confirmación, pero no cambiarlas 
 | E5 | APK instalada a mano (sin Play Store) | Play Store cobra USD 25. Actualizaciones de código con EAS Update, sin reinstalar |
 | E6 | NativeWind para estilos; librería de gráficas que funcione en Android y web, elegida con una prueba en la fase 00 | Recharts y Tailwind directo no funcionan en React Native |
 | E7 | SDK JavaScript de Firebase (no `@react-native-firebase`) | Funciona igual en Android y web. Costo: en Android no hay caché offline en disco |
+| E8 | Gráficas con `react-native-gifted-charts` (+ `react-native-svg`, `expo-linear-gradient`) | Mantenida, funciona en Android y web. En web, `LineChart` va **sin animación** (`isAnimated={Platform.OS !== 'web'}`): su animación usa un `Rect` SVG animado que rompe en web. Los avisos de consola `pointerEvents is deprecated` y `onStartShouldSetResponder` vienen de las librerías y se ignoran |
 
 ## Alcance
 

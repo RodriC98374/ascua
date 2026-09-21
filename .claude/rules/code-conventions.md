@@ -22,6 +22,7 @@
 ## Git
 
 - Conventional Commits: el prefijo en inglés (`feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`) y la descripción en español, en imperativo. Ejemplo: `feat: agrega el cálculo de racha al cierre del día`.
+- **Nunca escribir correos ni datos personales del usuario** en documentación, código ni comentarios (sí pueden figurar como autor de los commits). Para referirse a una cuenta, describirla ("la cuenta de Google dueña del proyecto").
 - **Sin atribución a Claude ni a ninguna IA** en commits, PRs, código o documentación: nada de `Co-Authored-By: Claude`, "Generated with Claude Code" ni similares. El autor es solo el usuario.
 - `main` siempre en verde. Trabajo por fase en ramas `feat/<fase>-<tema>`, por ejemplo `feat/02-shared-core`.
 - Nunca commitear `.env*`, cuentas de servicio ni `.claude/settings.local.json`.

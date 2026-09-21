@@ -1,6 +1,6 @@
 // Prueba temporal de la fase 00: valida que la librería de gráficas funcione en Android y web.
 // Se elimina al empezar la fase 05.
-import { Text, View } from 'react-native';
+import { Platform, Text, View } from 'react-native';
 import { BarChart, LineChart } from 'react-native-gifted-charts';
 
 const weekCompletion = [
@@ -32,7 +32,8 @@ export function ChartsSpike() {
         spacing={40}
         color="#14B8A6"
         curved
-        isAnimated
+        // La animación de LineChart usa un Rect SVG animado que falla en web.
+        isAnimated={Platform.OS !== 'web'}
       />
     </View>
   );
