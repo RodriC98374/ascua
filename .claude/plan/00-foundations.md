@@ -9,7 +9,7 @@ Claude no puede hacerlos; los guía paso a paso en el chat. Todo en el plan **Sp
 1. **Firebase:** crear el proyecto (sin Google Analytics) y pasar el `projectId`.
 2. **Firestore:** crear la base en modo producción, región **`southamerica-east1`**. La región no se puede cambiar después.
 3. **Authentication:** habilitar el proveedor Correo/contraseña. El registro se cierra en la fase 04.
-4. **Web app:** registrar una app web en el proyecto y pasar el objeto `firebaseConfig` (no es secreto; va en `.env`).
+4. **Web app:** registrar una app web en el proyecto y pasar el objeto `firebaseConfig`. No es secreto (viaja dentro de la app), así que va **versionado en el código** (`apps/client/src/config/firebase.ts`) para que funcione en cualquier máquina sin copiar archivos.
 5. **Expo:** crear una cuenta gratuita en expo.dev (para EAS Build y EAS Update).
 
 ## B. Tareas

@@ -6,6 +6,7 @@
 - **Modelo de datos:** [../data-model.md](../data-model.md)
 - **Reglas para Claude:** [../rules/](../rules/)
 - **Repositorio:** https://github.com/RodriC98374/ascua
+- **Proyecto Firebase:** `ascua-a9e27` (plan Spark, Firestore en `southamerica-east1`)
 - **Estado:** fase 00 sin empezar. Documentación y plan listos; arquitectura sin servidor aprobada.
 
 ## Arquitectura en una frase
@@ -82,7 +83,7 @@ Decisiones de diseño derivadas (no requieren confirmación, pero no cambiarlas 
 
 | Fase | Estado | Rama | Notas |
 |---|---|---|---|
-| 00 | pendiente | — | Esperando el proyecto de Firebase (pasos manuales §A) |
+| 00 | en curso | — | §A hecho (proyecto, Firestore, Auth, app web). Bloqueado: Node/npm de esta PC (ver Bitácora) |
 | 01 | pendiente | — | |
 | 02–10 | pendiente | — | |
 
@@ -90,5 +91,6 @@ Decisiones de diseño derivadas (no requieren confirmación, pero no cambiarlas 
 
 Lo más reciente arriba. Una línea por sesión: fecha, máquina (oficina/casa), qué se hizo y qué queda a medias.
 
+- **21-09-2026 · oficina** — Firebase configurado (`ascua-a9e27`, Spark, Firestore en `southamerica-east1`, login con correo, app web registrada). Bloqueo en la PC de la oficina: `C:\Program Files\nodejs` apunta al nvm de otro usuario de Windows (`jtapiab`, Node 21); `npm` falla con `EPERM`. Hace falta Node 22 propio del usuario.
 - **21-09-2026 · oficina** — Se descarta el plan Blaze (costo). Nueva arquitectura sin servidor: Expo (Android + web), Firebase Spark, cierre del día en la app, notificaciones locales (D2, D12–D15). Documentación y plan actualizados. Siguiente: crear el proyecto de Firebase (guía en el chat) y empezar la fase 00.
 - **21-09-2026 · oficina** — Requerimientos, modelo de datos, stack y plan definidos. Repo en GitHub con `.claude/` versionada.
