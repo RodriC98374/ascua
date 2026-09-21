@@ -27,7 +27,8 @@ Claude no puede hacerlos; los guía paso a paso en el chat. Todo en el plan **Sp
 - [x] `eas-cli` como devDependency; `eas.json` con perfiles `development`, `preview` y `production`, todos APK.
 - [x] Scripts raíz: `dev`, `android`, `web`, `build:web`, `build:apk`, `lint`, `typecheck`, `test`, `emulators`, `deploy:web`, `deploy:rules`.
 - [x] Sesiones iniciadas en Firebase CLI y EAS; proyecto vinculado a EAS (`@rodric983748/ascua`, `extra.eas.projectId` en `app.json`). Firma de Android generada y guardada en los servidores de Expo.
-- [ ] Ver la app en desarrollo en el navegador (`npm run web`) y en el celular con **Expo Go** (`npm run dev`, escanear el QR; `-- --tunnel` si la red lo bloquea).
+- [x] Ver la app en desarrollo en el navegador (`npm run web`): fondo, textos y gráficas correctos (21-09-2026).
+- Ver la app en el celular con **Expo Go** se movió a la fase 05: la red de la PC de la oficina no lo permitió.
 - La primera APK de uso real y el primer deploy web se **movieron al hito de uso diario** (fase 06): antes no hay nada que usar. Se lanzó un build de prueba el 21-09-2026, opcional.
 - [x] `CLAUDE.md`: sección de comandos con los reales, incluido cómo correr un solo test.
 

@@ -84,7 +84,7 @@ Decisiones de diseño derivadas (no requieren confirmación, pero no cambiarlas 
 
 | Fase | Estado | Rama | Notas |
 |---|---|---|---|
-| 00 | en curso | `feat/00-foundations` | Esqueleto completo, lint/tipos/tests en verde, logins y EAS listos. Falta: que el usuario vea la app en Expo Go y en el navegador. Emuladores → fase 03; APK y deploy web → fase 06 |
+| 00 | **hecha** | unida a `main` | Esqueleto completo, lint/tipos/tests en verde, logins y EAS listos, verificada en el navegador. Expo Go → fase 05; emuladores → fase 03; APK y deploy web → fase 06 |
 | 01 | **hecha** | — | Sistema "Brasa Viva" aprobado: https://claude.ai/artifact/R4ajRu7oMWUMzasdS317Fm |
 | 02–10 | pendiente | — | |
 
@@ -92,6 +92,7 @@ Decisiones de diseño derivadas (no requieren confirmación, pero no cambiarlas 
 
 Lo más reciente arriba. Una línea por sesión: fecha, máquina (oficina/casa), qué se hizo y qué queda a medias.
 
+- **21-09-2026 · oficina** — Fase 00 cerrada y unida a `main`. La app se ve en el navegador; en el celular (Expo Go) no conectó desde la red de la oficina: queda como primera tarea de la fase 05. Siguiente: fase 02 (núcleo compartido con TDD).
 - **21-09-2026 · oficina** — Fase 01 hecha: sistema de diseño "Brasa Viva" en Claude Design, revisado y aprobado. Quedan 4 pendientes de implementación para la fase 05 (navegación, modo oscuro con variables, sombras en Android, redacción de la regla de racha).
 - **21-09-2026 · oficina** — GitHub marcó la `apiKey` de Firebase como secreto: es pública por diseño; alerta cerrada como "won't fix", clave restringida a Identity Toolkit, Token Service y Firestore. Usuario creado a mano en la consola y registro desactivado (la fase 04 ya no tiene pantalla de registro).
 - **21-09-2026 · oficina** — Fase 00 en `feat/00-foundations`: monorepo, Expo SDK 57, `shared`, NativeWind, Firebase por plataforma, gifted-charts, EAS, ESLint/Prettier, Vitest/Jest. Se usa el Node portable `D:\node-portable-2` (v22). Corregido un `.gitignore` que ignoraba `src/lib`. Pendiente: Java 21, logins de Firebase CLI/EAS, deploy web y APK.

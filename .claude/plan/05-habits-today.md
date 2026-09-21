@@ -4,6 +4,9 @@
 
 ## Tareas
 
+**Primero (pendiente de la fase 00)**
+- [ ] Ver la app en el celular con **Expo Go** (`npm run dev`, escanear el QR; si no conecta, `npm run dev -- --tunnel`). En la oficina la red no lo permitió; probar en casa. Confirmar que `LineChart` se ve animada en Android.
+
 **Base de UI**
 - [ ] Tokens del sistema de diseño (fase 01) en la configuración de NativeWind; navegación con pestañas inferiores en Android y adaptada a escritorio en web.
 - [ ] Caché persistente de Firestore en web (`persistentLocalCache`); caché en memoria en Android.
