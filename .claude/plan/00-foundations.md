@@ -26,7 +26,9 @@ Claude no puede hacerlos; los guía paso a paso en el chat. Todo en el plan **Sp
 - [ ] Emulator Suite (Auth, Firestore) con `npm run emulators`. **Bloqueado:** requiere Java 21+ (la oficina tiene Java 11).
 - [x] `eas-cli` como devDependency; `eas.json` con perfiles `development`, `preview` y `production`, todos APK.
 - [x] Scripts raíz: `dev`, `android`, `web`, `build:web`, `build:apk`, `lint`, `typecheck`, `test`, `emulators`, `deploy:web`, `deploy:rules`.
-- [ ] Primer APK instalado en el celular y primer deploy web en Firebase Hosting. **Requiere que el usuario inicie sesión** en Firebase CLI y en EAS.
+- [x] Sesiones iniciadas en Firebase CLI y EAS; proyecto vinculado a EAS (`@rodric983748/ascua`, `extra.eas.projectId` en `app.json`). Firma de Android generada y guardada en los servidores de Expo.
+- [ ] Ver la app en desarrollo en el navegador (`npm run web`) y en el celular con **Expo Go** (`npm run dev`, escanear el QR; `-- --tunnel` si la red lo bloquea).
+- La primera APK de uso real y el primer deploy web se **movieron al hito de uso diario** (fase 06): antes no hay nada que usar. Se lanzó un build de prueba el 21-09-2026, opcional.
 - [x] `CLAUDE.md`: sección de comandos con los reales, incluido cómo correr un solo test.
 
 Notas de la implementación:
@@ -37,9 +39,9 @@ Notas de la implementación:
 ## Definición de terminado
 
 - `npm install && npm test` en verde desde un clon limpio (probarlo en la otra máquina).
-- La pantalla "hola" se ve en el celular (APK instalada) y en la URL de Firebase Hosting.
-- `npm run emulators` levanta todo y la app en desarrollo habla con el emulador.
-- La librería de gráficas elegida funciona en ambas plataformas.
+- La pantalla "hola" se ve en el celular (Expo Go) y en el navegador (`npm run web`).
+- La librería de gráficas elegida se ve bien en ambas plataformas.
+- Los emuladores (`npm run emulators`) se movieron a la fase 03, que es la primera que los necesita (requieren Java 21).
 
 ## Riesgos
 

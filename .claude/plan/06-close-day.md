@@ -27,4 +27,5 @@
 
 - Tests en verde.
 - Usada en el celular real al menos 3 días seguidos, con el saldo y la racha correctos cada mañana.
+- **Primera APK real** (`npm run build:apk`) instalada en el celular y **primer deploy web** (`npm run deploy:web` y `npm run deploy:rules`).
 - **Hito: uso diario.** A partir de aquí la app se usa todos los días. Anotar en la Bitácora la fecha de inicio: sus datos calibran los puntos en la fase 10.

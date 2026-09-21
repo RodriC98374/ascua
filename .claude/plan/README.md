@@ -83,7 +83,7 @@ Decisiones de diseño derivadas (no requieren confirmación, pero no cambiarlas 
 
 | Fase | Estado | Rama | Notas |
 |---|---|---|---|
-| 00 | en curso | `feat/00-foundations` | Esqueleto completo, lint/tipos/tests en verde. Falta: Java 21 (emuladores), login en Firebase CLI y EAS, primer deploy web y primera APK |
+| 00 | en curso | `feat/00-foundations` | Esqueleto completo, lint/tipos/tests en verde, logins y EAS listos. Falta: que el usuario vea la app en Expo Go y en el navegador. Emuladores → fase 03; APK y deploy web → fase 06 |
 | 01 | **hecha** | — | Sistema "Brasa Viva" aprobado: https://claude.ai/artifact/R4ajRu7oMWUMzasdS317Fm |
 | 02–10 | pendiente | — | |
 
