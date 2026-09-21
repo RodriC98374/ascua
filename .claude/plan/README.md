@@ -68,6 +68,7 @@ Decisiones de diseño derivadas (no requieren confirmación, pero no cambiarlas 
 | E6 | NativeWind para estilos; librería de gráficas que funcione en Android y web, elegida con una prueba en la fase 00 | Recharts y Tailwind directo no funcionan en React Native |
 | E7 | SDK JavaScript de Firebase (no `@react-native-firebase`) | Funciona igual en Android y web. Costo: en Android no hay caché offline en disco |
 | E8 | Gráficas con `react-native-gifted-charts` (+ `react-native-svg`, `expo-linear-gradient`) | Mantenida, funciona en Android y web. En web, `LineChart` va **sin animación** (`isAnimated={Platform.OS !== 'web'}`): su animación usa un `Rect` SVG animado que rompe en web. Los avisos de consola `pointerEvents is deprecated` y `onStartShouldSetResponder` vienen de las librerías y se ignoran |
+| E9 | `packages/shared` sin Firebase ni Node; converters de Firestore en la app | La lógica se prueba sin emulador y corre igual en Android, web y tests |
 
 ## Alcance
 
@@ -86,12 +87,14 @@ Decisiones de diseño derivadas (no requieren confirmación, pero no cambiarlas 
 |---|---|---|---|
 | 00 | **hecha** | unida a `main` | Esqueleto completo, lint/tipos/tests en verde, logins y EAS listos, verificada en el navegador. Expo Go → fase 05; emuladores → fase 03; APK y deploy web → fase 06 |
 | 01 | **hecha** | — | Sistema "Brasa Viva" aprobado: https://claude.ai/artifact/R4ajRu7oMWUMzasdS317Fm |
-| 02–10 | pendiente | — | |
+| 02 | **hecha** | unida a `main` | 63 tests, cobertura 100%. Converters movidos a la app |
+| 03–10 | pendiente | — | 03 requiere Java 21 portable |
 
 ## Bitácora
 
 Lo más reciente arriba. Una línea por sesión: fecha, máquina (oficina/casa), qué se hizo y qué queda a medias.
 
+- **21-09-2026 · oficina** — Fase 02 hecha con TDD: fechas de Bolivia, programación de hábitos, `evaluateDay` (racha, protectores, bonos, día perfecto) y gasto de puntos. 63 tests, 100% de cobertura. Siguiente: fase 03 (reglas de seguridad), que necesita Java 21 portable para los emuladores.
 - **21-09-2026 · oficina** — Fase 00 cerrada y unida a `main`. La app se ve en el navegador; en el celular (Expo Go) no conectó desde la red de la oficina: queda como primera tarea de la fase 05. Siguiente: fase 02 (núcleo compartido con TDD).
 - **21-09-2026 · oficina** — Fase 01 hecha: sistema de diseño "Brasa Viva" en Claude Design, revisado y aprobado. Quedan 4 pendientes de implementación para la fase 05 (navegación, modo oscuro con variables, sombras en Android, redacción de la regla de racha).
 - **21-09-2026 · oficina** — GitHub marcó la `apiKey` de Firebase como secreto: es pública por diseño; alerta cerrada como "won't fix", clave restringida a Identity Toolkit, Token Service y Firestore. Usuario creado a mano en la consola y registro desactivado (la fase 04 ya no tiene pantalla de registro).

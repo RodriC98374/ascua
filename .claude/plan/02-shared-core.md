@@ -1,50 +1,37 @@
 # 02 — Núcleo compartido (`packages/shared`)
 
-**Objetivo:** que toda la lógica de negocio exista como código puro y probado **antes** de tocar Firestore. Es la principal defensa contra incoherencias: si una regla del `data-model.md` es ambigua, aparece aquí como un test que no se puede escribir.
+**Estado: hecha (21-09-2026).** 63 tests, cobertura 100% (líneas, ramas y funciones). Rama `feat/02-shared-core`.
 
-Método: **TDD**. Por cada módulo, primero la tabla de casos (test en rojo), luego el código.
+**Objetivo:** que toda la lógica de negocio exista como código puro y probado **antes** de tocar Firestore. Es la principal defensa contra incoherencias: cada regla del `data-model.md` es un test.
 
-## Módulos
+Método: **TDD**. Se escribieron los tests primero, se verificó que fallaran y después se escribió el código.
 
-### `dates.ts`
-- `toDateKey(instant: Date): DateKey` y `toMonthKey(...)` con `Intl` en `America/La_Paz`.
-- `todayDateKey(now?: Date)`, `addDays(dateKey, n)`, `daysBetween(a, b)`, `startOfWeek(dateKey)` (lunes), `monthOf(dateKey)`.
-- Casos obligatorios: 23:59 y 00:00 Bolivia (03:59 y 04:00 UTC), fin de mes, fin de año, año bisiesto, máquina de test con otra zona horaria (`TZ=Asia/Tokyo`).
+## Qué quedó (API pública de `@ascua/shared`)
 
-### `constants.ts` y `types.ts`
-- Las constantes y tipos de `data-model.md` §2–3, tal cual.
+| Archivo | Exporta | Para qué |
+|---|---|---|
+| `types.ts` | `DateKey`, `MonthKey`, `Habit`, `DailyEntries`, `GamificationState`, `PointTransaction`, `Reward`, enums | Tipos de dominio **sin Firebase** |
+| `constants.ts` | `APP_TIME_ZONE`, `HABIT_POINTS`, `MAX_PRIMARY_HABITS`, `PERFECT_DAY_BONUS`, `STREAK_BONUSES`, `STREAK_FREEZE_COST`, `MAX_STREAK_FREEZES`, `REWARD_TIER_COST_RANGES` | Reglas de puntos en un solo lugar |
+| `dates.ts` | `toDateKey`, `todayDateKey`, `toMonthKey`, `addDays`, `daysBetween`, `startOfWeek`, `isValidDateKey`, `dateKeyRange`, `pendingDateKeysToClose` | Fechas de Bolivia; aritmética de calendario en UTC puro |
+| `habit-schedule.ts` | `isHabitScheduledOn`, `getScheduledHabits` | Qué hábitos cuentan cada día (archivar hoy no saca de hoy) |
+| `day-evaluation.ts` | `evaluateDay` → `{ status, isGoalMet, freezeUsed, summary, transactions, nextState }` | Cierre de un día. Lo usan `closePendingDays` y la vista previa de "Hoy" |
+| `points.ts` | `canPurchaseFreeze`, `canRedeemReward` (con `missingPoints`), `planFreezePurchase`, `planRewardRedemption` | Gasto de puntos |
+| `transaction-ids.ts` | `transactionIds` | IDs deterministas de los movimientos |
 
-### `habit-schedule.ts`
-- `isHabitScheduledOn(habit, dateKey)`: aplica `startDateKey <= D <= archivedDateKey`.
-- Casos: creado hoy, archivado hoy (sigue contando), archivado ayer, sin archivar.
+## Decisiones tomadas durante la fase
 
-### `day-evaluation.ts` (el corazón)
-- `evaluateDay(input): DayEvaluation`, función pura.
-  - Entrada: `dateKey`, hábitos, `entries`, estado de gamificación anterior.
-  - Salida: `status`, `summary`, lista de movimientos de puntos (con ID determinista) y nuevo estado de gamificación.
-- Tabla de casos mínima:
-  - Principales completos y secundarios incompletos → `completed`, sin bono de día perfecto.
-  - Todo completo → `completed` + `isPerfectDay` + bono.
-  - Sin principales → la meta pasa a ser todos los hábitos.
-  - Sin hábitos → `inactive`, no cambia nada.
-  - Falla con protector y racha > 0 → `frozen`, `daysWithoutFreeze = 0`, racha igual.
-  - Falla con protector y racha = 0 → `missed`, **el protector no se gasta**.
-  - Falla sin protector → `missed`, racha 0.
-  - `daysWithoutFreeze` llega a 7, 14, 30 y 210 → bonos correctos (210 da los dos).
-  - `longestStreak` se actualiza solo al superarlo.
-  - `entries` con un ID de hábito inexistente o archivado → se ignora.
-  - Racha y puntos que la UI muestra hoy = lo que acreditará el cierre (la pantalla "Hoy" y `closePendingDays` usan la misma función).
-
-### `points.ts`
-- `applyTransaction(state, transaction)` → nuevo saldo y totales; saldo negativo imposible.
-- `canPurchaseFreeze(state)` y `canRedeem(state, reward)`.
-
-### `converters.ts`
-- Un `FirestoreDataConverter` por colección, compartido. Valida la forma al leer.
+- **Los converters de Firestore van en la app, no en `shared`.** Si estuvieran aquí, `shared` dependería de Firebase y dejaría de ser lógica pura. Los converters (fases 04/05) traducen documentos de Firestore (con `Timestamp`) a los tipos de dominio de `shared`.
+- **`evaluateDay` se niega a cerrar un día que no sea `lastClosedDateKey + 1`** (lanza un error). Protege el orden del cierre aunque falle la orquestación.
+- **Los hábitos cumplidos suman puntos aunque no se cumpla la meta de racha** (ej.: día perdido con el secundario hecho → +5). Coincide con `data-model.md` §7.
+- **Un día `inactive` no toca la racha ni `daysWithoutFreeze`.**
+- **Orden de los movimientos al cerrar:** hábitos (en el orden recibido), día perfecto, bono de 7 y bono de 30, con `balanceAfter` acumulado.
+- **Textos de los movimientos** (voz del sistema de diseño): "Hábito cumplido: {nombre}", "Día perfecto", "Racha de 7 días sin protector", "Protector de racha", "Canje: {nombre}".
+- **Pantalla "Hoy":** para la vista previa, llamar a `evaluateDay` con el día de hoy (requiere haber cerrado antes los días pendientes). Usar `isGoalMet` y `summary`; **ignorar `status` y `freezeUsed`**, que solo tienen sentido al cierre (durante el día nunca se muestra "protector usado").
+- Los tests de zona horaria usan `vi.stubEnv('TZ', …)`: `shared` no incluye los tipos de Node a propósito, porque también corre en el celular.
 
 ## Definición de terminado
 
-- Cobertura ≥ 95% en `packages/shared` (`vitest --coverage`).
-- Todos los casos de arriba existen como tests con nombre descriptivo.
-- Cero dependencias de Firestore en `day-evaluation.ts` y `dates.ts`.
-- Si algún caso obligó a cambiar una regla, `data-model.md` quedó actualizado en el mismo commit.
+- [x] Cobertura ≥ 95% en `packages/shared` (`npm run test:coverage -w @ascua/shared`): **100%**.
+- [x] Todos los casos de la tabla (principales/secundarios, día perfecto, sin principales, sin hábitos, protector con y sin racha, sin protector, bonos 7/14/30/210, racha más larga, IDs inválidos o archivados) existen como tests con nombre descriptivo.
+- [x] Cero dependencias de Firestore en todo `packages/shared`.
+- [x] Ninguna regla del negocio cambió; `data-model.md` sigue vigente.

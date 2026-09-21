@@ -17,7 +17,7 @@
 - Modo `strict` en todos los paquetes. Prohibido `any`; si hace falta, `unknown` y estrechar el tipo.
 - Tipos, constantes de negocio y helpers de fecha viven **solo** en `packages/shared`. La app los importa de ahí; nunca se copian.
 - Constantes de negocio (puntos, costos, límites) nunca como literales sueltos: siempre desde `packages/shared`.
-- Cada colección se lee y escribe con un `FirestoreDataConverter` tipado (`withConverter`).
+- `packages/shared` es lógica pura: **nunca importa Firebase ni APIs de Node**. Cada colección se lee y escribe con un `FirestoreDataConverter` tipado (`withConverter`) que vive en `apps/client` y traduce el documento (con `Timestamp`) a los tipos de dominio de `shared`.
 
 ## Git
 

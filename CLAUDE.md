@@ -60,8 +60,10 @@ Desde la raíz (en la oficina, con el Node portable antepuesto al PATH):
 | `npm run deploy:web` / `npm run deploy:rules` | Publica la web en Hosting / las reglas de Firestore |
 | `npm run build:apk` | APK con EAS Build (perfil `preview`) |
 
+Cobertura de `shared` (mínimo 95%, hoy 100%): `npm run test:coverage -w @ascua/shared`.
+
 Un solo test:
-- `shared`: `npm test -w @ascua/shared -- src/constants.test.ts` o `-- -t "nombre del test"`.
+- `shared`: `npm test -w @ascua/shared -- src/day-evaluation.test.ts` o `-- -t "nombre del test"`.
 - `client`: `npm test -w @ascua/client -- src/config/firebase.test.ts` o `-- -t "nombre del test"`.
 
 Dependencias de la app: instalar con `npx expo install <paquete>` **desde `apps/client`** (elige versiones compatibles con el SDK). En este monorepo `expo install` ignora `--dev`: si el paquete es de desarrollo, moverlo a mano a `devDependencies`.
