@@ -34,6 +34,11 @@ Monorepo con npm workspaces:
 
 Firebase en plan **Spark**: Firestore (`southamerica-east1`), Auth por email y Hosting. **Sin Cloud Functions ni servidores**: la app ejecuta las operaciones y `firestore.rules` las valida. Node 22.
 
+## Entorno por máquina
+
+- **Oficina:** usar el Node portable `D:\node-portable-2` (v22). `C:\Program Files\nodejs` apunta a la instalación de otro usuario de Windows y `npm` falla con `EPERM`; no hay permisos de administrador. En cada comando de PowerShell, anteponerlo al PATH: `$env:Path = "D:\node-portable-2;" + $env:Path; npm ...`
+- **Casa:** por documentar en la primera sesión allí.
+
 ## Comandos
 
 Todavía no hay código. La fase 00 crea los scripts `dev`, `build`, `lint`, `typecheck`, `test` y `emulators`, y los documenta aquí, incluido cómo correr un solo test.

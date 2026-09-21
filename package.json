@@ -1,0 +1,27 @@
+{
+  "name": "ascua",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=22 <23"
+  },
+  "scripts": {
+    "dev": "npm run start -w @ascua/client",
+    "android": "npm run android -w @ascua/client",
+    "web": "npm run web -w @ascua/client",
+    "lint": "npm run lint --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "emulators": "firebase emulators:start --project demo-ascua",
+    "build:web": "npm run build:web -w @ascua/client",
+    "build:apk": "npm run build:apk -w @ascua/client",
+    "deploy:web": "npm run build:web && firebase deploy --only hosting",
+    "deploy:rules": "firebase deploy --only firestore:rules"
+  },
+  "devDependencies": {
+    "firebase-tools": "^15.30.2"
+  }
+}
