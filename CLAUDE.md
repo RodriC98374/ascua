@@ -16,7 +16,7 @@ Toda la documentación vive en `.claude/` y **se versiona en git**: el trabajo c
 | [.claude/data-model.md](.claude/data-model.md) | Modelo de datos en Firestore, flujos del servidor, reglas de seguridad, rendimiento |
 | [.claude/plan/README.md](.claude/plan/README.md) | Plan por fases, **decisiones confirmadas (no reabrirlas)**, estado y bitácora |
 | [.claude/rules/](.claude/rules/) | Convenciones de código, invariantes de dominio, tests y frontend. Se cargan solas |
-| [.claude/plan/01-design-system.md](.claude/plan/01-design-system.md) | Enlace al sistema de diseño aprobado (Claude Design), una vez hecho |
+| [.claude/plan/01-design-system.md](.claude/plan/01-design-system.md) | Sistema de diseño aprobado ([Claude Design](https://claude.ai/artifact/R4ajRu7oMWUMzasdS317Fm)): resumen y pendientes |
 
 ## Al empezar una sesión
 

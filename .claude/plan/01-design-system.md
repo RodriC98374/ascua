@@ -1,29 +1,23 @@
 # 01 — Sistema de diseño
 
-**Objetivo:** fijar la dirección visual **antes** de escribir componentes, para no rehacer la UI.
+**Estado: hecho y aprobado (21-09-2026).**
 
-**Herramienta:** **Claude Design** (D15). El diseño queda en HTML/CSS, que Claude lee como texto (valores exactos de color, tipografía y espaciado) sin procesar imágenes.
+**Sistema:** https://claude.ai/artifact/R4ajRu7oMWUMzasdS317Fm (Claude Design, dirección "Brasa Viva").
+Para leerlo desde Claude Code: `Artifact` con `action: "read"` y `paths: ["project/README.md", "project/tokens.json"]`. El README es la guía de marca y trae el bloque `theme.extend` para `tailwind.config.js`; `tokens.json` tiene cada token con su uso. **Es la fuente de verdad visual:** si se cambia el diseño, se cambia ahí y se vuelve a leer, no se copia a mano.
 
-## Entregables
+## Resumen
 
-1. **Sistema de diseño**
-   - Paleta: color principal, neutros, estados (éxito, advertencia, error) y los **5 colores de semana** (morado, azul, turquesa, rosa, verde). Modo claro y oscuro.
-   - Tipografía: familia, escala de tamaños y pesos.
-   - Espaciado, radios de borde y sombras.
-   - Componentes base: botón, tarjeta, check de hábito, chip de nivel, barra de progreso, indicador de racha, contador de puntos, barra de navegación.
-2. **Pantallas clave** (a 360 px de ancho, con datos falsos):
-   - **Hoy:** racha y saldo, progreso del día, lista de hábitos con los principales destacados, puntos del día.
-   - **Mes:** grilla semanal coloreada por semana, % por día, barras por hábito.
-   - **Recompensas:** saldo, protectores, catálogo por nivel, confirmación de canje.
+- **Concepto:** la racha es una brasa (`ember` naranja → `ember-glow` ámbar en degradado); el día protegido es hielo (`protegido` azul + ícono copo de nieve).
+- **Colores:** superficies cálidas (`surface-100/200/300`), texto `ink`/`ink-muted`/`ink-faint`, estados `success`/`warning`/`error`/`protegido` (cada uno con `-fill`, `on-*` y `-soft`), y los 5 colores de semana en orden fijo: `week-morado`, `week-azul`, `week-turquesa`, `week-rosa`, `week-verde` (cada uno con `-soft`). Modo claro y oscuro.
+- **Tipografía:** Baloo 2 para títulos y números; Nunito para texto. Se cargan con `@expo-google-fonts` (un archivo por peso).
+- **Forma:** espaciado de Tailwind por defecto (4 px); radios `sm` 8, `md` 12, `lg` 18, `xl` 24, `full`; sombras con tinte cálido en claro.
+- **Estados del día:** completado (verde + check), perfecto (degradado brasa + estrella), protegido (azul + copo), perdido (rojo), sin hábitos (apagado), hoy (anillo `ember-strong` de 2 px, sin relleno).
+- **Voz:** español neutro, de tú, celebra lo logrado ("¡Te lo ganaste!"), nunca "fallaste". Cifras siempre con unidad o contexto ("+50 hoy", "disponibles mañana"). **Sin emoji** en la interfaz: íconos propios de 24 × 24, un solo color.
+- **Componentes:** Button, Card, HabitCheck, RewardChip, ProgressBar, StreakIndicator, PointsCounter, protectores (0/1/2), NavBar. Pantallas de referencia: Hoy, Mes y Recompensas a 360 px.
 
-Las demás pantallas (gestión de hábitos, estadísticas, ajustes) se construyen directamente en la app siguiendo el sistema.
+## Pendientes para la fase 05
 
-## Traslado a código
-
-- Los tokens (colores, tipografía, espaciado) se copian a la configuración de NativeWind en la fase 05.
-- El enlace al sistema de diseño se guarda en este archivo y en `rules/frontend.md`.
-
-## Definición de terminado
-
-- El usuario revisó el sistema y las 3 pantallas en su celular y los aprobó (o pidió cambios, que ya se aplicaron).
-- Enlace registrado y decisión anotada en la Bitácora del README.
+1. **Navegación:** el diseño tiene 3 pestañas (Hoy, Mes, Recompensas). Propuesta: **Hoy / Progreso (mes + estadísticas) / Recompensas**; Ajustes y Gestión de hábitos desde un ícono en el encabezado. Confirmar con el usuario al empezar la fase 05.
+2. **Modo oscuro:** el bloque del README duplica cada color (`bg-surface-100 dark:bg-surface-100-dark`). Antes de copiarlo, verificar en la documentación de NativeWind 4.2 si se pueden usar variables CSS por tema en `global.css`, para que cada clase cambie sola de tema. Si no es posible, usar los pares tal como vienen.
+3. **Sombras en Android:** `boxShadow` funciona en web; en Android revisar el soporte de NativeWind o usar `elevation`.
+4. **Regla de racha:** el README del diseño dice "los 3 principales"; la regla real es **todos los principales programados** (pueden ser menos de 3). En el código manda `data-model.md`.

@@ -15,4 +15,4 @@ paths:
 - Las operaciones sensibles (`closePendingDays`, `purchaseStreakFreeze`, `redeemReward`, `initializeAccount`) viven en un módulo propio de la app y usan transacciones de Firestore. La lógica de negocio que usan viene de `packages/shared`.
 - Escrituras pendientes de sincronizar (`hasPendingWrites`) se muestran con un indicador visible. Una escritura rechazada por las reglas se muestra al usuario, nunca se ignora.
 - Notificaciones: solo en Android, locales con `expo-notifications`. En web no se piden permisos de notificación.
-- El sistema de diseño aprobado (fase 01, Claude Design) es la referencia visual; no inventar una dirección visual distinta.
+- **Sistema de diseño aprobado:** https://claude.ai/artifact/R4ajRu7oMWUMzasdS317Fm (leerlo con la herramienta `Artifact`, `action: "read"`, `paths: ["project/README.md", "project/tokens.json"]`). Usar solo sus tokens (colores, tipografías, radios, sombras) y seguir su guía de voz: español de tú, celebra lo logrado, sin emoji, cifras siempre con contexto. No inventar colores ni una dirección visual distinta. Resumen y pendientes en `.claude/plan/01-design-system.md`.
