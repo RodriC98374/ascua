@@ -120,7 +120,7 @@ interface Habit {
 
 - **Cuándo cuenta un hábito:** en el día `D` si `startDateKey <= D` y (`archivedDateKey` es `null` o `D <= archivedDateKey`). Archivar un hábito hoy **no lo saca del día de hoy**: así no se puede esquivar una racha rota archivando a las 23:59.
 - **Valor en puntos:** sale de `tier` vía `HABIT_POINTS`; no se guarda en el hábito. El monto acreditado queda fijo en cada `PointTransaction`, así que cambiar las reglas o el tier nunca reescribe el historial.
-- **Nunca se borra**, solo se archiva.
+- **Nunca se borra**, solo se archiva. **Un hábito archivado no se reactiva** (se crea uno nuevo) y un hábito nuevo empieza hoy o después: ambas cosas cambiarían el resultado de días pasados todavía sin cerrar.
 - **Máximo 3 principales:** se valida en la UI (sección 10, deudas aceptadas).
 
 ### `users/{userId}/dailyLogs/{dateKey}` — DailyLog
@@ -199,8 +199,11 @@ interface GamificationState {
   totalStreakFreezesUsed: number;
 
   lastClosedDateKey: DateKey;          // último día cerrado; al crear la cuenta = ayer
+  lastSpendTransactionId: string | null; // movimiento del último gasto (protector o canje)
 }
 ```
+
+`lastSpendTransactionId` existe para las reglas: cada compra o canje lo cambia al ID de su movimiento, y las reglas exigen que ese movimiento se cree en la misma transacción con el monto exacto. Así ningún descuento del saldo queda sin su registro en el historial.
 
 ### `users/{userId}/pointTransactions/{transactionId}` — PointTransaction
 Ledger **append-only**: nunca se edita ni se borra (las reglas lo impiden); las correcciones se hacen con un `manual_adjustment` desde la consola de Firebase. Cada movimiento se escribe en la misma transacción que actualiza `pointsBalance`.
@@ -351,6 +354,7 @@ erDiagram
         int streakFreezesAvailable "0..2"
         int totalStreakFreezesUsed
         string lastClosedDateKey
+        string lastSpendTransactionId
     }
 
     POINT_TRANSACTION {
@@ -415,8 +419,8 @@ No hay servidor: estas operaciones las ejecuta la app como **transacciones de Fi
 |---|---|---|
 | `initializeAccount` | Primer inicio de sesión (idempotente) | Crea `users/{uid}` y `meta/gamification` con valores iniciales (`lastClosedDateKey` = ayer, todo en 0). |
 | `closePendingDays` | Al abrir la app, al volver a primer plano y al pasar la medianoche con la app abierta | Cierra cada día desde `lastClosedDateKey + 1` hasta ayer (ver abajo). |
-| `purchaseStreakFreeze` | El usuario compra un protector | Transacción: saldo ≥ `STREAK_FREEZE_COST` y protectores < `MAX_STREAK_FREEZES` → movimiento, estado y `pointsSpent` del mes. |
-| `redeemReward` | El usuario canjea una recompensa | Transacción: recompensa activa y saldo ≥ costo → movimiento, canje con foto de la recompensa y `pointsSpent` del mes. |
+| `purchaseStreakFreeze` | El usuario compra un protector | Transacción: saldo ≥ `STREAK_FREEZE_COST` y protectores < `MAX_STREAK_FREEZES` → movimiento, estado (con `lastSpendTransactionId`) y `pointsSpent` del mes de hoy. |
+| `redeemReward` | El usuario canjea una recompensa | Transacción: recompensa activa y saldo ≥ costo → movimiento, canje con foto de la recompensa, estado (con `lastSpendTransactionId`) y `pointsSpent` del mes de hoy. |
 | `scheduleReminders` | Solo Android: al abrir la app, al cambiar los horarios y al marcar hábitos | Reprograma las notificaciones locales (sección 8). |
 
 **`closePendingDays`**: **una transacción por día**, en orden. Como `lastClosedDateKey` avanza en la misma transacción, ningún día se procesa dos veces, aunque la app esté abierta en el celular y en la PC al mismo tiempo: la segunda transacción ve el estado actualizado y no hace nada. Sin conexión no cierra; lo intenta la próxima vez. Por cada día `D`:
@@ -478,7 +482,9 @@ Sin servidor, las reglas son la única barrera: validan que cada operación de l
 - **Tier al cierre:** si se cambia el tier de un hábito durante el día, el cierre usa el tier nuevo.
 - **Marcas offline tardías:** una marca hecha sin conexión a las 23:58 que se sincroniza después de medianoche es rechazada (política sin gracia). La app muestra un indicador de "pendiente de sincronizar".
 - **Offline en Android:** las marcas pendientes se pierden si se cierra la app antes de recuperar la conexión (sección 9).
-- **Límite de las reglas:** Firestore permite hasta 20 llamadas `get()`/`getAfter()` por transacción. El cierre de un día debe diseñarse para respetarlo; se verifica con los tests de la fase 03.
+- **Lo que las reglas no pueden recorrer:** la forma de cada marca de `entries` (solo se limita a 100 claves), `habitStats` del resumen mensual y que la suma de los movimientos del día sea igual a `summary.pointsEarned`. Lo garantiza la app, probada con los tests de `evaluateDay`.
+- **Tier de cada movimiento de hábito:** las reglas aceptan 10 o 5 sin leer el hábito (leerlo sumaría una lectura por hábito y superaría el límite).
+- **Límite de las reglas:** hasta 10 lecturas `get()`/`getAfter()` distintas por documento y 20 por transacción. Verificado en la fase 03: cada regla lee a lo sumo 4 documentos distintos y el cierre más grande (13 movimientos) pasa, porque las lecturas repetidas del mismo documento no cuentan dos veces.
 
 ## 11. Decisiones confirmadas
 

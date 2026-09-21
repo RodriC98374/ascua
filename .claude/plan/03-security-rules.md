@@ -48,6 +48,15 @@ Método: **TDD** con `@firebase/rules-unit-testing` + Vitest contra el emulador.
 
 - **Límite de 20 `get()`/`getAfter()` por transacción.** El cierre de un día escribe varios documentos, y cada regla que consulta otros documentos suma al límite. Diseñar las reglas para validar con `getAfter` sobre `meta/gamification` una sola vez por documento. Si no alcanza, cerrar en dos transacciones (movimientos primero, estado después) y documentarlo.
 
+## Resultado (21-09-2026)
+
+- `firestore.rules` completas; tests en `packages/firestore-rules` (`npm test -w @ascua/firestore-rules`, necesita Java). Cada archivo levanta el emulador con el proyecto `demo-ascua`, que nunca toca el proyecto real.
+- Las escrituras de cierre, compra y canje se generan con `evaluateDay`, `planFreezePurchase` y `planRewardRedemption` reales (`src/support/fixtures.ts`). Cuando la app tenga sus operaciones, deben escribir exactamente esos documentos.
+- Los tests cargan las reglas reales con dos cambios: la lista de permitidos pasa a tener usuarios de prueba y el marcador `// ascua:test-probes` se reemplaza por sondas que prueban `dateKeyOf`, `nextDateKey`, `prevDateKey`, `isDateKey` y `rulesConstants()`. Es necesario porque el emulador no permite fijar `request.time`: el borde 23:59/00:00 se prueba sobre la función, no sobre una escritura real.
+- **Límite de lecturas:** el emulador lo aplica (verificado: 11 lecturas distintas en una operación se deniegan). El cierre más grande (10 hábitos, día perfecto y los dos bonos: 13 movimientos) pasa porque las lecturas repetidas del mismo documento no cuentan dos veces. Cada regla lee a lo sumo 4 documentos distintos.
+- **Verificadas con mutaciones:** se debilitó cada regla importante (cerrar hoy, monto del protector, recompensa archivada, saldo del cierre, lista de permitidos, múltiplo de racha, entries solo hoy, snapshot, protectores que suben, etc.) y en todos los casos algún test falló.
+- Decisiones nuevas: E10 (`lastSpendTransactionId`), E11 (hábitos: sin reactivar, empiezan hoy o después) y E12 (herramientas de test), en el README.
+
 ## Definición de terminado
 
 - Todos los casos de arriba pasan en `npm test`.

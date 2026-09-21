@@ -36,6 +36,7 @@ function state(overrides: Partial<GamificationState> = {}): GamificationState {
     streakFreezesAvailable: 1,
     totalStreakFreezesUsed: 0,
     lastClosedDateKey: '2026-09-20',
+    lastSpendTransactionId: null,
     ...overrides,
   };
 }
@@ -81,6 +82,7 @@ describe('evaluateDay', () => {
 
     it('advances the last closed day', () => {
       expect(result.nextState.lastClosedDateKey).toBe(DAY);
+      expect(result.nextState.lastSpendTransactionId).toBeNull();
     });
   });
 

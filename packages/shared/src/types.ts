@@ -69,6 +69,11 @@ export interface GamificationState {
   totalStreakFreezesUsed: number;
   /** Último día cerrado. */
   lastClosedDateKey: DateKey;
+  /**
+   * ID del movimiento del último gasto (protector o canje). Las reglas lo usan para exigir que
+   * cada descuento del saldo tenga su movimiento en el historial.
+   */
+  lastSpendTransactionId: string | null;
 }
 
 /** Movimiento de puntos listo para escribirse en `pointTransactions/{id}`. */

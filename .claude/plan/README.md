@@ -69,6 +69,9 @@ Decisiones de diseño derivadas (no requieren confirmación, pero no cambiarlas 
 | E7 | SDK JavaScript de Firebase (no `@react-native-firebase`) | Funciona igual en Android y web. Costo: en Android no hay caché offline en disco |
 | E8 | Gráficas con `react-native-gifted-charts` (+ `react-native-svg`, `expo-linear-gradient`) | Mantenida, funciona en Android y web. En web, `LineChart` va **sin animación** (`isAnimated={Platform.OS !== 'web'}`): su animación usa un `Rect` SVG animado que rompe en web. Los avisos de consola `pointerEvents is deprecated` y `onStartShouldSetResponder` vienen de las librerías y se ignoran |
 | E9 | `packages/shared` sin Firebase ni Node; converters de Firestore en la app | La lógica se prueba sin emulador y corre igual en Android, web y tests |
+| E10 | `meta/gamification.lastSpendTransactionId`: ID del movimiento del último gasto | Las reglas exigen que cada descuento del saldo tenga su movimiento nuevo en el historial |
+| E11 | Un hábito archivado **no se reactiva** (se crea uno nuevo) y un hábito nuevo empieza hoy o después | Ambos cambiarían el resultado de días pasados todavía sin cerrar |
+| E12 | Tests de reglas en `packages/firestore-rules`, con las escrituras generadas por `evaluateDay` real | Prueban que lo que calcula la app pasa las reglas. Las funciones de fecha de las reglas se prueban con sondas, porque el emulador no permite fijar `request.time` |
 
 ## Alcance
 
@@ -88,12 +91,14 @@ Decisiones de diseño derivadas (no requieren confirmación, pero no cambiarlas 
 | 00 | **hecha** | unida a `main` | Esqueleto completo, lint/tipos/tests en verde, logins y EAS listos, verificada en el navegador. Expo Go → fase 05; emuladores → fase 03; APK y deploy web → fase 06 |
 | 01 | **hecha** | — | Sistema "Brasa Viva" aprobado: https://claude.ai/artifact/R4ajRu7oMWUMzasdS317Fm |
 | 02 | **hecha** | unida a `main` | 63 tests, cobertura 100%. Converters movidos a la app |
-| 03–10 | pendiente | — | Java portable listo en la oficina |
+| 03 | **tests en verde** | `feat/03-security-rules` | 110 tests de reglas. Falta: uid real en la lista de permitidos y `npm run deploy:rules` |
+| 04–10 | pendiente | — | — |
 
 ## Bitácora
 
 Lo más reciente arriba. Una línea por sesión: fecha, máquina (oficina/casa), qué se hizo y qué queda a medias.
 
+- **21-09-2026 · oficina** — Fase 03 con TDD en `feat/03-security-rules`: `firestore.rules` completas y 110 tests contra el emulador (acceso, forma, entries solo hoy, cierre, compra, canje, inmutabilidad, límite de lecturas). Verificadas con mutaciones. Nuevo campo `lastSpendTransactionId` (E10). A medias: poner el uid real en `allowedUids()`, desplegar y unir a `main`.
 - **21-09-2026 · oficina** — Java portable (Temurin 25) en `D:\jdk-portable`; los emuladores de Auth y Firestore arrancan. Siguiente: fase 03.
 - **21-09-2026 · oficina** — Fase 02 hecha con TDD: fechas de Bolivia, programación de hábitos, `evaluateDay` (racha, protectores, bonos, día perfecto) y gasto de puntos. 63 tests, 100% de cobertura. Siguiente: fase 03 (reglas de seguridad), que necesita Java 21 portable para los emuladores.
 - **21-09-2026 · oficina** — Fase 00 cerrada y unida a `main`. La app se ve en el navegador; en el celular (Expo Go) no conectó desde la red de la oficina: queda como primera tarea de la fase 05. Siguiente: fase 02 (núcleo compartido con TDD).

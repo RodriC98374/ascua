@@ -1,10 +1,580 @@
 rules_version = '2';
 
-// Fase 00: todo denegado. Las reglas reales se escriben con TDD en la fase 03 (ver .claude/plan/03-security-rules.md).
+// Reglas de seguridad de Ascua.
+// No hay servidor (Firebase Spark): la app hace todas las operaciones y estas reglas son la única
+// barrera. Validan la forma de cada documento y que las operaciones de la app (inicializar la
+// cuenta, cerrar un día, comprar un protector, canjear) cuadren entre sí usando get()/getAfter().
+// Modelo y razones: .claude/data-model.md §7 y §10. Tests: packages/firestore-rules.
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if false;
+
+    // ===== Acceso =====
+
+    // uid de la cuenta creada a mano en la consola. El registro está desactivado; esta lista es la
+    // segunda barrera. Los tests la reemplazan por usuarios de prueba.
+    function allowedUids() {
+      return [];
     }
+
+    function isOwner(userId) {
+      return request.auth != null
+        && request.auth.uid == userId
+        && request.auth.uid in allowedUids();
+    }
+
+    // ===== Constantes de negocio =====
+
+    // Copia de packages/shared/src/constants.ts. Un test comprueba que coincidan.
+    function rulesConstants() {
+      return {
+        'habitPoints': {'primary': 10, 'secondary': 5},
+        'perfectDayBonus': 5,
+        'streakBonuses': {
+          'streak_bonus_7_days': {'everyDays': 7, 'points': 20},
+          'streak_bonus_30_days': {'everyDays': 30, 'points': 100}
+        },
+        'streakFreezeCost': 150,
+        'maxStreakFreezes': 2
+      };
+    }
+
+    // ===== Fechas =====
+
+    function pad2(n) {
+      return n < 10 ? '0' + string(n) : string(n);
+    }
+
+    // 'YYYY-MM-DD' de un timestamp, leído en UTC.
+    function utcDateKey(t) {
+      return string(t.year()) + '-' + pad2(t.month()) + '-' + pad2(t.day());
+    }
+
+    // Día de Bolivia de un instante. Las reglas no tienen Intl, así que se resta el offset fijo de
+    // America/La_Paz (UTC-4, sin horario de verano). Es el único lugar del proyecto donde se acepta
+    // un offset fijo; todo lo demás usa los helpers de packages/shared.
+    function dateKeyOf(instant) {
+      return utcDateKey(instant - duration.value(4, 'h'));
+    }
+
+    // "Hoy" según la hora del servidor, nunca la del dispositivo.
+    function todayKey() {
+      return dateKeyOf(request.time);
+    }
+
+    function parseDateKey(key) {
+      return timestamp.date(int(key[0:4]), int(key[5:7]), int(key[8:10]));
+    }
+
+    // Fecha real con formato 'YYYY-MM-DD': rechaza '2026-02-30' porque no sobrevive la ida y vuelta.
+    function isDateKey(value) {
+      return value is string
+        && value.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}')
+        && utcDateKey(parseDateKey(value)) == value;
+    }
+
+    function nextDateKey(key) {
+      return utcDateKey(parseDateKey(key) + duration.value(1, 'd'));
+    }
+
+    function prevDateKey(key) {
+      return utcDateKey(parseDateKey(key) - duration.value(1, 'd'));
+    }
+
+    function monthKeyOf(dateKey) {
+      return dateKey[0:7];
+    }
+
+    // ===== Utilidades =====
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function hasExactly(data, keys) {
+      return data.keys().hasAll(keys) && data.keys().hasOnly(keys);
+    }
+
+    function onlyChanges(keys) {
+      return incoming().diff(existing()).affectedKeys().hasOnly(keys);
+    }
+
+    function isText(value, minSize, maxSize) {
+      return value is string && value.size() >= minSize && value.size() <= maxSize;
+    }
+
+    function isOptionalText(value, maxSize) {
+      return value == null || isText(value, 0, maxSize);
+    }
+
+    function isCount(value) {
+      return value is int && value >= 0;
+    }
+
+    // Documento nuevo: timestamps del servidor (serverTimestamp) y versión de esquema 1.
+    function isCreatedNow() {
+      return incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && incoming().schemaVersion == 1;
+    }
+
+    // Edición: updatedAt del servidor; createdAt y schemaVersion no cambian.
+    function isTouchedNow() {
+      return incoming().updatedAt == request.time
+        && incoming().createdAt == existing().createdAt
+        && incoming().schemaVersion == existing().schemaVersion;
+    }
+
+    // ===== Estado de gamificación antes y después de la escritura =====
+
+    function gamificationPath(userId) {
+      return /databases/$(database)/documents/users/$(userId)/meta/gamification;
+    }
+
+    function dailyLogPath(userId, dateKey) {
+      return /databases/$(database)/documents/users/$(userId)/dailyLogs/$(dateKey);
+    }
+
+    function transactionPath(userId, transactionId) {
+      return /databases/$(database)/documents/users/$(userId)/pointTransactions/$(transactionId);
+    }
+
+    function rewardPath(userId, rewardId) {
+      return /databases/$(database)/documents/users/$(userId)/rewards/$(rewardId);
+    }
+
+    function redemptionPath(userId, redemptionId) {
+      return /databases/$(database)/documents/users/$(userId)/rewardRedemptions/$(redemptionId);
+    }
+
+    function stateBefore(userId) {
+      return get(gamificationPath(userId)).data;
+    }
+
+    function stateAfter(userId) {
+      return getAfter(gamificationPath(userId)).data;
+    }
+
+    // En esta misma escritura se cierra el día dateKey (lastClosedDateKey avanza hasta él).
+    function isClosingDay(userId, dateKey) {
+      return stateBefore(userId).lastClosedDateKey != stateAfter(userId).lastClosedDateKey
+        && stateAfter(userId).lastClosedDateKey == dateKey;
+    }
+
+    // En esta misma escritura se registra el gasto transactionId.
+    function isSpending(userId, transactionId) {
+      return stateBefore(userId).lastSpendTransactionId != transactionId
+        && stateAfter(userId).lastSpendTransactionId == transactionId;
+    }
+
+    // ===== Documentos =====
+
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidProfile(incoming()) && isCreatedNow();
+      allow update: if isOwner(userId)
+        && onlyChanges(['displayName', 'reminderSettings', 'updatedAt'])
+        && isValidProfile(incoming())
+        && isTouchedNow();
+
+      function isReminderTime(value) {
+        return value is string && value.matches('([01][0-9]|2[0-3]):[0-5][0-9]');
+      }
+
+      function isValidProfile(profile) {
+        return hasExactly(profile, ['email', 'displayName', 'reminderSettings', 'createdAt', 'updatedAt', 'schemaVersion'])
+          && profile.email == request.auth.token.email
+          && isText(profile.displayName, 1, 50)
+          && hasExactly(profile.reminderSettings, ['enabled', 'dailyReminderTime', 'streakRiskReminderTime'])
+          && profile.reminderSettings.enabled is bool
+          && isReminderTime(profile.reminderSettings.dailyReminderTime)
+          && isReminderTime(profile.reminderSettings.streakRiskReminderTime);
+      }
+
+      // --- Hábitos: libres con forma validada; nunca se borran, se archivan ---
+
+      match /habits/{habitId} {
+        allow read: if isOwner(userId);
+        // Empieza hoy o después: un hábito nuevo no puede cambiar un día pasado sin cerrar.
+        allow create: if isOwner(userId)
+          && isValidHabit(incoming())
+          && isCreatedNow()
+          && incoming().status == 'active'
+          && incoming().archivedDateKey == null
+          && incoming().startDateKey >= todayKey();
+        allow update: if isOwner(userId)
+          && onlyChanges(['name', 'description', 'icon', 'color', 'tier', 'sortOrder', 'status', 'archivedDateKey', 'updatedAt'])
+          && isValidHabit(incoming())
+          && isTouchedNow()
+          && isValidHabitStatusChange(existing(), incoming());
+      }
+
+      function isValidHabit(habit) {
+        return hasExactly(habit, ['name', 'description', 'icon', 'color', 'tier', 'schedule', 'status', 'sortOrder', 'startDateKey', 'archivedDateKey', 'createdAt', 'updatedAt', 'schemaVersion'])
+          && isText(habit.name, 1, 60)
+          && isOptionalText(habit.description, 200)
+          && isText(habit.icon, 1, 40)
+          && habit.color is string && habit.color.matches('#[0-9A-Fa-f]{6}')
+          && habit.tier in ['primary', 'secondary']
+          && habit.schedule == {'type': 'daily'}
+          && habit.status in ['active', 'archived']
+          && habit.sortOrder is int
+          && isDateKey(habit.startDateKey)
+          && (habit.archivedDateKey == null || isDateKey(habit.archivedDateKey));
+      }
+
+      // Archivar deja hoy como último día en que cuenta. Un hábito archivado no se reactiva:
+      // volvería a contar en días pasados todavía sin cerrar.
+      function isValidHabitStatusChange(before, after) {
+        return (before.status == 'active' && after.status == 'active' && after.archivedDateKey == null)
+          || (before.status == 'active' && after.status == 'archived' && after.archivedDateKey == todayKey())
+          || (before.status == 'archived' && after.status == 'archived' && after.archivedDateKey == before.archivedDateKey);
+      }
+
+      // --- Recompensas: libres con forma validada; nunca se borran, se archivan ---
+
+      match /rewards/{rewardId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId)
+          && isValidReward(incoming())
+          && isCreatedNow()
+          && incoming().status == 'active';
+        allow update: if isOwner(userId)
+          && onlyChanges(['name', 'description', 'icon', 'tier', 'cost', 'status', 'sortOrder', 'updatedAt'])
+          && isValidReward(incoming())
+          && isTouchedNow();
+      }
+
+      // El costo es libre: los rangos por nivel son solo una sugerencia de la UI.
+      function isValidReward(reward) {
+        return hasExactly(reward, ['name', 'description', 'icon', 'tier', 'cost', 'status', 'sortOrder', 'createdAt', 'updatedAt', 'schemaVersion'])
+          && isText(reward.name, 1, 60)
+          && isOptionalText(reward.description, 200)
+          && isText(reward.icon, 1, 40)
+          && reward.tier in ['small', 'medium', 'large']
+          && reward.cost is int && reward.cost > 0 && reward.cost <= 1000000
+          && reward.status in ['active', 'archived']
+          && reward.sortOrder is int;
+      }
+
+      // --- Registro diario: entries solo hoy; status y summary solo al cerrar ---
+
+      match /dailyLogs/{dateKey} {
+        allow read: if isOwner(userId);
+        // Hoy se crea abierto con la primera marca. Un día pasado sin marcas lo crea el cierre.
+        allow create: if isOwner(userId)
+          && hasExactly(incoming(), ['dateKey', 'entries', 'status', 'summary', 'createdAt', 'updatedAt', 'schemaVersion'])
+          && incoming().dateKey == dateKey
+          && isCreatedNow()
+          && (isOpenedToday(dateKey) || (incoming().entries == {} && isClosedLog(userId, dateKey)));
+        // Sin margen de gracia: a las 00:00 de Bolivia el día deja de aceptar marcas.
+        allow update: if isOwner(userId)
+          && existing().status == 'open'
+          && isTouchedNow()
+          && (
+            (dateKey == todayKey() && onlyChanges(['entries', 'updatedAt']) && isEntries(incoming().entries))
+            || (onlyChanges(['status', 'summary', 'updatedAt']) && isClosedLog(userId, dateKey))
+          );
+      }
+
+      // La forma de cada marca no se puede recorrer en las reglas; se valida en la app.
+      function isEntries(entries) {
+        return entries is map && entries.size() <= 100;
+      }
+
+      function isOpenedToday(dateKey) {
+        return dateKey == todayKey()
+          && incoming().status == 'open'
+          && incoming().summary == null
+          && isEntries(incoming().entries);
+      }
+
+      // Cierre: el día ya pasó, el estado avanza hasta él en esta misma escritura y el resumen es
+      // coherente con el estado nuevo.
+      function isClosedLog(userId, dateKey) {
+        let log = incoming();
+        let summary = log.summary;
+        return dateKey < todayKey()
+          && isClosingDay(userId, dateKey)
+          && log.status in ['completed', 'frozen', 'missed', 'inactive']
+          && hasExactly(summary, ['scheduledHabitIds', 'scheduledPrimaryHabitIds', 'completedHabitIds', 'completionRate', 'isPerfectDay', 'pointsEarned', 'streakAfterClose', 'closedAt'])
+          && summary.scheduledHabitIds is list
+          && summary.scheduledPrimaryHabitIds is list
+          && summary.completedHabitIds is list
+          && summary.scheduledPrimaryHabitIds.hasOnly(summary.scheduledHabitIds)
+          && summary.completedHabitIds.hasOnly(summary.scheduledHabitIds)
+          && summary.completionRate is number
+          && summary.completionRate >= 0 && summary.completionRate <= 1
+          && summary.isPerfectDay is bool
+          && (!summary.isPerfectDay || log.status == 'completed')
+          && isCount(summary.pointsEarned)
+          && summary.streakAfterClose == stateAfter(userId).currentStreak
+          && summary.closedAt == request.time;
+      }
+
+      // --- Resumen mensual: solo al cerrar un día, comprar un protector o canjear ---
+
+      match /monthlySummaries/{monthKey} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId)
+          && isValidMonthly(monthKey, incoming())
+          && isCreatedNow()
+          && isValidMonthlyChange(userId, monthKey, emptyMonth(), incoming());
+        allow update: if isOwner(userId)
+          && isValidMonthly(monthKey, incoming())
+          && isTouchedNow()
+          && isValidMonthlyChange(userId, monthKey, existing(), incoming());
+      }
+
+      function emptyMonth() {
+        return {
+          'closedDays': 0, 'completedDays': 0, 'perfectDays': 0, 'frozenDays': 0, 'missedDays': 0,
+          'pointsEarned': 0, 'pointsSpent': 0, 'habitStats': {}
+        };
+      }
+
+      function isValidMonthly(monthKey, month) {
+        return hasExactly(month, ['monthKey', 'closedDays', 'completedDays', 'perfectDays', 'frozenDays', 'missedDays', 'pointsEarned', 'pointsSpent', 'habitStats', 'createdAt', 'updatedAt', 'schemaVersion'])
+          && month.monthKey == monthKey
+          && monthKey.matches('[0-9]{4}-(0[1-9]|1[0-2])')
+          && isCount(month.closedDays)
+          && isCount(month.completedDays)
+          && isCount(month.perfectDays)
+          && isCount(month.frozenDays)
+          && isCount(month.missedDays)
+          && isCount(month.pointsEarned)
+          && isCount(month.pointsSpent)
+          && month.habitStats is map;
+      }
+
+      function isValidMonthlyChange(userId, monthKey, before, after) {
+        let stateBeforeWrite = stateBefore(userId);
+        let stateAfterWrite = stateAfter(userId);
+        return stateBeforeWrite.lastClosedDateKey != stateAfterWrite.lastClosedDateKey
+          ? isMonthlyClose(userId, monthKey, before, after, stateAfterWrite.lastClosedDateKey)
+          : stateBeforeWrite.lastSpendTransactionId != stateAfterWrite.lastSpendTransactionId
+            && isMonthlySpend(monthKey, before, after, stateAfterWrite.lifetimePointsSpent - stateBeforeWrite.lifetimePointsSpent);
+      }
+
+      // Suma exactamente el día cerrado. habitStats no se valida (las reglas no recorren mapas).
+      function isMonthlyClose(userId, monthKey, before, after, closedDateKey) {
+        let log = getAfter(dailyLogPath(userId, closedDateKey)).data;
+        return monthKeyOf(closedDateKey) == monthKey
+          && after.closedDays == before.closedDays + 1
+          && after.completedDays == before.completedDays + (log.status == 'completed' ? 1 : 0)
+          && after.perfectDays == before.perfectDays + (log.summary.isPerfectDay ? 1 : 0)
+          && after.frozenDays == before.frozenDays + (log.status == 'frozen' ? 1 : 0)
+          && after.missedDays == before.missedDays + (log.status == 'missed' ? 1 : 0)
+          && after.pointsEarned == before.pointsEarned + log.summary.pointsEarned
+          && after.pointsSpent == before.pointsSpent;
+      }
+
+      // Un gasto se anota en el mes de hoy y solo cambia pointsSpent.
+      function isMonthlySpend(monthKey, before, after, spent) {
+        return monthKey == monthKeyOf(todayKey())
+          && spent > 0
+          && after.pointsSpent == before.pointsSpent + spent
+          && after.closedDays == before.closedDays
+          && after.completedDays == before.completedDays
+          && after.perfectDays == before.perfectDays
+          && after.frozenDays == before.frozenDays
+          && after.missedDays == before.missedDays
+          && after.pointsEarned == before.pointsEarned
+          && after.habitStats == before.habitStats;
+      }
+
+      // --- Saldo y racha: solo initializeAccount, cierre, compra de protector y canje ---
+
+      match /meta/gamification {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId)
+          && isValidState(incoming())
+          && isCreatedNow()
+          && isInitialState(incoming());
+        allow update: if isOwner(userId)
+          && isValidState(incoming())
+          && isTouchedNow()
+          && (incoming().lastClosedDateKey != existing().lastClosedDateKey
+            ? isValidClose(userId, existing(), incoming())
+            : isValidSpend(userId, existing(), incoming()));
+      }
+
+      function isValidState(state) {
+        return hasExactly(state, ['pointsBalance', 'lifetimePointsEarned', 'lifetimePointsSpent', 'currentStreak', 'longestStreak', 'currentStreakStartDateKey', 'daysWithoutFreeze', 'streakFreezesAvailable', 'totalStreakFreezesUsed', 'lastClosedDateKey', 'lastSpendTransactionId', 'createdAt', 'updatedAt', 'schemaVersion'])
+          && isCount(state.pointsBalance)
+          && isCount(state.lifetimePointsEarned)
+          && isCount(state.lifetimePointsSpent)
+          && isCount(state.currentStreak)
+          && isCount(state.longestStreak)
+          && state.longestStreak >= state.currentStreak
+          && (state.currentStreakStartDateKey == null || isDateKey(state.currentStreakStartDateKey))
+          && isCount(state.daysWithoutFreeze)
+          && isCount(state.streakFreezesAvailable)
+          && state.streakFreezesAvailable <= rulesConstants().maxStreakFreezes
+          && isCount(state.totalStreakFreezesUsed)
+          && isDateKey(state.lastClosedDateKey)
+          && (state.lastSpendTransactionId == null || state.lastSpendTransactionId is string);
+      }
+
+      // La cuenta nace en cero y con ayer como último día cerrado.
+      function isInitialState(state) {
+        return state.pointsBalance == 0
+          && state.lifetimePointsEarned == 0
+          && state.lifetimePointsSpent == 0
+          && state.currentStreak == 0
+          && state.longestStreak == 0
+          && state.currentStreakStartDateKey == null
+          && state.daysWithoutFreeze == 0
+          && state.streakFreezesAvailable == 0
+          && state.totalStreakFreezesUsed == 0
+          && state.lastClosedDateKey == prevDateKey(todayKey())
+          && state.lastSpendTransactionId == null;
+      }
+
+      // Cierre de un día: avanza exactamente un día ya pasado y el estado sigue al resultado del
+      // día. No se puede comprobar que el resultado en sí sea correcto (eso lo prueban los tests de
+      // evaluateDay); sí que el saldo, la racha y los protectores cuadren con él.
+      function isValidClose(userId, before, after) {
+        let day = after.lastClosedDateKey;
+        let log = getAfter(dailyLogPath(userId, day)).data;
+        let freezesUsed = before.streakFreezesAvailable - after.streakFreezesAvailable;
+        return day == nextDateKey(before.lastClosedDateKey)
+          && day < todayKey()
+          && log.status in ['completed', 'frozen', 'missed', 'inactive']
+          && freezesUsed == (log.status == 'frozen' ? 1 : 0)
+          && after.totalStreakFreezesUsed == before.totalStreakFreezesUsed + freezesUsed
+          && after.currentStreak == (log.status == 'completed' ? before.currentStreak + 1
+            : (log.status == 'missed' ? 0 : before.currentStreak))
+          && after.currentStreakStartDateKey == (after.currentStreak == 0 ? null
+            : (before.currentStreak == 0 ? day : before.currentStreakStartDateKey))
+          && after.longestStreak == (after.currentStreak > before.longestStreak ? after.currentStreak : before.longestStreak)
+          && after.daysWithoutFreeze == (log.status == 'completed' ? before.daysWithoutFreeze + 1
+            : (log.status == 'inactive' ? before.daysWithoutFreeze : 0))
+          && after.pointsBalance == before.pointsBalance + log.summary.pointsEarned
+          && after.lifetimePointsEarned == before.lifetimePointsEarned + log.summary.pointsEarned
+          && after.lifetimePointsSpent == before.lifetimePointsSpent
+          && after.lastSpendTransactionId == before.lastSpendTransactionId;
+      }
+
+      // Gasto (protector o canje): el saldo baja exactamente lo que dice un movimiento nuevo creado
+      // en esta misma escritura. Solo un protector suma protectores.
+      function isValidSpend(userId, before, after) {
+        let transactionId = after.lastSpendTransactionId;
+        let spent = after.lifetimePointsSpent - before.lifetimePointsSpent;
+        return transactionId is string
+          && transactionId != before.lastSpendTransactionId
+          && !exists(transactionPath(userId, transactionId))
+          && getAfter(transactionPath(userId, transactionId)).data.amount == -spent
+          && spent > 0
+          && after.pointsBalance == before.pointsBalance - spent
+          && after.diff(before).affectedKeys().hasOnly(['pointsBalance', 'lifetimePointsSpent', 'streakFreezesAvailable', 'lastSpendTransactionId', 'updatedAt'])
+          && after.streakFreezesAvailable == before.streakFreezesAvailable + (transactionId.matches('freeze_.+') ? 1 : 0);
+      }
+
+      // --- Movimientos de puntos: solo crear, nunca editar ni borrar ---
+
+      match /pointTransactions/{transactionId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId)
+          && isValidTransaction(incoming())
+          && isCreatedNow()
+          && (isClosingTransaction(userId, transactionId, incoming())
+            || isSpendTransaction(userId, transactionId, incoming()));
+      }
+
+      function isValidTransaction(transaction) {
+        return hasExactly(transaction, ['type', 'amount', 'balanceAfter', 'dateKey', 'sourceType', 'sourceId', 'description', 'createdAt', 'updatedAt', 'schemaVersion'])
+          && transaction.amount is int
+          && isCount(transaction.balanceAfter)
+          && isDateKey(transaction.dateKey)
+          && isText(transaction.description, 1, 120);
+      }
+
+      // Movimiento del cierre: ID determinista del día y monto válido para su tipo. El tier de cada
+      // hábito no se consulta (sumaría una lectura por hábito); basta con que sea 10 o 5.
+      function isClosingTransaction(userId, transactionId, transaction) {
+        let before = stateBefore(userId);
+        let after = stateAfter(userId);
+        let summary = getAfter(dailyLogPath(userId, transaction.dateKey)).data.summary;
+        let points = rulesConstants();
+        return isClosingDay(userId, transaction.dateKey)
+          && transaction.balanceAfter > before.pointsBalance
+          && transaction.balanceAfter <= after.pointsBalance
+          && (
+            (transaction.type == 'habit_completion'
+              && transaction.sourceType == 'habit'
+              && transaction.sourceId is string
+              && transactionId == 'completion_' + transaction.dateKey + '_' + transaction.sourceId
+              && transaction.sourceId in summary.completedHabitIds
+              && transaction.amount in [points.habitPoints.primary, points.habitPoints.secondary])
+            || (transaction.type == 'perfect_day_bonus'
+              && isDayBonus(transactionId, transaction, 'perfect_')
+              && summary.isPerfectDay == true
+              && transaction.amount == points.perfectDayBonus)
+            || (transaction.type in points.streakBonuses
+              && isDayBonus(transactionId, transaction, 'streak' + string(points.streakBonuses[transaction.type].everyDays) + '_')
+              // Solo en un día cumplido (el único que suma días sin protector) y en cada múltiplo.
+              && after.daysWithoutFreeze == before.daysWithoutFreeze + 1
+              && after.daysWithoutFreeze % points.streakBonuses[transaction.type].everyDays == 0
+              && transaction.amount == points.streakBonuses[transaction.type].points)
+          );
+      }
+
+      function isDayBonus(transactionId, transaction, prefix) {
+        return transaction.sourceType == 'daily_log'
+          && transaction.sourceId == transaction.dateKey
+          && transactionId == prefix + transaction.dateKey;
+      }
+
+      // Movimiento de un gasto: hoy, con el saldo final del estado y el monto exacto.
+      function isSpendTransaction(userId, transactionId, transaction) {
+        return isSpending(userId, transactionId)
+          && transaction.dateKey == todayKey()
+          && transaction.balanceAfter == stateAfter(userId).pointsBalance
+          && transaction.sourceId is string
+          && (
+            (transaction.type == 'streak_freeze_purchase'
+              && transaction.sourceType == 'streak_freeze'
+              && transactionId == 'freeze_' + transaction.sourceId
+              && transaction.amount == -rulesConstants().streakFreezeCost)
+            || (transaction.type == 'reward_redemption'
+              && transaction.sourceType == 'reward_redemption'
+              && transactionId == 'redemption_' + transaction.sourceId
+              && transaction.amount == -redeemedRewardCost(userId, transaction.sourceId))
+          );
+      }
+
+      // Costo de la recompensa del canje que se crea en esta misma escritura.
+      function redeemedRewardCost(userId, redemptionId) {
+        let redemption = getAfter(redemptionPath(userId, redemptionId)).data;
+        return get(rewardPath(userId, redemption.rewardId)).data.cost;
+      }
+
+      // --- Canjes: solo crear, junto con su cobro ---
+
+      match /rewardRedemptions/{redemptionId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId)
+          && isCreatedNow()
+          && isValidRedemption(userId, redemptionId, incoming());
+      }
+
+      function isValidRedemption(userId, redemptionId, redemption) {
+        let reward = get(rewardPath(userId, redemption.rewardId)).data;
+        return hasExactly(redemption, ['rewardId', 'rewardSnapshot', 'pointTransactionId', 'dateKey', 'redeemedAt', 'note', 'createdAt', 'updatedAt', 'schemaVersion'])
+          && reward.status == 'active'
+          && redemption.rewardSnapshot == {'name': reward.name, 'tier': reward.tier, 'cost': reward.cost}
+          && redemption.pointTransactionId == 'redemption_' + redemptionId
+          && isSpending(userId, redemption.pointTransactionId)
+          && redemption.dateKey == todayKey()
+          && redemption.redeemedAt == request.time
+          && isOptionalText(redemption.note, 200);
+      }
+    }
+
+    // ascua:test-probes
   }
 }

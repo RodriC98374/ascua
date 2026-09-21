@@ -36,6 +36,7 @@ Cuentas del usuario (no son intercambiables; los correos no se escriben en el re
 Monorepo con npm workspaces:
 - `apps/client`: Expo + TypeScript, Expo Router, NativeWind, React Native Web. APK con EAS Build (sin Play Store) y web en Firebase Hosting.
 - `packages/shared`: tipos, constantes de negocio, helper de fechas de Bolivia y lógica pura (cierre del día, rachas, recordatorios).
+- `packages/firestore-rules`: tests de `firestore.rules` (en la raíz) contra el emulador.
 
 Firebase en plan **Spark**: Firestore (`southamerica-east1`), Auth por email y Hosting. **Sin Cloud Functions ni servidores**: la app ejecuta las operaciones y `firestore.rules` las valida. Node 22.
 
@@ -55,7 +56,7 @@ Desde la raíz (en la oficina, con el Node portable antepuesto al PATH):
 | `npm run web` / `npm run android` | Abre directamente en el navegador / en el celular o emulador |
 | `npm run lint` | ESLint + Prettier (config de Expo) |
 | `npm run typecheck` | TypeScript en todos los paquetes |
-| `npm test` | Vitest en `shared` + Jest en `client` |
+| `npm test` | Vitest en `shared` y en las reglas (emulador, **requiere Java**) + Jest en `client` |
 | `npm run emulators` | Emuladores de Auth y Firestore (requiere Java 21+) |
 | `npm run build:web` | Exporta la web a `apps/client/dist` |
 | `npm run deploy:web` / `npm run deploy:rules` | Publica la web en Hosting / las reglas de Firestore |
@@ -66,6 +67,9 @@ Cobertura de `shared` (mínimo 95%, hoy 100%): `npm run test:coverage -w @ascua/
 Un solo test:
 - `shared`: `npm test -w @ascua/shared -- src/day-evaluation.test.ts` o `-- -t "nombre del test"`.
 - `client`: `npm test -w @ascua/client -- src/config/firebase.test.ts` o `-- -t "nombre del test"`.
+- Reglas (levanta el emulador con el proyecto `demo-ascua`): `npm test -w @ascua/firestore-rules`. Para un solo archivo, desde `packages/firestore-rules`: `npx firebase emulators:exec --only firestore --project demo-ascua "npx vitest run src/close-day.test.ts"`.
+
+`firestore.rules` tiene dos marcadores que usan los tests: la lista de `allowedUids()` (la reemplazan por usuarios de prueba) y `// ascua:test-probes`. No quitarlos.
 
 Dependencias de la app: instalar con `npx expo install <paquete>` **desde `apps/client`** (elige versiones compatibles con el SDK). En este monorepo `expo install` ignora `--dev`: si el paquete es de desarrollo, moverlo a mano a `devDependencies`.
 

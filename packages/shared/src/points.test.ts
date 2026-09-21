@@ -22,6 +22,7 @@ function state(overrides: Partial<GamificationState> = {}): GamificationState {
     streakFreezesAvailable: 0,
     totalStreakFreezesUsed: 1,
     lastClosedDateKey: '2026-09-20',
+    lastSpendTransactionId: 'redemption_old',
     ...overrides,
   };
 }
@@ -79,6 +80,7 @@ describe('planFreezePurchase', () => {
       pointsBalance: 50,
       lifetimePointsSpent: 450,
       streakFreezesAvailable: 2,
+      lastSpendTransactionId: 'freeze_req-1',
     });
   });
 
@@ -123,7 +125,11 @@ describe('planRewardRedemption', () => {
       sourceId: 'req-2',
       description: 'Canje: Tarde de anime',
     });
-    expect(plan.nextState).toMatchObject({ pointsBalance: 140, lifetimePointsSpent: 360 });
+    expect(plan.nextState).toMatchObject({
+      pointsBalance: 140,
+      lifetimePointsSpent: 360,
+      lastSpendTransactionId: 'redemption_req-2',
+    });
   });
 
   it('allows spending the exact balance', () => {

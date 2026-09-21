@@ -44,6 +44,7 @@ function spend(
       ...state,
       pointsBalance,
       lifetimePointsSpent: state.lifetimePointsSpent + cost,
+      lastSpendTransactionId: transaction.id,
     },
   };
 }
