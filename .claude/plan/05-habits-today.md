@@ -25,6 +25,31 @@
 - [ ] Indicador de "pendiente de sincronizar" (`hasPendingWrites`) y aviso claro si una escritura es rechazada.
 - [ ] El día cambia solo a medianoche de Bolivia si la app queda abierta.
 
+## Avance (21-09-2026, oficina) — rama `feat/05-habits-today`, SIN unir a `main`
+
+Decisiones de esta sesión: **D16** navegación de 4 pestañas (Hoy / Mes / Recompensas / Ajustes; la gestión de hábitos vive en Ajustes) y **D17** modo oscuro en la fase 10. Selector de ícono y color **descartado**: el diseño no los muestra; se guardan fijos (`DEFAULT_HABIT_ICON`, `DEFAULT_HABIT_COLOR` en `operations/habits.ts`).
+
+**Hecho y probado:**
+- `shared` (TDD, 89 tests, 100%): `msUntilNextDay`, `previewDay`, `canBePrimary`, tipos `HabitRecord` y `DailyLog`.
+- Operaciones con tests contra el emulador (15 en `packages/firestore-rules/src/operations/`): `createHabit`, `updateHabit`, `archiveHabit`, `reorderHabits`, `setHabitCompletion`. Converters de hábitos y del registro diario en `data/documents.ts`.
+- Cliente con Jest (19 tests): `formatLongDate` y `buildTodaySummary` (vista previa de Hoy con `previewDay`).
+
+**Escrito pero SIN verificar (no compila todavía el typecheck):**
+- Hooks: `features/data/use-snapshot.ts` + `hooks.ts` (`useHabits`, `useDailyLog`, `useGamificationState`), `features/today/use-today.ts` (cambio a medianoche), `features/sync/write-errors.ts` (`trackWrite` + banner).
+- Componentes del diseño: `components/ui/icons.tsx`, `card`, `progress-bar`, `button` (primario con degradado), `habit-check`, `gamification.tsx` (racha, puntos, protectores), `nav-bar.tsx`, `habit-form.tsx`, `screen-header.tsx`, `coming-soon.tsx`, `write-error-banner.tsx`. `theme/colors.ts`.
+- Rutas: `app/(app)/(tabs)/_layout.tsx` (tabs headless de `expo-router/ui`; barra abajo y columna izquierda desde 768 px), `(tabs)/index.tsx` (Hoy), `mes.tsx` y `recompensas.tsx` (provisionales), `ajustes.tsx` (hábitos con reordenar + cuenta), `app/(app)/habits/new.tsx` y `habits/[habitId].tsx` (editar y archivar con confirmación). Se borraron `app/(app)/index.tsx` y `components/charts-spike.tsx`.
+
+**Dónde quedé (primer paso de la próxima sesión):**
+1. `npm run typecheck -w @ascua/client` falla **solo por rutas tipadas desactualizadas** (`/habits/new`, `/ajustes`, `/mes`… "not assignable"). Expo las regenera en `apps/client/.expo/types/router.d.ts` al correr `npm run web`: arrancarlo una vez, esperar a que compile y volver a correr el typecheck. Si sigue fallando, revisar que `(tabs)` y `habits/` estén bien detectados (el archivo generado también tiene una ruta rara `/../../../../packages/shared/src/user-profile.test`: investigar por qué el router ve archivos de `packages/`).
+2. Correr lint y todos los tests (`npm test`, con Java).
+3. Probar en la web (`npm run web`): crear hábitos (el 4.º principal debe quedar bloqueado), marcar/desmarcar, ver racha/puntos al instante, día perfecto, reordenar, editar, archivar, barra inferior vs. columna lateral (ventana angosta/ancha), indicador "Pendiente" sin conexión (DevTools → Offline).
+4. Verificar que `TabList` funciona con `renderNavBar` (función, no componente: `Tabs` lee sus hijos para descubrir las rutas).
+
+**Falta de la fase:**
+- Expo Go en el celular (en casa) y confirmar que todo se ve bien en Android (sombras con `elevation`, fuentes, degradados).
+- Sincronización celular ↔ PC en segundos y prueba sin conexión.
+- Actualizar `01-design-system.md` (pendientes 1 y 2 resueltos por D16/D17) y `data-model.md` si hace falta.
+
 ## Definición de terminado
 
 - En la APK y en la web: crear hábitos, marcarlos y ver la racha y los puntos actualizarse al instante.

@@ -5,6 +5,7 @@ import {
   dateKeyRange,
   daysBetween,
   isValidDateKey,
+  msUntilNextDay,
   pendingDateKeysToClose,
   startOfWeek,
   toDateKey,
@@ -145,5 +146,25 @@ describe('pendingDateKeysToClose', () => {
 
   it('never includes today', () => {
     expect(pendingDateKeysToClose('2026-09-21', '2026-09-21')).toEqual([]);
+  });
+});
+
+describe('msUntilNextDay', () => {
+  it('counts down to the next midnight in Bolivia', () => {
+    expect(msUntilNextDay(new Date('2026-09-21T16:00:00Z'))).toBe(12 * 60 * 60 * 1000); // 12:00
+  });
+
+  it('is one minute at 23:59 in Bolivia', () => {
+    expect(msUntilNextDay(new Date('2026-09-22T03:59:00Z'))).toBe(60 * 1000);
+  });
+
+  it('is a full day right at midnight', () => {
+    expect(msUntilNextDay(new Date('2026-09-22T04:00:00Z'))).toBe(24 * 60 * 60 * 1000);
+  });
+
+  it('does not depend on the time zone of the device', () => {
+    vi.stubEnv('TZ', 'Asia/Tokyo');
+    expect(msUntilNextDay(new Date('2026-09-22T03:59:30.500Z'))).toBe(29_500);
+    vi.unstubAllEnvs();
   });
 });

@@ -1,9 +1,18 @@
 // Referencias tipadas a los documentos de Firestore y los campos comunes de todo documento.
 // Sin imports con alias (`@/`): las operaciones se prueban también desde packages/firestore-rules.
-import type { GamificationState, UserProfile } from '@ascua/shared';
+import type {
+  DailyEntries,
+  DailyLog,
+  DateKey,
+  GamificationState,
+  HabitRecord,
+  UserProfile,
+} from '@ascua/shared';
 import {
+  collection,
   doc,
   serverTimestamp,
+  type CollectionReference,
   type DocumentData,
   type DocumentReference,
   type Firestore,
@@ -45,10 +54,54 @@ function domainConverter<T extends object>(): FirestoreDataConverter<T, Document
 export const userProfileConverter = domainConverter<UserProfile>();
 export const gamificationConverter = domainConverter<GamificationState>();
 
+// El ID del documento es el ID del hábito.
+const baseHabitConverter = domainConverter<Omit<HabitRecord, 'id'>>();
+export const habitConverter: FirestoreDataConverter<HabitRecord, DocumentData> = {
+  toFirestore: (data) => data as DocumentData,
+  fromFirestore: (snapshot, options) => ({
+    id: snapshot.id,
+    ...baseHabitConverter.fromFirestore(snapshot, options),
+  }),
+};
+
+// Cada marca guarda también su updatedAt; el dominio solo necesita `completed`.
+const baseDailyLogConverter = domainConverter<DailyLog>();
+export const dailyLogConverter: FirestoreDataConverter<DailyLog, DocumentData> = {
+  toFirestore: (data) => data as DocumentData,
+  fromFirestore: (snapshot, options) => {
+    const log = baseDailyLogConverter.fromFirestore(snapshot, options);
+    const entries: Record<string, { completed: boolean }> = {};
+    for (const [habitId, entry] of Object.entries(log.entries)) {
+      entries[habitId] = { completed: entry.completed === true };
+    }
+    return { ...log, entries: entries as DailyEntries };
+  },
+};
+
 export function userProfileRef(db: Firestore, uid: string): DocumentReference<UserProfile> {
   return doc(db, 'users', uid).withConverter(userProfileConverter);
 }
 
 export function gamificationRef(db: Firestore, uid: string): DocumentReference<GamificationState> {
   return doc(db, 'users', uid, 'meta', 'gamification').withConverter(gamificationConverter);
+}
+
+export function habitsCollection(db: Firestore, uid: string): CollectionReference<HabitRecord> {
+  return collection(db, 'users', uid, 'habits').withConverter(habitConverter);
+}
+
+export function habitRef(
+  db: Firestore,
+  uid: string,
+  habitId: string,
+): DocumentReference<HabitRecord> {
+  return doc(habitsCollection(db, uid), habitId);
+}
+
+export function dailyLogRef(
+  db: Firestore,
+  uid: string,
+  dateKey: DateKey,
+): DocumentReference<DailyLog> {
+  return doc(db, 'users', uid, 'dailyLogs', dateKey).withConverter(dailyLogConverter);
 }

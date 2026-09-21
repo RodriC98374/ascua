@@ -51,8 +51,34 @@ export interface Habit {
   archivedDateKey: DateKey | null;
 }
 
+/** Hábito completo, tal como lo guarda y muestra la app. */
+export interface HabitRecord extends Habit {
+  description: string | null;
+  icon: string;
+  /** Hex, ej. '#FF6B35'. */
+  color: string;
+  sortOrder: number;
+}
+
 /** Marcas del día por hábito, tal como las escribe el usuario. */
 export type DailyEntries = Readonly<Record<string, { completed: boolean }>>;
+
+/** Registro de un día (documento `dailyLogs/{dateKey}`). */
+export interface DailyLog {
+  dateKey: DateKey;
+  entries: DailyEntries;
+  status: DayStatus;
+  /** null mientras el día está abierto. */
+  summary: {
+    scheduledHabitIds: string[];
+    scheduledPrimaryHabitIds: string[];
+    completedHabitIds: string[];
+    completionRate: number;
+    isPerfectDay: boolean;
+    pointsEarned: number;
+    streakAfterClose: number;
+  } | null;
+}
 
 /** Horarios de los recordatorios, 'HH:mm' en hora de Bolivia. */
 export interface ReminderSettings {

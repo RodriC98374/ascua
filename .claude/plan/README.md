@@ -55,6 +55,8 @@ Confirmadas por el usuario. **No volver a preguntarlas ni cambiarlas durante la 
 | D13 | 21-09-2026 | **La app cierra los días pendientes al abrirse** | La UI muestra racha y puntos al instante; el saldo oficial se actualiza al cerrar el día. Los puntos de hoy se gastan desde mañana |
 | D14 | 21-09-2026 | **Notificaciones locales solo en Android**, con horario configurable desde la app | Sin push ni servidor. La web no notifica |
 | D15 | 21-09-2026 | Sistema de diseño en **Claude Design** en lugar de mockups HTML | Lo lee Claude como código; Figma queda descartado |
+| D16 | 21-09-2026 | **Navegación de 4 pestañas: Hoy / Mes / Recompensas / Ajustes** | Elegida por el usuario (el diseño tenía 3). La gestión de hábitos vive en Ajustes |
+| D17 | 21-09-2026 | **Modo oscuro en la fase 10** | Todo nace en tema claro; se agrega al pulir |
 
 Decisiones de diseño derivadas (no requieren confirmación, pero no cambiarlas sin avisar):
 
@@ -94,12 +96,14 @@ Decisiones de diseño derivadas (no requieren confirmación, pero no cambiarlas 
 | 02 | **hecha** | unida a `main` | 63 tests, cobertura 100%. Converters movidos a la app |
 | 03 | **hecha** | unida a `main` | 110 tests de reglas, verificadas con mutaciones. Desplegadas en `ascua-a9e27` con el uid real en `allowedUids()` |
 | 04 | **hecha** | unida a `main` | Probada por el usuario en web: login, error de credenciales, sesión persistente, cuenta creada en Firestore y correo de recuperación. Prueba en el celular junto con la fase 05 |
-| 05–10 | pendiente | — | — |
+| 05 | **en curso** | `feat/05-habits-today` | Lógica y operaciones probadas; UI escrita sin verificar. Retomar por "Dónde quedé" en `05-habits-today.md` |
+| 06–10 | pendiente | — | — |
 
 ## Bitácora
 
 Lo más reciente arriba. Una línea por sesión: fecha, máquina (oficina/casa), qué se hizo y qué queda a medias.
 
+- **21-09-2026 · oficina** — Fase 05 empezada en `feat/05-habits-today` (commit de trabajo en curso). Decisiones D16 (4 pestañas) y D17 (oscuro en fase 10). Hecho y probado: lógica de `shared`, operaciones de hábitos y marcas contra el emulador, resumen de Hoy. Escrito sin verificar: hooks, componentes del diseño, pestañas, Hoy, Ajustes y formularios. A medias: el typecheck falla por rutas tipadas desactualizadas; ver "Dónde quedé" en `05-habits-today.md`.
 - **21-09-2026 · oficina** — Fase 04 en `feat/04-auth-account`: login, recuperación de contraseña, rutas protegidas, `initializeAccount` (6 tests contra el emulador), tokens claros y fuentes del diseño. `shared` suma `initialUserProfile` y `DEFAULT_REMINDER_SETTINGS`. Probada por el usuario en web (5/5) y unida a `main`. Siguiente: fase 05 (hábitos y pantalla "Hoy"), que empieza probando Expo Go en el celular desde casa.
 - **21-09-2026 · oficina** — Fase 03 con TDD en `feat/03-security-rules`: `firestore.rules` completas y 110 tests contra el emulador (acceso, forma, entries solo hoy, cierre, compra, canje, inmutabilidad, límite de lecturas). Verificadas con mutaciones. Nuevo campo `lastSpendTransactionId` (E10). Uid real en `allowedUids()`, reglas desplegadas y rama unida a `main`. Siguiente: fase 04 (login e `initializeAccount`).
 - **21-09-2026 · oficina** — Java portable (Temurin 25) en `D:\jdk-portable`; los emuladores de Auth y Firestore arrancan. Siguiente: fase 03.

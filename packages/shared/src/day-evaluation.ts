@@ -48,6 +48,18 @@ export interface DayEvaluation {
 
 type PendingTransaction = Omit<PointTransaction, 'balanceAfter' | 'dateKey'>;
 
+/**
+ * Vista previa de un día abierto (pantalla "Hoy"): lo que dará su cierre. Si quedan días
+ * anteriores sin cerrar, los calcula como si ya estuvieran cerrados con el estado actual;
+ * la app los cierra al abrirse, así que en la práctica es el mismo resultado.
+ */
+export function previewDay(input: EvaluateDayInput): DayEvaluation {
+  return evaluateDay({
+    ...input,
+    state: { ...input.state, lastClosedDateKey: addDays(input.dateKey, -1) },
+  });
+}
+
 export function evaluateDay({ dateKey, habits, entries, state }: EvaluateDayInput): DayEvaluation {
   const expectedDateKey = addDays(state.lastClosedDateKey, 1);
   if (dateKey !== expectedDateKey) {

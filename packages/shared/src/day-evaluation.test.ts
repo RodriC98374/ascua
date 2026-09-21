@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { evaluateDay } from './day-evaluation';
+import { evaluateDay, previewDay } from './day-evaluation';
 import type { DailyEntries, GamificationState, Habit } from './types';
 
 const DAY = '2026-09-21';
@@ -373,5 +373,28 @@ describe('evaluateDay', () => {
         }),
       ).toThrow(/2026-09-21/);
     });
+  });
+});
+
+describe('previewDay', () => {
+  it('gives the same numbers the close will give', () => {
+    const input = {
+      dateKey: DAY,
+      habits: HABITS,
+      entries: done('read', 'exercise'),
+      state: state(),
+    };
+    expect(previewDay(input)).toEqual(evaluateDay(input));
+  });
+
+  it('works even if earlier days are still pending to close', () => {
+    const preview = previewDay({
+      dateKey: DAY,
+      habits: HABITS,
+      entries: done('read'),
+      state: state({ lastClosedDateKey: '2026-09-15' }),
+    });
+    expect(preview.dateKey).toBe(DAY);
+    expect(preview.isGoalMet).toBe(false);
   });
 });

@@ -13,6 +13,14 @@ const boliviaDateFormatter = new Intl.DateTimeFormat('en-CA', {
   day: '2-digit',
 });
 
+const boliviaTimeFormatter = new Intl.DateTimeFormat('en-GB', {
+  timeZone: APP_TIME_ZONE,
+  hour: '2-digit',
+  minute: '2-digit',
+  second: '2-digit',
+  hourCycle: 'h23',
+});
+
 /** Día de calendario en Bolivia al que pertenece un instante. */
 export function toDateKey(instant: Date): DateKey {
   const parts = Object.fromEntries(
@@ -24,6 +32,21 @@ export function toDateKey(instant: Date): DateKey {
 /** Día de hoy en Bolivia. En producción `now` debe venir de la hora del servidor cuando importe. */
 export function todayDateKey(now: Date = new Date()): DateKey {
   return toDateKey(now);
+}
+
+/**
+ * Milisegundos hasta la próxima medianoche de Bolivia, para cambiar de día con la app abierta.
+ * Se calcula con la hora local de Bolivia (Intl), sin offset fijo.
+ */
+export function msUntilNextDay(now: Date = new Date()): number {
+  // 'HH:mm:ss' siempre tiene tres partes.
+  const [hours, minutes, seconds] = boliviaTimeFormatter.format(now).split(':').map(Number) as [
+    number,
+    number,
+    number,
+  ];
+  const elapsedSeconds = hours * 3600 + minutes * 60 + seconds;
+  return MS_PER_DAY - elapsedSeconds * 1000 - now.getUTCMilliseconds();
 }
 
 export function toMonthKey(dateKey: DateKey): MonthKey {

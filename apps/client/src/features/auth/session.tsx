@@ -33,6 +33,13 @@ export function useSession(): Session {
   return session;
 }
 
+/** uid del usuario; solo dentro del grupo (app), que se monta únicamente con sesión. */
+export function useUid(): string {
+  const { user } = useSession();
+  if (!user) throw new Error('useUid se usa solo con sesión iniciada.');
+  return user.uid;
+}
+
 export async function signIn(email: string, password: string): Promise<void> {
   await signInWithEmailAndPassword(auth, email.trim(), password);
 }
