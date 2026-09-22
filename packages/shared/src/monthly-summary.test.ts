@@ -2,7 +2,12 @@ import { describe, expect, it } from 'vitest';
 
 import { evaluateDay } from './day-evaluation';
 import { initialGamificationState } from './gamification-state';
-import { addMonthlySpending, addClosedDay, EMPTY_MONTHLY_COUNTERS } from './monthly-summary';
+import {
+  addClosedDay,
+  addMonthlySpending,
+  EMPTY_MONTHLY_COUNTERS,
+  mergeMonthlyCounters,
+} from './monthly-summary';
 import type { GamificationState, Habit, HabitTier } from './types';
 
 function habit(id: string, tier: HabitTier): Habit {
@@ -118,5 +123,48 @@ describe('addMonthlySpending', () => {
   it('adds a spend (negative amount) to points spent as a positive number', () => {
     const counters = addMonthlySpending({ ...EMPTY_MONTHLY_COUNTERS, pointsSpent: 60 }, -150);
     expect(counters.pointsSpent).toBe(210);
+  });
+});
+
+describe('mergeMonthlyCounters', () => {
+  it('adds every counter and the habit stats of both periods', () => {
+    const merged = mergeMonthlyCounters(
+      {
+        closedDays: 30,
+        completedDays: 20,
+        perfectDays: 4,
+        frozenDays: 1,
+        missedDays: 9,
+        pointsEarned: 300,
+        pointsSpent: 150,
+        habitStats: { reading: { scheduledDays: 30, completedDays: 25 } },
+      },
+      {
+        closedDays: 5,
+        completedDays: 5,
+        perfectDays: 2,
+        frozenDays: 0,
+        missedDays: 0,
+        pointsEarned: 90,
+        pointsSpent: 0,
+        habitStats: {
+          reading: { scheduledDays: 5, completedDays: 5 },
+          water: { scheduledDays: 5, completedDays: 3 },
+        },
+      },
+    );
+    expect(merged).toEqual({
+      closedDays: 35,
+      completedDays: 25,
+      perfectDays: 6,
+      frozenDays: 1,
+      missedDays: 9,
+      pointsEarned: 390,
+      pointsSpent: 150,
+      habitStats: {
+        reading: { scheduledDays: 35, completedDays: 30 },
+        water: { scheduledDays: 5, completedDays: 3 },
+      },
+    });
   });
 });
