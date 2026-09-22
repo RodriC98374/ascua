@@ -16,9 +16,6 @@ import { habitRef, habitsCollection, newDocumentFields } from '../data/documents
 export const DEFAULT_HABIT_ICON = 'check';
 export const DEFAULT_HABIT_COLOR = '#FF6B35';
 
-export const HABIT_NAME_MAX_LENGTH = 60;
-export const HABIT_DESCRIPTION_MAX_LENGTH = 200;
-
 export interface HabitInput {
   name: string;
   description: string | null;

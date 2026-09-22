@@ -55,7 +55,7 @@ Confirmadas por el usuario. **No volver a preguntarlas ni cambiarlas durante la 
 | D13 | 21-09-2026 | **La app cierra los días pendientes al abrirse** | La UI muestra racha y puntos al instante; el saldo oficial se actualiza al cerrar el día. Los puntos de hoy se gastan desde mañana |
 | D14 | 21-09-2026 | **Notificaciones locales solo en Android**, con horario configurable desde la app | Sin push ni servidor. La web no notifica |
 | D15 | 21-09-2026 | Sistema de diseño en **Claude Design** en lugar de mockups HTML | Lo lee Claude como código; Figma queda descartado |
-| D16 | 21-09-2026 | **Navegación de 4 pestañas: Hoy / Mes / Recompensas / Ajustes** | Elegida por el usuario (el diseño tenía 3). La gestión de hábitos vive en Ajustes |
+| D16 | 21-09-2026 | **Navegación de 4 pestañas: Hoy / Mes / Recompensas / Ajustes** | Elegida por el usuario (el diseño tenía 3). Todo lo de hábitos vive en Hoy (22-09-2026): crear con el botón flotante "+", editar y archivar con el menú de tres puntos (archivar con modal), "Ordenar" en la cabecera de la lista. Los formularios se abren dentro de la pestaña Hoy, con la navegación visible. Ajustes queda para cuenta y preferencias |
 | D17 | 21-09-2026 | **Modo oscuro en la fase 10** | Todo nace en tema claro; se agrega al pulir |
 
 Decisiones de diseño derivadas (no requieren confirmación, pero no cambiarlas sin avisar):

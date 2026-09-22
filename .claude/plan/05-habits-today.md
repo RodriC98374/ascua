@@ -39,11 +39,22 @@ Decisiones de esta sesión: **D16** navegación de 4 pestañas (Hoy / Mes / Reco
 - Componentes del diseño: `components/ui/icons.tsx`, `card`, `progress-bar`, `button` (primario con degradado), `habit-check`, `gamification.tsx` (racha, puntos, protectores), `nav-bar.tsx`, `habit-form.tsx`, `screen-header.tsx`, `coming-soon.tsx`, `write-error-banner.tsx`. `theme/colors.ts`.
 - Rutas: `app/(app)/(tabs)/_layout.tsx` (tabs headless de `expo-router/ui`; barra abajo y columna izquierda desde 768 px), `(tabs)/index.tsx` (Hoy), `mes.tsx` y `recompensas.tsx` (provisionales), `ajustes.tsx` (hábitos con reordenar + cuenta), `app/(app)/habits/new.tsx` y `habits/[habitId].tsx` (editar y archivar con confirmación). Se borraron `app/(app)/index.tsx` y `components/charts-spike.tsx`.
 
+**22-09-2026 (oficina):** typecheck, lint y tests en verde (client 19, reglas + operaciones 125, shared 89); el bundle web compila. Las rutas tipadas se regeneraron al arrancar `expo start --web` (la ruta rara de `packages/shared` desapareció). `Tabs` descubre los `TabTrigger` de `renderNavBar` (revisado en `parseTriggersFromChildren`). Corregido: `TabList` ahora usa `asChild` con un `View` propio, porque su `View` interna no pasa por NativeWind (ignoraba `className`) y forzaba `flexDirection: 'row'`.
+
+**22-09-2026, prueba del usuario en web:** OK crear (bloquea el 4.º principal), editar, reordenar, archivar, racha/puntos al instante e indicador "Pendiente". Observaciones atendidas el mismo día:
+- Columna lateral en escritorio: `TabList` y `TabTrigger` pasan a su hijo un estilo inline (`flexDirection: 'row'`) que les gana a las clases de NativeWind; la dirección va ahora en `style`.
+- Botón "+" en Hoy para crear; menú de tres puntos (`PopoverMenu`) con Editar y Archivar en Hoy y Ajustes; archivar confirma con `ConfirmDialog` (modal). Un hábito archivado hoy sigue en Hoy con la etiqueta "Último día" y sin menú.
+- Validaciones con mensajes: hábito (`features/habits/habit-validation.ts`: nombre 2–60, sin repetir entre activos, descripción ≤ 200, máximo de principales) y acceso (`features/auth/credentials-validation.ts`). Los largos pasaron a `shared` (`HABIT_NAME_MIN_LENGTH`, etc.).
+
+**22-09-2026, segunda ronda de observaciones + pasada de diseño de Hoy:**
+- Descripción como área de texto (~4 líneas, contador, máximo 200 como las reglas).
+- Botón flotante "+" abajo a la derecha, alineado a la columna de contenido; la lista deja espacio para que no tape la última fila.
+- Reordenar se mueve a Hoy: "Ordenar" / "Listo" en la cabecera de la lista; cada hábito se mueve dentro de su grupo (`features/habits/habit-order.ts`, con tests). Ajustes queda con cuenta y hábitos archivados.
+- Rutas: Hoy y los formularios viven en `app/(app)/(tabs)/(hoy)/` con su propio `Stack`, así la navegación no desaparece al crear o editar.
+- Diseño: la tarjeta de progreso y el bloque de racha/saldo se reemplazan por `TodayHero`, con el **brasero** (`StreakHearth`), un anillo con un segmento por hábito principal que se enciende al cumplirlo, la racha y una franja con puntos de hoy, saldo y protectores. Principales en fichas propias; secundarios como filas dentro de una tarjeta. El desglose de puntos pasa a una frase al final.
+
 **Dónde quedé (primer paso de la próxima sesión):**
-1. `npm run typecheck -w @ascua/client` falla **solo por rutas tipadas desactualizadas** (`/habits/new`, `/ajustes`, `/mes`… "not assignable"). Expo las regenera en `apps/client/.expo/types/router.d.ts` al correr `npm run web`: arrancarlo una vez, esperar a que compile y volver a correr el typecheck. Si sigue fallando, revisar que `(tabs)` y `habits/` estén bien detectados (el archivo generado también tiene una ruta rara `/../../../../packages/shared/src/user-profile.test`: investigar por qué el router ve archivos de `packages/`).
-2. Correr lint y todos los tests (`npm test`, con Java).
-3. Probar en la web (`npm run web`): crear hábitos (el 4.º principal debe quedar bloqueado), marcar/desmarcar, ver racha/puntos al instante, día perfecto, reordenar, editar, archivar, barra inferior vs. columna lateral (ventana angosta/ancha), indicador "Pendiente" sin conexión (DevTools → Offline).
-4. Verificar que `TabList` funciona con `renderNavBar` (función, no componente: `Tabs` lee sus hijos para descubrir las rutas).
+1. Que el usuario pruebe en la web todo lo de arriba (ventana angosta y ancha): brasero, "+", menú ⋮, modal de archivar, ordenar, formularios con la navegación visible y mensajes de error.
 
 **Falta de la fase:**
 - Expo Go en el celular (en casa) y confirmar que todo se ve bien en Android (sombras con `elevation`, fuentes, degradados).

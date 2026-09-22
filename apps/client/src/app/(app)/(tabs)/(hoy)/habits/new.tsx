@@ -23,9 +23,9 @@ export default function NewHabitScreen() {
   }
 
   return (
-    <Screen>
+    <Screen edges={['top']}>
       <View className="gap-6">
-        <ScreenHeader title="Nuevo hábito" fallbackHref="/ajustes" />
+        <ScreenHeader title="Nuevo hábito" fallbackHref="/" />
         {!habits.isLoading && <HabitForm habits={habits.data} onSubmit={handleSubmit} />}
       </View>
     </Screen>

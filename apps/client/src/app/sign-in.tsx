@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
 import { TextField } from '@/components/ui/text-field';
 import { signInErrorMessage } from '@/features/auth/auth-errors';
+import { validateEmail, validatePassword } from '@/features/auth/credentials-validation';
 import { signIn } from '@/features/auth/session';
 
 export default function SignInScreen() {
@@ -13,9 +14,15 @@ export default function SignInScreen() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [hasTriedSubmit, setHasTriedSubmit] = useState(false);
+
+  const emailError = hasTriedSubmit ? validateEmail(email) : null;
+  const passwordError = hasTriedSubmit ? validatePassword(password) : null;
 
   async function handleSubmit() {
+    setHasTriedSubmit(true);
     setError(null);
+    if (validateEmail(email) || validatePassword(password)) return;
     setIsSubmitting(true);
     try {
       // Al iniciar sesión, las rutas protegidas del layout llevan solas a la app.
@@ -46,6 +53,7 @@ export default function SignInScreen() {
             keyboardType="email-address"
             textContentType="username"
             returnKeyType="next"
+            error={emailError}
           />
           <TextField
             label="Contraseña"
@@ -56,6 +64,7 @@ export default function SignInScreen() {
             textContentType="password"
             returnKeyType="go"
             onSubmitEditing={handleSubmit}
+            error={passwordError}
           />
           {error && (
             <Text accessibilityRole="alert" className="font-body-bold text-caption text-error">
@@ -65,12 +74,7 @@ export default function SignInScreen() {
         </View>
 
         <View className="gap-2">
-          <Button
-            label="Entrar"
-            onPress={handleSubmit}
-            isLoading={isSubmitting}
-            isDisabled={email.trim() === '' || password === ''}
-          />
+          <Button label="Entrar" onPress={handleSubmit} isLoading={isSubmitting} />
           <Button
             label="¿Olvidaste tu contraseña?"
             variant="link"

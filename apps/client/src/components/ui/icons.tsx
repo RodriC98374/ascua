@@ -124,6 +124,35 @@ export function ArrowIcon({
   );
 }
 
+export function MoreVerticalIcon({ size = 20, color }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Circle cx={12} cy={5} r={1.8} fill={color} />
+      <Circle cx={12} cy={12} r={1.8} fill={color} />
+      <Circle cx={12} cy={19} r={1.8} fill={color} />
+    </Svg>
+  );
+}
+
+export function EditIcon({ size = 20, color }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Path d="M4 20h4L19 9a2.8 2.8 0 00-4-4L4 16v4zM13.5 6.5l4 4" {...stroke(color)} />
+    </Svg>
+  );
+}
+
+export function ArchiveIcon({ size = 20, color }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <G {...stroke(color)}>
+        <Rect x={3.5} y={4.5} width={17} height={4.5} rx={1} />
+        <Path d="M5 9v9.5a1.5 1.5 0 001.5 1.5h11a1.5 1.5 0 001.5-1.5V9M10 13h4" />
+      </G>
+    </Svg>
+  );
+}
+
 export function CloudIcon({ size = 16, color }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24">

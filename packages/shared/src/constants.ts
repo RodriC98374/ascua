@@ -8,6 +8,11 @@ export const HABIT_POINTS: Readonly<Record<HabitTier, number>> = { primary: 10, 
 
 export const MAX_PRIMARY_HABITS = 3;
 
+/** Largo del nombre y la descripción de un hábito. Las reglas aceptan desde 1; la UI pide 2. */
+export const HABIT_NAME_MIN_LENGTH = 2;
+export const HABIT_NAME_MAX_LENGTH = 60;
+export const HABIT_DESCRIPTION_MAX_LENGTH = 200;
+
 /** Bono por cumplir el 100% de los hábitos programados del día. */
 export const PERFECT_DAY_BONUS = 5;
 

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
 import { TextField } from '@/components/ui/text-field';
 import { passwordResetErrorMessage } from '@/features/auth/auth-errors';
+import { validateEmail } from '@/features/auth/credentials-validation';
 import { sendPasswordReset } from '@/features/auth/session';
 
 export default function ForgotPasswordScreen() {
@@ -14,9 +15,14 @@ export default function ForgotPasswordScreen() {
   const [error, setError] = useState<string | null>(null);
   const [isSending, setIsSending] = useState(false);
   const [isSent, setIsSent] = useState(false);
+  const [hasTriedSubmit, setHasTriedSubmit] = useState(false);
+
+  const emailError = hasTriedSubmit ? validateEmail(email) : null;
 
   async function handleSubmit() {
+    setHasTriedSubmit(true);
     setError(null);
+    if (validateEmail(email)) return;
     setIsSending(true);
     try {
       await sendPasswordReset(email);
@@ -73,6 +79,7 @@ export default function ForgotPasswordScreen() {
             textContentType="username"
             returnKeyType="send"
             onSubmitEditing={handleSubmit}
+            error={emailError}
           />
           {error && (
             <Text accessibilityRole="alert" className="font-body-bold text-caption text-error">
@@ -82,12 +89,7 @@ export default function ForgotPasswordScreen() {
         </View>
 
         <View className="gap-2">
-          <Button
-            label="Enviar enlace"
-            onPress={handleSubmit}
-            isLoading={isSending}
-            isDisabled={email.trim() === ''}
-          />
+          <Button label="Enviar enlace" onPress={handleSubmit} isLoading={isSending} />
           <Button label="Volver" variant="link" onPress={backToSignIn} />
         </View>
       </View>
