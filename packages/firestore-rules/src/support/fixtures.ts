@@ -1,7 +1,10 @@
 // Documentos tal como los escribirá la app. Las operaciones de cierre y gasto usan la lógica real
 // de `@ascua/shared`: así se prueba que lo que calcula la app pasa las reglas.
 import {
+  addClosedDay,
   addDays,
+  addMonthlySpending,
+  EMPTY_MONTHLY_COUNTERS,
   evaluateDay,
   initialGamificationState,
   planFreezePurchase,
@@ -14,6 +17,7 @@ import {
   type Habit,
   type HabitTier,
   type MonthKey,
+  type MonthlyCounters,
   type PointTransaction,
   type Reward,
 } from '@ascua/shared';
@@ -177,28 +181,6 @@ export function without(writes: readonly Write[], path: string): Write[] {
 
 // ---------- Resumen mensual ----------
 
-export interface MonthlyCounters {
-  closedDays: number;
-  completedDays: number;
-  perfectDays: number;
-  frozenDays: number;
-  missedDays: number;
-  pointsEarned: number;
-  pointsSpent: number;
-  habitStats: Record<string, { scheduledDays: number; completedDays: number }>;
-}
-
-export const EMPTY_MONTH: MonthlyCounters = {
-  closedDays: 0,
-  completedDays: 0,
-  perfectDays: 0,
-  frozenDays: 0,
-  missedDays: 0,
-  pointsEarned: 0,
-  pointsSpent: 0,
-  habitStats: {},
-};
-
 export function monthlyDoc(monthKey: MonthKey, counters: MonthlyCounters): DocumentData {
   return { monthKey, ...counters, ...created() };
 }
@@ -212,28 +194,6 @@ function monthlyWrite(
   return before
     ? { kind: 'update', path, data: { ...after, updatedAt: serverTimestamp() } }
     : { kind: 'set', path, data: monthlyDoc(monthKey, after) };
-}
-
-function countersAfterClose(before: MonthlyCounters, evaluation: DayEvaluation): MonthlyCounters {
-  const { status, summary } = evaluation;
-  const habitStats = { ...before.habitStats };
-  for (const habitId of summary.scheduledHabitIds) {
-    const stats = habitStats[habitId] ?? { scheduledDays: 0, completedDays: 0 };
-    habitStats[habitId] = {
-      scheduledDays: stats.scheduledDays + 1,
-      completedDays: stats.completedDays + (summary.completedHabitIds.includes(habitId) ? 1 : 0),
-    };
-  }
-  return {
-    ...before,
-    closedDays: before.closedDays + 1,
-    completedDays: before.completedDays + (status === 'completed' ? 1 : 0),
-    perfectDays: before.perfectDays + (summary.isPerfectDay ? 1 : 0),
-    frozenDays: before.frozenDays + (status === 'frozen' ? 1 : 0),
-    missedDays: before.missedDays + (status === 'missed' ? 1 : 0),
-    pointsEarned: before.pointsEarned + summary.pointsEarned,
-    habitStats,
-  };
 }
 
 // ---------- Operaciones ----------
@@ -281,7 +241,7 @@ export function planClose(input: CloseInput): { evaluation: DayEvaluation; write
     monthlyWrite(
       toMonthKey(dateKey),
       monthly,
-      countersAfterClose(monthly ?? EMPTY_MONTH, evaluation),
+      addClosedDay(monthly ?? EMPTY_MONTHLY_COUNTERS, evaluation),
     ),
   ];
   return { evaluation, writes };
@@ -305,7 +265,6 @@ function spendWrites(
   nextState: GamificationState,
   monthly: MonthlyCounters | undefined,
 ): Write[] {
-  const before = monthly ?? EMPTY_MONTH;
   return [
     { kind: 'set', path: paths.transaction(transaction.id), data: transactionDoc(transaction) },
     {
@@ -313,10 +272,11 @@ function spendWrites(
       path: paths.gamification(),
       data: { ...nextState, updatedAt: serverTimestamp() },
     },
-    monthlyWrite(toMonthKey(TODAY), monthly, {
-      ...before,
-      pointsSpent: before.pointsSpent - transaction.amount,
-    }),
+    monthlyWrite(
+      toMonthKey(TODAY),
+      monthly,
+      addMonthlySpending(monthly ?? EMPTY_MONTHLY_COUNTERS, transaction.amount),
+    ),
   ];
 }
 

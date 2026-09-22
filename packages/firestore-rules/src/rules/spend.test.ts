@@ -1,4 +1,9 @@
-import { initialGamificationState, toMonthKey, type GamificationState } from '@ascua/shared';
+import {
+  EMPTY_MONTHLY_COUNTERS,
+  initialGamificationState,
+  toMonthKey,
+  type GamificationState,
+} from '@ascua/shared';
 import { assertFails, assertSucceeds } from '@firebase/rules-unit-testing';
 import { describe, it } from 'vitest';
 
@@ -6,7 +11,6 @@ import { ownerDb, useRulesTestEnvironment } from '../support/env';
 import {
   ANIME,
   commit,
-  EMPTY_MONTH,
   monthlyDoc,
   paths,
   planFreeze,
@@ -42,7 +46,7 @@ describe('purchaseStreakFreeze', () => {
   });
 
   it('updates an existing monthly summary', async () => {
-    const monthly = { ...EMPTY_MONTH, closedDays: 3, pointsEarned: 60, pointsSpent: 10 };
+    const monthly = { ...EMPTY_MONTHLY_COUNTERS, closedDays: 3, pointsEarned: 60, pointsSpent: 10 };
     await seedState(rich());
     await seedDocs({ [monthPath]: monthlyDoc(toMonthKey(TODAY), monthly) });
     await assertSucceeds(commit(ownerDb(), planFreeze(rich(), 'req-1', monthly)));
@@ -83,7 +87,10 @@ describe('purchaseStreakFreeze', () => {
       lastSpendTransactionId: 'freeze_req-1',
     });
     await assertFails(
-      commit(ownerDb(), planFreeze(afterFirst, 'req-1', { ...EMPTY_MONTH, pointsSpent: 150 })),
+      commit(
+        ownerDb(),
+        planFreeze(afterFirst, 'req-1', { ...EMPTY_MONTHLY_COUNTERS, pointsSpent: 150 }),
+      ),
     );
   });
 
@@ -154,7 +161,7 @@ describe('redeemReward', () => {
     await assertFails(
       commit(
         ownerDb(),
-        planRedeem(afterFirst, ANIME, 'req-2', { ...EMPTY_MONTH, pointsSpent: 60 }),
+        planRedeem(afterFirst, ANIME, 'req-2', { ...EMPTY_MONTHLY_COUNTERS, pointsSpent: 60 }),
       ),
     );
   });

@@ -6,6 +6,8 @@ import type {
   DateKey,
   GamificationState,
   HabitRecord,
+  MonthKey,
+  MonthlySummary,
   UserProfile,
 } from '@ascua/shared';
 import {
@@ -104,4 +106,23 @@ export function dailyLogRef(
   dateKey: DateKey,
 ): DocumentReference<DailyLog> {
   return doc(db, 'users', uid, 'dailyLogs', dateKey).withConverter(dailyLogConverter);
+}
+
+export const monthlySummaryConverter = domainConverter<MonthlySummary>();
+
+export function monthlySummaryRef(
+  db: Firestore,
+  uid: string,
+  monthKey: MonthKey,
+): DocumentReference<MonthlySummary> {
+  return doc(db, 'users', uid, 'monthlySummaries', monthKey).withConverter(monthlySummaryConverter);
+}
+
+/** Movimiento del historial de puntos. Solo se crean; se escriben sin converter. */
+export function pointTransactionRef(
+  db: Firestore,
+  uid: string,
+  transactionId: string,
+): DocumentReference {
+  return doc(db, 'users', uid, 'pointTransactions', transactionId);
 }

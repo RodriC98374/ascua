@@ -80,6 +80,25 @@ export interface DailyLog {
   } | null;
 }
 
+/** Contadores de un mes; se acumulan al cerrar cada día y en cada gasto. */
+export interface MonthlyCounters {
+  closedDays: number;
+  /** Incluye los días perfectos. */
+  completedDays: number;
+  perfectDays: number;
+  frozenDays: number;
+  missedDays: number;
+  pointsEarned: number;
+  /** Positivo: lo gastado en protectores y canjes. */
+  pointsSpent: number;
+  habitStats: Readonly<Record<string, { scheduledDays: number; completedDays: number }>>;
+}
+
+/** Resumen de un mes (documento `monthlySummaries/{monthKey}`). */
+export interface MonthlySummary extends MonthlyCounters {
+  monthKey: MonthKey;
+}
+
 /** Horarios de los recordatorios, 'HH:mm' en hora de Bolivia. */
 export interface ReminderSettings {
   enabled: boolean;

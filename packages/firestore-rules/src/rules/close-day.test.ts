@@ -1,4 +1,4 @@
-import { addDays, toMonthKey, transactionIds } from '@ascua/shared';
+import { addDays, EMPTY_MONTHLY_COUNTERS, toMonthKey, transactionIds } from '@ascua/shared';
 import { assertFails, assertSucceeds } from '@firebase/rules-unit-testing';
 import { serverTimestamp } from 'firebase/firestore';
 import { describe, expect, it } from 'vitest';
@@ -8,7 +8,6 @@ import {
   commit,
   created,
   done,
-  EMPTY_MONTH,
   gamificationDoc,
   openLogDoc,
   paths,
@@ -98,7 +97,7 @@ describe('closePendingDays: allowed', () => {
 
   it('updates an existing monthly summary', async () => {
     const monthly = {
-      ...EMPTY_MONTH,
+      ...EMPTY_MONTHLY_COUNTERS,
       closedDays: 5,
       completedDays: 4,
       missedDays: 1,
@@ -124,7 +123,7 @@ describe('closePendingDays: allowed', () => {
       }),
       habits,
       entries: done(...habits.map((habit) => habit.id)),
-      monthly: { ...EMPTY_MONTH, closedDays: 20, completedDays: 20, pointsEarned: 900 },
+      monthly: { ...EMPTY_MONTHLY_COUNTERS, closedDays: 20, completedDays: 20, pointsEarned: 900 },
     };
     const { evaluation, writes } = await prepared(input);
     expect(evaluation.transactions).toHaveLength(13);

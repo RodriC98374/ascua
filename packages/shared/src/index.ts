@@ -4,6 +4,7 @@ export * from './day-evaluation';
 export * from './format-date';
 export * from './gamification-state';
 export * from './habit-schedule';
+export * from './monthly-summary';
 export * from './points';
 export * from './primary-habits';
 export * from './transaction-ids';
