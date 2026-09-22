@@ -1,6 +1,8 @@
 // Tipos del dominio. Sin dependencias de Firebase: los documentos de Firestore
 // (con Timestamp y converters) viven en la app y se traducen a estos tipos.
 
+import type { HabitCategory, HabitColor } from './habit-appearance';
+
 /** Día de calendario en America/La_Paz, formato 'YYYY-MM-DD'. Ordenable como string. */
 export type DateKey = string;
 
@@ -55,8 +57,9 @@ export interface Habit {
 export interface HabitRecord extends Habit {
   description: string | null;
   icon: string;
-  /** Hex, ej. '#FF6B35'. */
-  color: string;
+  /** Uno de `HABIT_COLORS`. Propuesto por la categoría y editable. */
+  color: HabitColor;
+  category: HabitCategory;
   sortOrder: number;
 }
 
