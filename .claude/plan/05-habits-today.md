@@ -5,25 +5,25 @@
 ## Tareas
 
 **Primero (pendiente de la fase 00)**
-- [ ] Ver la app en el celular con **Expo Go** (`npm run dev`, escanear el QR; si no conecta, `npm run dev -- --tunnel`). En la oficina la red no lo permitió; probar en casa. Confirmar que `LineChart` se ve animada en Android.
+- [ ] Ver la app en el celular con **Expo Go** (`npm run dev`, escanear el QR; si no conecta, `npm run dev -- --tunnel`). En la oficina la red no lo permitió; probar en casa. Confirmar que `LineChart` se ve animada en Android. **Pasa a la fase 09** (22-09-2026): se prueba con la primera APK.
 
 **Base de UI**
-- [ ] Tokens del sistema de diseño (fase 01) en la configuración de NativeWind; navegación con pestañas inferiores en Android y adaptada a escritorio en web.
-- [ ] Caché persistente de Firestore en web (`persistentLocalCache`); caché en memoria en Android.
-- [ ] Hooks de datos sobre `onSnapshot`: `useHabits`, `useDailyLog(dateKey)`, `useGamificationState`.
+- [x] Tokens del sistema de diseño (fase 01) en la configuración de NativeWind; navegación con pestañas inferiores en Android y adaptada a escritorio en web.
+- [x] Caché persistente de Firestore en web (`persistentLocalCache`); caché en memoria en Android.
+- [x] Hooks de datos sobre `onSnapshot`: `useHabits`, `useDailyLog(dateKey)`, `useGamificationState`.
 
 **Hábitos**
-- [ ] Crear, editar, reordenar y archivar. Selector de ícono y color.
-- [ ] Validación en la UI: máximo 3 principales activos (`MAX_PRIMARY_HABITS`).
-- [ ] `startDateKey` = hoy al crear; `archivedDateKey` = hoy al archivar.
+- [x] Crear, editar, reordenar y archivar. El selector de ícono y color se descartó: el diseño no lo tiene.
+- [x] Validación en la UI: máximo 3 principales activos (`MAX_PRIMARY_HABITS`).
+- [x] `startDateKey` = hoy al crear; `archivedDateKey` = hoy al archivar.
 
 **Hoy**
-- [ ] Lista de hábitos programados hoy con check; los principales, destacados.
-- [ ] Progreso del día (% y si la meta de racha está cumplida).
-- [ ] Racha, puntos del día y celebración de día perfecto **al instante**, calculados con `evaluateDay` de `shared` (mismos números que dará el cierre).
-- [ ] Saldo oficial (de `meta/gamification`) mostrado aparte de los puntos de hoy, con la aclaración "disponibles mañana".
-- [ ] Indicador de "pendiente de sincronizar" (`hasPendingWrites`) y aviso claro si una escritura es rechazada.
-- [ ] El día cambia solo a medianoche de Bolivia si la app queda abierta.
+- [x] Lista de hábitos programados hoy con check; los principales, destacados.
+- [x] Progreso del día (% y si la meta de racha está cumplida).
+- [x] Racha, puntos del día y celebración de día perfecto **al instante**, calculados con `evaluateDay` de `shared` (mismos números que dará el cierre).
+- [x] Saldo oficial (de `meta/gamification`) mostrado aparte de los puntos de hoy, con la aclaración "disponibles mañana".
+- [x] Indicador de "pendiente de sincronizar" (`hasPendingWrites`) y aviso claro si una escritura es rechazada.
+- [x] El día cambia solo a medianoche de Bolivia si la app queda abierta.
 
 ## Avance (21-09-2026, oficina) — rama `feat/05-habits-today`, SIN unir a `main`
 
@@ -55,12 +55,7 @@ Decisiones de esta sesión: **D16** navegación de 4 pestañas (Hoy / Mes / Reco
 
 **22-09-2026, probado por el usuario en web:** todo lo anterior funciona. Después se reordenó el proyecto (mapa en `.claude/rules/frontend.md`): componentes de dominio a `features/<dominio>/`, hooks de lectura a `data/`, Firebase a `lib/firebase/`, `formatLongDate` a `shared`, tests de reglas a `packages/firestore-rules/src/rules/`; se borró `components/gamification.tsx` (sin uso). Las rutas de archivos citadas arriba son las de antes de ese cambio.
 
-**Falta de la fase** (sigue abajo): Expo Go en el celular y sincronización celular ↔ PC.
-
-**Falta de la fase:**
-- Expo Go en el celular (en casa) y confirmar que todo se ve bien en Android (sombras con `elevation`, fuentes, degradados).
-- Sincronización celular ↔ PC en segundos y prueba sin conexión.
-- Actualizar `01-design-system.md` (pendientes 1 y 2 resueltos por D16/D17) y `data-model.md` si hace falta.
+**22-09-2026, cierre en web:** unida a `main` junto con las fases 06 y 07, con el acuerdo del usuario. La parte de Android (verla en el celular, sombras con `elevation`, fuentes, degradados, sincronización celular ↔ PC y marcar sin conexión) **pasa a la fase 09**, que la necesita igual y empieza con la primera APK. `01-design-system.md` actualizado (pendientes 1, 2 y 4 resueltos).
 
 ## Definición de terminado
 

@@ -1,4 +1,4 @@
-import { formatLongDate, type HabitRecord } from '@ascua/shared';
+import { formatLongDate, MAX_PRIMARY_HABITS, type HabitRecord } from '@ascua/shared';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useState, type ReactNode } from 'react';
@@ -265,7 +265,7 @@ function EmptyState() {
         <View className="gap-1">
           <Text className="font-heading text-heading-md text-ink">Crea tu primer hábito</Text>
           <Text className="font-body text-body text-ink-muted">
-            Elige hasta 3 principales: son los que mantienen viva tu racha.
+            Elige hasta {MAX_PRIMARY_HABITS} principales: son los que mantienen viva tu racha.
           </Text>
         </View>
         <Button label="Crear hábito" onPress={() => router.push('/habits/new')} />

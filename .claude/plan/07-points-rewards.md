@@ -7,7 +7,7 @@
 - `shared`: tipos `RewardRecord` y `RewardRedemption`; límites `REWARD_*` y `REDEMPTION_NOTE_MAX_LENGTH`.
 - Operaciones con tests contra el emulador: `operations/rewards.ts` (crear, editar, archivar) y `operations/spending.ts` (`purchaseStreakFreeze`, `redeemReward`). Un mismo `requestId` cobra una sola vez en reintento **y en doble toque simultáneo** (el segundo recibe `permission-denied`; se reconoce porque el movimiento ya existe en el servidor). Errores de negocio como `SpendNotAllowedError` con el `SpendCheck` (cuánto falta, máximo, archivada).
 - UI en `features/rewards/` (lógica con tests: catálogo por nivel, textos de botones, validación, historial por día) y rutas en `app/(app)/(tabs)/recompensas/` (pila propia): saldo, `FreezeCard` (compra con confirmación), catálogo por nivel con `RewardChip`, hoja de canje (`RedeemSheet`: confirmar con nota → "¡Te lo ganaste!"), formulario con rango sugerido, menú ⋮ editar/archivar, historial con la nota de cada canje. Primitiva nueva `components/ui/fab.tsx` (la usan Hoy y Recompensas).
-- Falta: prueba del usuario en web (el gasto real necesita puntos: llegan al cerrar los días) y deploy.
+- **22-09-2026:** aprobada por el usuario, unida a `main` y publicada en la web. El cobro único está probado contra el emulador; comprar y canjear con saldo real se verá con el uso, cuando los cierres acrediten puntos (el saldo era 0 ese día).
 
 ## Tareas
 

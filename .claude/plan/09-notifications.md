@@ -6,6 +6,16 @@ Son **notificaciones locales** (`expo-notifications`): las programa la app en el
 
 ## Tareas
 
+**Primero: la primera APK (pendiente de las fases 05 y 06)**
+
+Las notificaciones solo se prueban en el celular, así que esta fase empieza con la primera APK (el plan gratis de EAS tiene un cupo mensual de builds: juntar cambios antes de cada build).
+- [ ] `npm run build:apk` e instalarla en el celular.
+- [ ] Revisar en Android lo que en web ya funciona: sombras (`elevation`), fuentes, degradados, `LineChart` animada, teclado sobre los formularios.
+- [ ] Lo marcado en el celular aparece en la PC en segundos, y viceversa.
+- [ ] Sin conexión se puede marcar; al volver la red, sincroniza y el indicador "Pendiente" desaparece.
+- [ ] El cierre de días funciona al abrir la APK al día siguiente.
+
+**Recordatorios**
 - [ ] Pedir permiso de notificaciones en un momento explicado (no al abrir la app por primera vez). Android 13+ lo exige explícitamente.
 - [ ] Canal de notificaciones de Android con nombre e importancia adecuados.
 - [ ] Ajustes: activar o desactivar, y elegir la hora de cada recordatorio (se guarda en `reminderSettings` del perfil, editable también desde la web).

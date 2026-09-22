@@ -9,7 +9,7 @@
 - `features/close-day/`: `useClosePendingDays` (cierra cuando `lastClosedDateKey + 1 < hoy`, hay red —`expo-network`— y no está bloqueado; también al volver a primer plano), `DayClosingBanner` ("Actualizando tus días…", resultado con puntos, racha y protectores, o error con "Reintentar") y `closing-summary.ts` (textos, con tests). Primitiva nueva `components/ui/notice-bar.tsx`, que usa también el aviso de escrituras rechazadas.
 - **Primer deploy web (22-09-2026):** https://ascua-a9e27.web.app, desde `feat/06-close-day`. `firebase.json` suma una reescritura para `/habits/*` (la ruta dinámica de editar hábito en la exportación estática). Reglas sin cambios desde la fase 03.
 - **APK pospuesta por decisión del usuario:** el plan gratis de EAS tiene un cupo mensual de builds; se hará cuando la app esté más madura. Mientras tanto, el uso diario es por la web (también desde el navegador del celular).
-- Falta: probarlo en uso real (al abrir la app al día siguiente) y la APK.
+- **22-09-2026:** unida a `main` junto con las fases 05 y 07, con el acuerdo del usuario. **Hito de uso diario: 22-09-2026, en la web** (desde el navegador de la PC y del celular). La APK pasa a la fase 09. Queda por comprobar con el uso: 3 cierres seguidos con el saldo y la racha correctos cada mañana (anotarlo en la Bitácora).
 
 ## Tareas
 
