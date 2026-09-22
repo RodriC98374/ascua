@@ -1,6 +1,7 @@
 import {
   buildYearStats,
   formatMonthYear,
+  strongHabitColor,
   type DateKey,
   type HabitRecord,
   type MonthKey,
@@ -18,6 +19,7 @@ import { colors } from '@/theme/colors';
 
 import { monthRate, yearPoints } from './chart-data';
 import { TouchLineChart } from './chart-parts';
+import { CategoryRadar } from './category-radar';
 import { HabitBars } from './habit-bars';
 import { PeriodSummary } from './period-summary';
 import { formatPercent, monthCaption, percentValue, plural } from './statistics-text';
@@ -115,6 +117,8 @@ export function YearView({
                   maxValue={100}
                   noOfSections={4}
                   yAxisLabelSuffix="%"
+                  color={selectedHabit && strongHabitColor(selectedHabit.color)}
+                  areaColor={selectedHabit?.color}
                   selectedIndex={points.findIndex((point) => point.monthKey === selectedMonthKey)}
                   onSelect={(index) => setSelectedMonthKey(points[index]?.monthKey ?? null)}
                   describePoint={(index) => {
@@ -156,6 +160,8 @@ export function YearView({
           </>
         )}
       </Card>
+
+      <CategoryRadar rows={stats.habits} />
 
       <HabitBars
         title="Cada hábito"

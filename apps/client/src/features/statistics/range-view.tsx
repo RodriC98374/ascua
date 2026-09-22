@@ -15,6 +15,7 @@ import { colors } from '@/theme/colors';
 
 import { DayDetail } from './day-detail';
 import { HabitBars } from './habit-bars';
+import { HabitDonut } from './habit-donut';
 import { HabitGrid } from './habit-grid';
 import { PeriodSummary } from './period-summary';
 import { StateLegend } from './state-legend';
@@ -135,6 +136,7 @@ function RangeContent({
       />
       {kind === 'week' ? (
         <>
+          <HabitDonut stats={stats} selectedHabitId={selectedHabitId} onSelectHabit={toggleHabit} />
           <Card className="gap-1">
             <Text className="font-heading text-heading-md text-ink">Cada día</Text>
             <Text className="font-body text-caption text-ink-muted">
