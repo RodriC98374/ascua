@@ -100,7 +100,7 @@ Decisiones de diseño derivadas (no requieren confirmación, pero no cambiarlas 
 | 05 | **hecha en web** | unida a `main` | Probada por el usuario en web. La parte de Android (APK, sincronización celular ↔ PC, sin conexión) pasa a la fase 09 |
 | 06 | **hecha en web** | unida a `main` | Tests y UI hechos; web publicada. Hito de uso diario: 22-09-2026, en la web. Queda comprobar 3 cierres reales seguidos; la APK pasa a la fase 09 |
 | 07 | **hecha** | unida a `main` | Aprobada por el usuario y publicada. El gasto con saldo real se verá con el uso |
-| 08 | **en curso** | `feat/08-statistics` | Semana, mes y año con grilla, gráficas y filtros. Falta: prueba del usuario. Datos de ejemplo para probar: `npm run seed:demo` |
+| 08 | **en curso** | `feat/08-statistics` → `feat/01-palette-categories` | Semana, mes y año con grilla, gráficas y filtros. Probada por el usuario, que pidió más color: paleta revisada (neutrales fríos, categorías y color por hábito en pastel) y se sumaron el donut de la semana y el radar por categoría del año. Falta: revisión final del usuario, `deploy:rules` + `deploy:web` y unir ambas ramas a `main` |
 | 09 | pendiente | — | Empieza con la primera APK y lo pendiente de Android de las fases 05 y 06 |
 | 10 | pendiente | — | — |
 
@@ -108,6 +108,23 @@ Decisiones de diseño derivadas (no requieren confirmación, pero no cambiarlas 
 
 Lo más reciente arriba. Una línea por sesión: fecha, máquina (oficina/casa), qué se hizo y qué queda a medias.
 
+- **22-09-2026 · oficina** — Probada la fase 08: al usuario no le gustó la paleta (muy naranja, poca
+  variedad de color). Rama nueva `feat/01-palette-categories` sobre `feat/08-statistics` (no
+  atados al mockup, con permiso del usuario). Primera vuelta: neutrales fríos (`surface`/`ink`/
+  `border`) y categoría + color por hábito (`packages/shared/src/habit-appearance.ts`, campo
+  `category` nuevo en `HabitRecord` y en `firestore.rules`); los hábitos existentes sin categoría
+  se completan solos al leerlos y al escribir (bug encontrado y cubierto con test: archivar o
+  reordenar un hábito antiguo quedaba denegado por la regla). Segunda vuelta, tras otra prueba del
+  usuario: colores pastel con un tono oscuro por color para los trazos finos
+  (`strongHabitColor`, ver `01-design-system.md` punto 3), y dos gráficas nuevas que habían
+  quedado pendientes: donut de reparto en la semana (`habit-donut.tsx`) y radar por categoría en
+  el año (`category-radar.tsx`, `buildCategoryStats` en `shared`, SVG a mano porque la librería no
+  trae radar). Revisado con Edge headless contra los emuladores y `npm run seed:demo`; typecheck,
+  lint y tests en verde (shared 164 al 100%, reglas 151, cliente 81). Corregido de paso: `npm.cmd`/
+  `npx.cmd` en PowerShell (ver CLAUDE.md) y basura de `expo start` corrido desde la raíz
+  (`tsconfig.json` suelto, `.expo/` sin ignorar). Queda: revisión final del usuario, publicar
+  reglas y web (en ese orden, si no la web vieja no puede editar hábitos) y unir las dos ramas a
+  `main`.
 - **22-09-2026 · oficina** — Fases 05, 06 y 07 unidas a `main` con el acuerdo del usuario (lo pendiente de Android pasa a la fase 09, que empieza con la primera APK) y web publicada con la fase 07. **Hito de uso diario: 22-09-2026, en la web.** Fase 08 en `feat/08-statistics`: periodos y estadísticas en `shared`, pestaña Mes con semana/mes/año, grilla, gráficas con toque propio y filtros. Datos de ejemplo para los emuladores (`npm run seed:demo`) y revisión en el navegador a 360 px y en escritorio. Queda: prueba del usuario.
 - **22-09-2026 · oficina** — Web publicada en Hosting (desde la rama de la 06). APK pospuesta por decisión del usuario (cupo mensual de EAS). Fase 07 en `feat/07-points-rewards`: operaciones de recompensas y gasto con tests (incluido doble toque), pantalla Recompensas, canje en hoja, historial. Queda: prueba del usuario en web y volver a publicar.
 

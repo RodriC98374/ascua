@@ -4,6 +4,9 @@ node_modules/
 # Build output (dist/ de la exportación web de Expo)
 dist/
 
+# Caché local de Expo
+.expo/
+
 # Firebase
 .firebase/
 firebase-debug.log*

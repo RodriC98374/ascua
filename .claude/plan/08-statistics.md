@@ -23,6 +23,16 @@
   `Chevron` y `Close`. Se borró `components/coming-soon.tsx`, que ya no usa nadie.
 - Revisado en el navegador a 360 px y en escritorio, con los datos de ejemplo de abajo: mes con
   día perfecto y día protegido, semana, año, meses anteriores y filtro por hábito.
+- **Al probarlo, el usuario pidió más color:** la app se veía monocromática. De ahí salió la
+  revisión de la paleta y las categorías por hábito, en la rama `feat/01-palette-categories`
+  (ver [01-design-system.md](01-design-system.md)). La grilla, las barras y la línea del año usan
+  ahora el color de cada hábito.
+- En la misma rama se sumaron dos gráficas que faltaban de la lista de ideas: **donut** de la
+  semana (`habit-donut.tsx`, `PieChart` de la librería) con el reparto de lo cumplido por hábito, y
+  **radar** por categoría en el año (`category-radar.tsx`). El radar va dibujado a mano con
+  `react-native-svg` porque `react-native-gifted-charts` no trae uno; su agregación es
+  `buildCategoryStats` en `shared`, que suma los días de cada categoría en vez de promediar los
+  porcentajes de sus hábitos.
 - Falta: prueba del usuario y verlo en Android (fase 09).
 
 ## Cómo probarlo con datos
