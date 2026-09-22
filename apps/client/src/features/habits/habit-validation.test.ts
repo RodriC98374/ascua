@@ -14,13 +14,20 @@ function habit(id: string, overrides: Partial<HabitRecord> = {}) {
     archivedDateKey: null,
     description: null,
     icon: 'check',
-    color: '#FF6B35',
+    color: '#9FCBAC',
+    category: 'health',
     sortOrder: 0,
     ...overrides,
   } satisfies HabitRecord;
 }
 
-const valid = { name: 'Leer 20 minutos', description: '', tier: 'secondary' as const };
+const valid = {
+  name: 'Leer 20 minutos',
+  description: '',
+  tier: 'secondary' as const,
+  category: 'health' as const,
+  color: '#9FCBAC' as const,
+};
 
 describe('validateHabit', () => {
   it('accepts a valid habit', () => {

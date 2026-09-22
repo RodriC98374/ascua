@@ -18,7 +18,7 @@ export function HabitActions({ habit }: { habit: HabitRecord }) {
   function archive() {
     setIsConfirmingArchive(false);
     // Sin esperar la escritura: sin conexión queda en cola.
-    trackWrite(archiveHabit(db, uid, habit.id));
+    trackWrite(archiveHabit(db, uid, habit));
   }
 
   return (

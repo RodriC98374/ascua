@@ -14,7 +14,8 @@ function habit(id: string, tier: HabitRecord['tier'], sortOrder: number, overrid
     archivedDateKey: null,
     description: null,
     icon: 'check',
-    color: '#FF6B35',
+    color: '#9FCBAC',
+    category: 'health',
     sortOrder,
     ...overrides,
   } satisfies HabitRecord;

@@ -2,6 +2,7 @@ import {
   formatLongDate,
   formatWeekdayInitial,
   monthWeekIndex,
+  strongHabitColor,
   type DateKey,
   type DayStats,
   type HabitDayStatus,
@@ -10,9 +11,6 @@ import {
 } from '@ascua/shared';
 import { useRef, type ReactNode } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
-
-import { CheckIcon } from '@/components/ui/icons';
-import { colors } from '@/theme/colors';
 
 import { DayDot } from './day-dot';
 import { DAY_STATUS_LABELS, formatPercent } from './statistics-text';
@@ -77,11 +75,18 @@ export function HabitGrid(props: HabitGridProps) {
               accessibilityLabel={`${row.habit.name}: ${formatPercent(row.completionRate)}`}
               onPress={() => onSelectHabit(row.habit.id)}
               style={{ height: ROW_HEIGHT }}
-              className={`justify-center rounded-l-sm pl-2 pr-2 ${isSelected ? 'bg-warning-soft' : index % 2 === 1 ? 'bg-surface-300' : ''}`}
+              className={`flex-row items-center gap-1.5 rounded-l-sm pl-2 pr-2 ${isSelected ? 'bg-warning-soft' : index % 2 === 1 ? 'bg-surface-300' : ''}`}
             >
+              <View
+                className="h-2.5 w-2.5 shrink-0 rounded-full border"
+                style={{
+                  backgroundColor: row.habit.color,
+                  borderColor: strongHabitColor(row.habit.color),
+                }}
+              />
               <Text
                 numberOfLines={1}
-                className={`text-caption ${row.habit.tier === 'primary' ? 'font-body-bold text-ink' : 'font-body text-ink-muted'}`}
+                className={`text-caption flex-1 ${row.habit.tier === 'primary' ? 'font-body-bold text-ink' : 'font-body text-ink-muted'}`}
               >
                 {row.habit.name}
               </Text>
@@ -205,6 +210,7 @@ function DayColumn({
         >
           <HabitMark
             status={day.habits[row.habit.id]}
+            color={row.habit.color}
             isDimmed={grid.selectedHabitId !== null && grid.selectedHabitId !== row.habit.id}
           />
         </View>
@@ -230,16 +236,22 @@ function DayColumn({
  */
 function HabitMark({
   status,
+  color,
   isDimmed,
 }: {
   status: HabitDayStatus | undefined;
+  color: string;
   isDimmed: boolean;
 }) {
   if (!status) return null;
   return (
     <View style={{ opacity: isDimmed ? 0.25 : 1 }}>
       {status === 'done' ? (
-        <CheckIcon size={14} color={colors.success} />
+        // Relleno pastel con aro oscuro: el pastel solo no se distingue del fondo blanco.
+        <View
+          className="h-3.5 w-3.5 rounded-full border-2"
+          style={{ backgroundColor: color, borderColor: strongHabitColor(color) }}
+        />
       ) : (
         <View className="border-ink-faint h-2 w-2 rounded-full border-[1.5px] opacity-50" />
       )}

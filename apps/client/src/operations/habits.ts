@@ -1,6 +1,13 @@
 // Hábitos: escrituras libres, validadas en forma por las reglas. No usan transacciones para que
 // funcionen sin conexión: la escritura queda en cola y se sincroniza al volver la red.
-import { todayDateKey, type DateKey, type HabitTier } from '@ascua/shared';
+import {
+  todayDateKey,
+  type DateKey,
+  type HabitCategory,
+  type HabitColor,
+  type HabitRecord,
+  type HabitTier,
+} from '@ascua/shared';
 import {
   doc,
   serverTimestamp,
@@ -12,19 +19,20 @@ import {
 
 import { habitRef, habitsCollection, newDocumentFields } from '../data/documents';
 
-/** El diseño aprobado no muestra ícono ni color por hábito: se guardan con valores fijos. */
+/** El ícono por hábito todavía no se elige en la interfaz: se guarda con un valor fijo. */
 export const DEFAULT_HABIT_ICON = 'check';
-export const DEFAULT_HABIT_COLOR = '#FF6B35';
 
 export interface HabitInput {
   name: string;
   description: string | null;
   tier: HabitTier;
+  category: HabitCategory;
+  color: HabitColor;
 }
 
-function clean({ name, description, tier }: HabitInput): HabitInput {
+function clean({ name, description, tier, category, color }: HabitInput): HabitInput {
   const trimmedDescription = description?.trim() ?? '';
-  return { name: name.trim(), description: trimmedDescription || null, tier };
+  return { name: name.trim(), description: trimmedDescription || null, tier, category, color };
 }
 
 /** Crea un hábito que cuenta desde hoy. Devuelve su ID al instante y la escritura en curso. */
@@ -39,7 +47,6 @@ export function createHabit(
   const write = setDoc(ref, {
     ...clean(input),
     icon: DEFAULT_HABIT_ICON,
-    color: DEFAULT_HABIT_COLOR,
     schedule: { type: 'daily' },
     status: 'active',
     sortOrder,
@@ -62,14 +69,24 @@ export function updateHabit(
   });
 }
 
+/**
+ * Los hábitos guardados antes de que existieran las categorías no traen `category` y las reglas
+ * la exigen en todo el documento, así que cualquier escritura la completa. El converter ya la
+ * rellenó al leerlos, de modo que aquí siempre hay un valor válido.
+ */
+function appearance(habit: HabitRecord): { category: HabitCategory; color: HabitColor } {
+  return { category: habit.category, color: habit.color };
+}
+
 /** Archivar: hoy es el último día en que cuenta. No se puede deshacer (ver data-model §3). */
 export function archiveHabit(
   db: Firestore,
   uid: string,
-  habitId: string,
+  habit: HabitRecord,
   today: DateKey = todayDateKey(),
 ): Promise<void> {
-  return updateDoc(habitRef(db, uid, habitId).withConverter(null), {
+  return updateDoc(habitRef(db, uid, habit.id).withConverter(null), {
+    ...appearance(habit),
     status: 'archived',
     archivedDateKey: today,
     updatedAt: serverTimestamp(),
@@ -81,10 +98,14 @@ export function reorderHabits(
   db: Firestore,
   uid: string,
   orderedHabitIds: string[],
+  habits: readonly HabitRecord[],
 ): Promise<void> {
   const batch = writeBatch(db);
   orderedHabitIds.forEach((habitId, index) => {
+    const habit = habits.find((candidate) => candidate.id === habitId);
+    if (!habit) return;
     batch.update(habitRef(db, uid, habitId).withConverter(null), {
+      ...appearance(habit),
       sortOrder: index,
       updatedAt: serverTimestamp(),
     });

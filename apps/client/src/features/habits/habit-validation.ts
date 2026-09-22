@@ -6,14 +6,19 @@ import {
   HABIT_NAME_MAX_LENGTH,
   HABIT_NAME_MIN_LENGTH,
   MAX_PRIMARY_HABITS,
+  type HabitCategory,
+  type HabitColor,
   type HabitRecord,
   type HabitTier,
 } from '@ascua/shared';
 
+// Categoría y color se eligen de una lista cerrada, así que no pueden traer un valor inválido.
 export interface HabitDraft {
   name: string;
   description: string;
   tier: HabitTier;
+  category: HabitCategory;
+  color: HabitColor;
 }
 
 export type HabitErrors = Partial<Record<keyof HabitDraft, string>>;

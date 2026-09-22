@@ -1,5 +1,6 @@
 // Referencias tipadas a los documentos de Firestore y los campos comunes de todo documento.
 // Sin imports con alias (`@/`): las operaciones se prueban también desde packages/firestore-rules.
+import { categoryOf, isHabitColor } from '@ascua/shared';
 import type {
   DailyEntries,
   DailyLog,
@@ -59,8 +60,21 @@ function domainConverter<T extends object>(): FirestoreDataConverter<T, Document
 export const userProfileConverter = domainConverter<UserProfile>();
 export const gamificationConverter = domainConverter<GamificationState>();
 
-// El ID del documento es el ID del hábito.
-export const habitConverter = withIdConverter<HabitRecord>();
+// El ID del documento es el ID del hábito. Los hábitos creados antes de que existieran las
+// categorías no traen `category` ni un `color` de la paleta: se les completa al leerlos.
+const baseHabitConverter = withIdConverter<HabitRecord>();
+export const habitConverter: FirestoreDataConverter<HabitRecord, DocumentData> = {
+  toFirestore: (data) => data as DocumentData,
+  fromFirestore: (snapshot, options) => {
+    const habit = baseHabitConverter.fromFirestore(snapshot, options);
+    const category = categoryOf(habit.category);
+    return {
+      ...habit,
+      category: category.id,
+      color: isHabitColor(habit.color) ? habit.color : category.color,
+    };
+  },
+};
 
 // Cada marca guarda también su updatedAt; el dominio solo necesita `completed`.
 const baseDailyLogConverter = domainConverter<DailyLog>();

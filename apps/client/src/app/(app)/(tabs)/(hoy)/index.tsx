@@ -60,7 +60,7 @@ export default function TodayScreen() {
   }
 
   function move(habitId: string, offset: MoveOffset) {
-    trackWrite(reorderHabits(db, uid, moveHabit(habits.data, habitId, offset)));
+    trackWrite(reorderHabits(db, uid, moveHabit(habits.data, habitId, offset), habits.data));
   }
 
   function row(habit: HabitRecord) {
@@ -91,6 +91,7 @@ export default function TodayScreen() {
         key={habit.id}
         name={habit.name}
         tier={habit.tier}
+        color={habit.color}
         isDone={summary.isDone(habit.id)}
         isArchived={isArchived}
         isToggleDisabled={isReordering}

@@ -79,9 +79,13 @@ interface TouchLineChartProps {
   onSelect: (index: number) => void;
   /** Texto del globo y de accesibilidad de cada punto. */
   describePoint: (index: number) => string;
+  /** Trazo de la línea; por defecto la brasa. Al filtrar por hábito, su tono oscuro. */
+  color?: string;
+  /** Relleno del área bajo la línea; por defecto el mismo trazo. */
+  areaColor?: string;
 }
 
-/** Línea con área en degradado de marca; tocar cerca de un punto lo elige y muestra su cifra. */
+/** Línea con área en degradado; tocar cerca de un punto lo elige y muestra su cifra. */
 export function TouchLineChart({
   points,
   maxValue,
@@ -90,6 +94,8 @@ export function TouchLineChart({
   selectedIndex,
   onSelect,
   describePoint,
+  color = colors.ember,
+  areaColor = color,
 }: TouchLineChartProps) {
   const [width, onLayout] = useLayoutWidth();
   const plotWidth = Math.max(0, width - Y_AXIS_WIDTH - 8);
@@ -122,30 +128,31 @@ export function TouchLineChart({
             maxValue={maxValue}
             noOfSections={noOfSections}
             yAxisLabelSuffix={yAxisLabelSuffix}
-            color={colors.ember}
+            color={color}
             thickness={3}
             areaChart
-            startFillColor={colors.ember}
-            endFillColor={colors.emberGlow}
-            startOpacity={0.28}
-            endOpacity={0.04}
-            dataPointsColor={colors.ember}
+            startFillColor={areaColor}
+            endFillColor={areaColor}
+            startOpacity={0.45}
+            endOpacity={0.06}
+            dataPointsColor={color}
             dataPointsRadius={2.5}
             focusedDataPointIndex={selectedIndex}
-            focusedDataPointColor={colors.emberStrong}
+            focusedDataPointColor={color}
             focusedDataPointRadius={5}
           />
           {selectedIndex >= 0 && (
             <>
               <View
                 pointerEvents="none"
-                className="bg-ember-strong absolute"
+                className="absolute"
                 style={{
                   left: xOf(selectedIndex) - 1,
                   top: TOOLTIP_HEIGHT,
                   width: 2,
                   height: CHART_HEIGHT,
                   opacity: 0.35,
+                  backgroundColor: color,
                 }}
               />
               <View

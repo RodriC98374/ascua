@@ -7,14 +7,16 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        'surface-100': '#FFF8F0',
-        'surface-200': '#FFFBF6',
-        'surface-300': '#FDEEDF',
-        border: '#F1DFCB',
-        ink: '#2B1B12',
-        'ink-muted': '#6E6153',
-        'ink-faint': '#8A7862',
-        'ink-on-fill': '#2B1B12',
+        // Neutrales fríos: la brasa es lo único cálido, así resalta y los colores de los
+        // hábitos no se apagan contra el fondo.
+        'surface-100': '#FFFFFF',
+        'surface-200': '#FAFAF9',
+        'surface-300': '#F1F0EE',
+        border: '#E0DEDA',
+        ink: '#1C1917',
+        'ink-muted': '#57534E',
+        'ink-faint': '#A8A29E',
+        'ink-on-fill': '#1C1917',
         ember: '#FF6B35',
         'ember-strong': '#C2410C',
         'ember-glow': '#FFB238',
@@ -35,8 +37,8 @@ module.exports = {
         'protegido-fill': '#0369A1',
         'on-protegido': '#FFFFFF',
         'protegido-soft': '#DBEEFC',
-        vacio: '#8A7862',
-        'vacio-soft': '#FDEEDF',
+        vacio: '#A8A29E',
+        'vacio-soft': '#F1F0EE',
         'week-morado': '#7C3AED',
         'week-morado-soft': '#EEE7FD',
         'week-azul': '#2563EB',

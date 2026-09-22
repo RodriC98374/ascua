@@ -1,14 +1,15 @@
-import type { HabitTier } from '@ascua/shared';
-import { LinearGradient } from 'expo-linear-gradient';
+import { strongHabitColor, type HabitTier } from '@ascua/shared';
 import type { ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import { CheckIcon } from '@/components/ui/icons';
-import { colors, emberGradient } from '@/theme/colors';
+import { colors } from '@/theme/colors';
 
 interface HabitCheckProps {
   name: string;
   tier: HabitTier;
+  /** Color del hábito: pinta la casilla marcada. */
+  color: string;
   isDone: boolean;
   /** Archivado hoy: todavía cuenta, pero es su último día. */
   isArchived?: boolean;
@@ -27,6 +28,7 @@ interface HabitCheckProps {
 export function HabitCheck({
   name,
   tier,
+  color,
   isDone,
   isArchived = false,
   isToggleDisabled = false,
@@ -57,7 +59,7 @@ export function HabitCheck({
         onPress={onToggle}
         className={`min-h-11 flex-1 flex-row items-center gap-3 py-2 ${isToggleDisabled ? '' : 'active:opacity-85'}`}
       >
-        <Checkbox isDone={isDone} size={isPrimary ? 28 : 24} />
+        <Checkbox isDone={isDone} size={isPrimary ? 28 : 24} color={color} />
         <Text
           className={`flex-1 ${isPrimary ? 'font-heading text-heading-sm text-ink' : 'font-body text-body text-ink-muted'}`}
         >
@@ -78,19 +80,25 @@ export function HabitCheck({
   );
 }
 
-function Checkbox({ isDone, size }: { isDone: boolean; size: number }) {
+// Marcada: relleno pastel con borde y check del tono oscuro del mismo color.
+function Checkbox({ isDone, size, color }: { isDone: boolean; size: number; color: string }) {
   const box = { width: size, height: size, borderRadius: 8 };
   if (!isDone) {
     return <View className="border-border bg-surface-300 border-[1.5px]" style={box} />;
   }
+  const strong = strongHabitColor(color);
   return (
-    <LinearGradient
-      colors={emberGradient}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={{ ...box, alignItems: 'center', justifyContent: 'center' }}
+    <View
+      style={{
+        ...box,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: color,
+        borderWidth: 2,
+        borderColor: strong,
+      }}
     >
-      <CheckIcon size={size / 2} color={colors.inkOnFill} />
-    </LinearGradient>
+      <CheckIcon size={size / 2} color={strong} />
+    </View>
   );
 }

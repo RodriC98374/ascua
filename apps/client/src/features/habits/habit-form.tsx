@@ -1,8 +1,12 @@
 import {
   canBePrimary,
+  categoryOf,
+  HABIT_CATEGORIES,
+  HABIT_COLORS,
   HABIT_DESCRIPTION_MAX_LENGTH,
   HABIT_NAME_MAX_LENGTH,
   MAX_PRIMARY_HABITS,
+  type HabitCategory,
   type HabitRecord,
   type HabitTier,
 } from '@ascua/shared';
@@ -33,6 +37,8 @@ export function HabitForm({ habits, habit, onSubmit }: HabitFormProps) {
     name: habit?.name ?? '',
     description: habit?.description ?? '',
     tier: habit?.tier ?? (isPrimaryAllowed ? 'primary' : 'secondary'),
+    category: habit?.category ?? 'health',
+    color: habit?.color ?? categoryOf('health').color,
   });
   // Los errores de un campo se muestran después de salir de él o de intentar guardar.
   const [touched, setTouched] = useState<Partial<Record<keyof HabitDraft, boolean>>>({});
@@ -44,6 +50,11 @@ export function HabitForm({ habits, habit, onSubmit }: HabitFormProps) {
 
   function update<Field extends keyof HabitDraft>(field: Field, value: HabitDraft[Field]) {
     setDraft((current) => ({ ...current, [field]: value }));
+  }
+
+  // La categoría propone su color; si no gusta, se cambia después en la paleta.
+  function selectCategory(category: HabitCategory) {
+    setDraft((current) => ({ ...current, category, color: categoryOf(category).color }));
   }
 
   function handleSubmit() {
@@ -120,6 +131,60 @@ export function HabitForm({ habits, habit, onSubmit }: HabitFormProps) {
             </Text>
           )
         )}
+      </View>
+
+      <View className="gap-2">
+        <Text className="font-body-bold text-caption text-ink-muted">Categoría</Text>
+        <View accessibilityRole="radiogroup" className="flex-row flex-wrap gap-2">
+          {HABIT_CATEGORIES.map((option) => {
+            const isSelected = option.id === draft.category;
+            return (
+              <Pressable
+                key={option.id}
+                accessibilityRole="radio"
+                accessibilityState={{ checked: isSelected }}
+                onPress={() => selectCategory(option.id)}
+                className={`min-h-11 flex-row items-center gap-2 rounded-full border-2 px-3 ${isSelected ? 'border-ink bg-surface-300' : 'border-border bg-surface-200 active:opacity-85'}`}
+              >
+                <View className="h-3 w-3 rounded-full" style={{ backgroundColor: option.color }} />
+                <Text
+                  className={`font-body-extrabold text-button ${isSelected ? 'text-ink' : 'text-ink-muted'}`}
+                >
+                  {option.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      </View>
+
+      <View className="gap-2">
+        <Text className="font-body-bold text-caption text-ink-muted">Color</Text>
+        {/* Cuatro por fila: los ocho colores caben en dos filas parejas a 360 px. */}
+        <View accessibilityRole="radiogroup" className="flex-row flex-wrap">
+          {HABIT_COLORS.map((color) => {
+            const isSelected = color === draft.color;
+            return (
+              <Pressable
+                key={color}
+                accessibilityRole="radio"
+                accessibilityLabel={`Color ${color}`}
+                accessibilityState={{ checked: isSelected }}
+                onPress={() => update('color', color)}
+                className="h-12 w-1/4 items-center justify-center active:opacity-85"
+              >
+                <View
+                  className={`h-10 w-10 items-center justify-center rounded-full border-2 ${isSelected ? 'border-ink' : 'border-transparent'}`}
+                >
+                  <View className="h-7 w-7 rounded-full" style={{ backgroundColor: color }} />
+                </View>
+              </Pressable>
+            );
+          })}
+        </View>
+        <Text className="font-body-semibold text-caption text-ink-muted">
+          Lo propone la categoría. Cámbialo si quieres.
+        </Text>
       </View>
 
       <View className="gap-2">

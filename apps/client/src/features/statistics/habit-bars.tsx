@@ -1,4 +1,4 @@
-import type { HabitPeriodStats, HabitRecord } from '@ascua/shared';
+import { strongHabitColor, type HabitPeriodStats, type HabitRecord } from '@ascua/shared';
 import { Pressable, Text, View } from 'react-native';
 
 import { Card } from '@/components/ui/card';
@@ -37,7 +37,14 @@ export function HabitBars({
               onPress={() => onSelectHabit(row.habit.id)}
               className={`-mx-2 gap-1.5 rounded-md px-2 py-2 ${isSelected ? 'bg-warning-soft' : 'active:bg-surface-300'}`}
             >
-              <View className="flex-row items-baseline justify-between gap-3">
+              <View className="flex-row items-center justify-between gap-3">
+                <View
+                  className="h-2.5 w-2.5 rounded-full border"
+                  style={{
+                    backgroundColor: row.habit.color,
+                    borderColor: strongHabitColor(row.habit.color),
+                  }}
+                />
                 <Text numberOfLines={1} className="font-body-semibold text-body text-ink flex-1">
                   {row.habit.name}
                 </Text>
@@ -45,7 +52,7 @@ export function HabitBars({
                   {formatPercent(row.completionRate)}
                 </Text>
               </View>
-              <ProgressBar value={percentValue(row.completionRate)} tone="success" />
+              <ProgressBar value={percentValue(row.completionRate)} color={row.habit.color} />
               <Text className="font-body text-caption text-ink-muted">{habitCaption(row)}</Text>
             </Pressable>
           );
