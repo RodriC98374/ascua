@@ -7,6 +7,7 @@
     "public": "apps/client/dist",
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
     "cleanUrls": true,
+    "rewrites": [{ "source": "/habits/*", "destination": "/habits/[habitId].html" }],
     "headers": [
       {
         "source": "/_expo/static/**",

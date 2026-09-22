@@ -7,7 +7,9 @@
 - `shared`: `addClosedDay` / `addMonthlySpending` / `EMPTY_MONTHLY_COUNTERS` y tipos `MonthlyCounters` / `MonthlySummary` (antes vivían duplicados en los fixtures de test).
 - `operations/close-pending-days.ts` con 9 tests contra el emulador (todos los de abajo + reloj adelantado). **Hallazgo:** con dos dispositivos a la vez, el segundo no recibe un conflicto que el SDK reintente, sino `permission-denied` (sus movimientos ya existen y `lastClosedDateKey` avanzó). La operación lo distingue de un rechazo real releyendo el estado en el servidor y sigue con el día siguiente.
 - `features/close-day/`: `useClosePendingDays` (cierra cuando `lastClosedDateKey + 1 < hoy`, hay red —`expo-network`— y no está bloqueado; también al volver a primer plano), `DayClosingBanner` ("Actualizando tus días…", resultado con puntos, racha y protectores, o error con "Reintentar") y `closing-summary.ts` (textos, con tests). Primitiva nueva `components/ui/notice-bar.tsx`, que usa también el aviso de escrituras rechazadas.
-- Falta: probarlo en uso real (al abrir la app al día siguiente) y lo del celular, APK y deploy de la Definición de terminado.
+- **Primer deploy web (22-09-2026):** https://ascua-a9e27.web.app, desde `feat/06-close-day`. `firebase.json` suma una reescritura para `/habits/*` (la ruta dinámica de editar hábito en la exportación estática). Reglas sin cambios desde la fase 03.
+- **APK pospuesta por decisión del usuario:** el plan gratis de EAS tiene un cupo mensual de builds; se hará cuando la app esté más madura. Mientras tanto, el uso diario es por la web (también desde el navegador del celular).
+- Falta: probarlo en uso real (al abrir la app al día siguiente) y la APK.
 
 ## Tareas
 
