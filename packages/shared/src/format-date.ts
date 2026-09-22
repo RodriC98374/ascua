@@ -1,4 +1,4 @@
-import type { DateKey } from '@ascua/shared';
+import type { DateKey } from './types';
 
 // Nombres propios en vez de Intl: el soporte de locales en Android (Hermes) no es uniforme.
 const WEEKDAYS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];

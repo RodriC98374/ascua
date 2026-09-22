@@ -10,8 +10,8 @@ import {
   STRANGER,
   strangerDb,
   useRulesTestEnvironment,
-} from './support/env';
-import { habitDoc, paths, profileDoc, seedDocs } from './support/fixtures';
+} from '../support/env';
+import { habitDoc, paths, profileDoc, seedDocs } from '../support/fixtures';
 
 useRulesTestEnvironment();
 

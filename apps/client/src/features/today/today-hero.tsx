@@ -2,7 +2,7 @@
 import { MAX_STREAK_FREEZES } from '@ascua/shared';
 import { Text, View } from 'react-native';
 
-import { StreakHearth } from '@/components/streak-hearth';
+import { StreakHearth } from '@/features/today/streak-hearth';
 import { CheckIcon, ShieldIcon } from '@/components/ui/icons';
 import type { TodaySummary } from '@/features/today/today-summary';
 import { colors } from '@/theme/colors';

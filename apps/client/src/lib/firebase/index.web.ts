@@ -8,7 +8,7 @@ import {
   persistentMultipleTabManager,
 } from 'firebase/firestore';
 
-import { emulatorConfig, firebaseConfig } from '@/config/firebase';
+import { emulatorConfig, firebaseConfig } from '@/lib/firebase/config';
 
 export const app = initializeApp(firebaseConfig);
 

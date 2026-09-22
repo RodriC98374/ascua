@@ -36,7 +36,9 @@ Cuentas del usuario (no son intercambiables; los correos no se escriben en el re
 Monorepo con npm workspaces:
 - `apps/client`: Expo + TypeScript, Expo Router, NativeWind, React Native Web. APK con EAS Build (sin Play Store) y web en Firebase Hosting.
 - `packages/shared`: tipos, constantes de negocio, helper de fechas de Bolivia y lógica pura (cierre del día, rachas, recordatorios).
-- `packages/firestore-rules`: tests de `firestore.rules` (en la raíz) contra el emulador.
+- `packages/firestore-rules`: todo lo que se prueba contra el emulador de Firestore: `src/rules/` (tests de `firestore.rules`, que está en la raíz) y `src/operations/` (las operaciones de la app con las reglas reales).
+
+Mapa de carpetas de `apps/client/src`: [.claude/rules/frontend.md](.claude/rules/frontend.md).
 
 Firebase en plan **Spark**: Firestore (`southamerica-east1`), Auth por email y Hosting. **Sin Cloud Functions ni servidores**: la app ejecuta las operaciones y `firestore.rules` las valida. Node 22.
 
@@ -66,8 +68,8 @@ Cobertura de `shared` (mínimo 95%, hoy 100%): `npm run test:coverage -w @ascua/
 
 Un solo test:
 - `shared`: `npm test -w @ascua/shared -- src/day-evaluation.test.ts` o `-- -t "nombre del test"`.
-- `client`: `npm test -w @ascua/client -- src/config/firebase.test.ts` o `-- -t "nombre del test"`.
-- Reglas (levanta el emulador con el proyecto `demo-ascua`): `npm test -w @ascua/firestore-rules`. Para un solo archivo, desde `packages/firestore-rules`: `npx firebase emulators:exec --only firestore --project demo-ascua "npx vitest run src/close-day.test.ts"`.
+- `client`: `npm test -w @ascua/client -- src/lib/firebase/config.test.ts` o `-- -t "nombre del test"`.
+- Reglas y operaciones (levanta el emulador con el proyecto `demo-ascua`): `npm test -w @ascua/firestore-rules`. Para un solo archivo, desde `packages/firestore-rules`: `npx firebase emulators:exec --only firestore --project demo-ascua "npx vitest run src/rules/close-day.test.ts"`.
 
 `firestore.rules` tiene dos marcadores que usan los tests: la lista de `allowedUids()` (la reemplazan por usuarios de prueba) y `// ascua:test-probes`. No quitarlos.
 

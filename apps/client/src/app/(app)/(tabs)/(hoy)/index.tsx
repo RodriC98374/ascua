@@ -1,21 +1,21 @@
-import type { HabitRecord } from '@ascua/shared';
+import { formatLongDate, type HabitRecord } from '@ascua/shared';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useState, type ReactNode } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 
-import { HabitActions } from '@/components/habit-actions';
-import { HabitCheck } from '@/components/habit-check';
-import { TodayHero } from '@/components/today-hero';
+import { HabitActions } from '@/features/habits/habit-actions';
+import { HabitCheck } from '@/features/today/habit-check';
+import { TodayHero } from '@/features/today/today-hero';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ArrowIcon, CloudIcon, PlusIcon, StarIcon } from '@/components/ui/icons';
 import { Screen } from '@/components/ui/screen';
 import { useUid } from '@/features/auth/session';
-import { useDailyLog, useGamificationState, useHabits } from '@/features/data/hooks';
+import { useDailyLog, useGamificationState, useHabits } from '@/data/hooks';
 import { canMove, moveHabit, type MoveOffset } from '@/features/habits/habit-order';
 import { trackWrite } from '@/features/sync/write-errors';
-import { formatLongDate } from '@/features/today/format-date';
+
 import { buildTodaySummary, type TodaySummary } from '@/features/today/today-summary';
 import { useToday } from '@/features/today/use-today';
 import { db } from '@/lib/firebase';

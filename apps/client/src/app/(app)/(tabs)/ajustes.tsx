@@ -1,11 +1,11 @@
+import { formatLongDate } from '@ascua/shared';
 import { Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Screen } from '@/components/ui/screen';
 import { signOut, useSession, useUid } from '@/features/auth/session';
-import { useHabits } from '@/features/data/hooks';
-import { formatLongDate } from '@/features/today/format-date';
+import { useHabits } from '@/data/hooks';
 
 /** Preferencias y cuenta. Los hábitos se crean, editan y ordenan desde Hoy. */
 export default function SettingsScreen() {

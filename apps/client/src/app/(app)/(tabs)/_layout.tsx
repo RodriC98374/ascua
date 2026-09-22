@@ -3,7 +3,7 @@ import { useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { renderNavBar } from '@/components/nav-bar';
-import { WriteErrorBanner } from '@/components/write-error-banner';
+import { WriteErrorBanner } from '@/features/sync/write-error-banner';
 
 /** Ancho desde el que la navegación pasa a ser una columna a la izquierda (sistema de diseño). */
 const WIDE_LAYOUT_MIN_WIDTH = 768;

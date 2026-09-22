@@ -3,7 +3,7 @@ import { assertFails, assertSucceeds } from '@firebase/rules-unit-testing';
 import { serverTimestamp } from 'firebase/firestore';
 import { describe, expect, it } from 'vitest';
 
-import { ownerDb, useRulesTestEnvironment } from './support/env';
+import { ownerDb, useRulesTestEnvironment } from '../support/env';
 import {
   commit,
   created,
@@ -22,7 +22,7 @@ import {
   without,
   YESTERDAY,
   type CloseInput,
-} from './support/fixtures';
+} from '../support/fixtures';
 
 useRulesTestEnvironment();
 

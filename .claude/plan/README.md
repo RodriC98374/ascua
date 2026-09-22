@@ -74,7 +74,7 @@ Decisiones de diseño derivadas (no requieren confirmación, pero no cambiarlas 
 | E10 | `meta/gamification.lastSpendTransactionId`: ID del movimiento del último gasto | Las reglas exigen que cada descuento del saldo tenga su movimiento nuevo en el historial |
 | E11 | Un hábito archivado **no se reactiva** (se crea uno nuevo) y un hábito nuevo empieza hoy o después | Ambos cambiarían el resultado de días pasados todavía sin cerrar |
 | E12 | Tests de reglas en `packages/firestore-rules`, con las escrituras generadas por `evaluateDay` real | Prueban que lo que calcula la app pasa las reglas. Las funciones de fecha de las reglas se prueban con sondas, porque el emulador no permite fijar `request.time` |
-| E13 | Las operaciones de la app (`src/operations/`) y `src/data/` usan solo imports relativos y se prueban contra el emulador desde `packages/firestore-rules/src/operations/` | Un solo lugar con emulador y reglas reales; Jest en la app queda para lógica de UI sin Firebase |
+| E13 | Las operaciones de la app (`src/operations/`) y `src/data/documents.ts` usan solo imports relativos y se prueban contra el emulador desde `packages/firestore-rules/src/operations/` | Un solo lugar con emulador y reglas reales; Jest en la app queda para lógica de UI sin Firebase |
 
 ## Alcance
 
@@ -96,12 +96,14 @@ Decisiones de diseño derivadas (no requieren confirmación, pero no cambiarlas 
 | 02 | **hecha** | unida a `main` | 63 tests, cobertura 100%. Converters movidos a la app |
 | 03 | **hecha** | unida a `main` | 110 tests de reglas, verificadas con mutaciones. Desplegadas en `ascua-a9e27` con el uid real en `allowedUids()` |
 | 04 | **hecha** | unida a `main` | Probada por el usuario en web: login, error de credenciales, sesión persistente, cuenta creada en Firestore y correo de recuperación. Prueba en el celular junto con la fase 05 |
-| 05 | **en curso** | `feat/05-habits-today` | Lógica y operaciones probadas; UI escrita sin verificar. Retomar por "Dónde quedé" en `05-habits-today.md` |
+| 05 | **en curso** | `feat/05-habits-today` | Web probada por el usuario (hábitos, Hoy rediseñada, validaciones). Falta: Expo Go en el celular y sincronización celular ↔ PC (en casa) |
 | 06–10 | pendiente | — | — |
 
 ## Bitácora
 
 Lo más reciente arriba. Una línea por sesión: fecha, máquina (oficina/casa), qué se hizo y qué queda a medias.
+
+- **22-09-2026 · oficina** — Fase 05: typecheck arreglado, observaciones del usuario resueltas (navegación lateral, "+" flotante, menú ⋮ con modal de archivar, reordenar en Hoy, formularios con navegación visible, validaciones) y pasada de diseño de Hoy (brasero). Probado por el usuario en web. Proyecto reordenado por dominio (mapa en `rules/frontend.md`). Queda de la fase: probar en el celular con Expo Go y la sincronización celular ↔ PC, en casa.
 
 - **21-09-2026 · oficina** — Fase 05 empezada en `feat/05-habits-today` (commit de trabajo en curso). Decisiones D16 (4 pestañas) y D17 (oscuro en fase 10). Hecho y probado: lógica de `shared`, operaciones de hábitos y marcas contra el emulador, resumen de Hoy. Escrito sin verificar: hooks, componentes del diseño, pestañas, Hoy, Ajustes y formularios. A medias: el typecheck falla por rutas tipadas desactualizadas; ver "Dónde quedé" en `05-habits-today.md`.
 - **21-09-2026 · oficina** — Fase 04 en `feat/04-auth-account`: login, recuperación de contraseña, rutas protegidas, `initializeAccount` (6 tests contra el emulador), tokens claros y fuentes del diseño. `shared` suma `initialUserProfile` y `DEFAULT_REMINDER_SETTINGS`. Probada por el usuario en web (5/5) y unida a `main`. Siguiente: fase 05 (hábitos y pantalla "Hoy"), que empieza probando Expo Go en el celular desde casa.

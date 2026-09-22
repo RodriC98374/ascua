@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { emulatorConfig, firebaseConfig } from './firebase';
+import { emulatorConfig, firebaseConfig } from './config';
 
 describe('firebase config', () => {
   it('points to the ascua project', () => {

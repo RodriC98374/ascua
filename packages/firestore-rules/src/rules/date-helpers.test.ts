@@ -11,8 +11,8 @@ import { assertFails, assertSucceeds } from '@firebase/rules-unit-testing';
 import { doc, getDoc, Timestamp, type DocumentData } from 'firebase/firestore';
 import { describe, it } from 'vitest';
 
-import { ownerDb, useRulesTestEnvironment } from './support/env';
-import { seedDocs } from './support/fixtures';
+import { ownerDb, useRulesTestEnvironment } from '../support/env';
+import { seedDocs } from '../support/fixtures';
 
 useRulesTestEnvironment();
 

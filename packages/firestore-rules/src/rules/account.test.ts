@@ -3,8 +3,8 @@ import { assertFails, assertSucceeds } from '@firebase/rules-unit-testing';
 import { deleteDoc, doc, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
 import { describe, it } from 'vitest';
 
-import { ownerDb, useRulesTestEnvironment } from './support/env';
-import { gamificationDoc, paths, seedState, TODAY, TWO_DAYS_AGO } from './support/fixtures';
+import { ownerDb, useRulesTestEnvironment } from '../support/env';
+import { gamificationDoc, paths, seedState, TODAY, TWO_DAYS_AGO } from '../support/fixtures';
 
 useRulesTestEnvironment();
 

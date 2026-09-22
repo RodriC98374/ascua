@@ -2,7 +2,7 @@ import { initialGamificationState, toMonthKey, type GamificationState } from '@a
 import { assertFails, assertSucceeds } from '@firebase/rules-unit-testing';
 import { describe, it } from 'vitest';
 
-import { ownerDb, useRulesTestEnvironment } from './support/env';
+import { ownerDb, useRulesTestEnvironment } from '../support/env';
 import {
   ANIME,
   commit,
@@ -17,7 +17,7 @@ import {
   tamper,
   TODAY,
   without,
-} from './support/fixtures';
+} from '../support/fixtures';
 
 useRulesTestEnvironment();
 

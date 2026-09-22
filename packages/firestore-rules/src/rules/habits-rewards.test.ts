@@ -2,7 +2,7 @@ import { assertFails, assertSucceeds } from '@firebase/rules-unit-testing';
 import { deleteDoc, doc, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
 import { beforeEach, describe, it } from 'vitest';
 
-import { ownerDb, useRulesTestEnvironment } from './support/env';
+import { ownerDb, useRulesTestEnvironment } from '../support/env';
 import {
   habitDoc,
   paths,
@@ -11,7 +11,7 @@ import {
   TODAY,
   TOMORROW,
   YESTERDAY,
-} from './support/fixtures';
+} from '../support/fixtures';
 
 useRulesTestEnvironment();
 

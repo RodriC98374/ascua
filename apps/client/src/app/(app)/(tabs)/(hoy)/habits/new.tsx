@@ -1,11 +1,11 @@
 import { router } from 'expo-router';
 import { View } from 'react-native';
 
-import { HabitForm } from '@/components/habit-form';
-import { ScreenHeader } from '@/components/screen-header';
+import { HabitForm } from '@/features/habits/habit-form';
+import { ScreenHeader } from '@/components/ui/screen-header';
 import { Screen } from '@/components/ui/screen';
 import { useUid } from '@/features/auth/session';
-import { useHabits } from '@/features/data/hooks';
+import { useHabits } from '@/data/hooks';
 import { trackWrite } from '@/features/sync/write-errors';
 import { db } from '@/lib/firebase';
 import { createHabit, type HabitInput } from '@/operations/habits';

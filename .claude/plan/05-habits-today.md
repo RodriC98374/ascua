@@ -53,8 +53,9 @@ Decisiones de esta sesión: **D16** navegación de 4 pestañas (Hoy / Mes / Reco
 - Rutas: Hoy y los formularios viven en `app/(app)/(tabs)/(hoy)/` con su propio `Stack`, así la navegación no desaparece al crear o editar.
 - Diseño: la tarjeta de progreso y el bloque de racha/saldo se reemplazan por `TodayHero`, con el **brasero** (`StreakHearth`), un anillo con un segmento por hábito principal que se enciende al cumplirlo, la racha y una franja con puntos de hoy, saldo y protectores. Principales en fichas propias; secundarios como filas dentro de una tarjeta. El desglose de puntos pasa a una frase al final.
 
-**Dónde quedé (primer paso de la próxima sesión):**
-1. Que el usuario pruebe en la web todo lo de arriba (ventana angosta y ancha): brasero, "+", menú ⋮, modal de archivar, ordenar, formularios con la navegación visible y mensajes de error.
+**22-09-2026, probado por el usuario en web:** todo lo anterior funciona. Después se reordenó el proyecto (mapa en `.claude/rules/frontend.md`): componentes de dominio a `features/<dominio>/`, hooks de lectura a `data/`, Firebase a `lib/firebase/`, `formatLongDate` a `shared`, tests de reglas a `packages/firestore-rules/src/rules/`; se borró `components/gamification.tsx` (sin uso). Las rutas de archivos citadas arriba son las de antes de ese cambio.
+
+**Falta de la fase** (sigue abajo): Expo Go en el celular y sincronización celular ↔ PC.
 
 **Falta de la fase:**
 - Expo Go en el celular (en casa) y confirmar que todo se ve bien en Android (sombras con `elevation`, fuentes, degradados).

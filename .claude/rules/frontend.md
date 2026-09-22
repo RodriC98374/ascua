@@ -5,6 +5,24 @@ paths:
 
 # App (Expo: Android + web)
 
+## Dónde va cada cosa en `apps/client/src`
+
+| Carpeta | Contenido | Regla |
+|---|---|---|
+| `app/` | Solo rutas de Expo Router (pantallas y `_layout.tsx`) | Nada que no sea ruta: todo archivo aquí es una pantalla. Las pantallas componen; la lógica va en `features/` |
+| `components/ui/` | Primitivas del sistema de diseño (botón, tarjeta, íconos, campos, modal, menú, `Screen`) | No conocen Firestore ni el dominio |
+| `components/` | Piezas de la app que no son de un dominio (`nav-bar`, `coming-soon`) | — |
+| `features/<dominio>/` | Todo lo de un dominio: componentes, hooks y lógica de UI con sus tests (`auth`, `habits`, `today`, `sync`…) | Una funcionalidad nueva = una carpeta nueva aquí |
+| `data/` | Lectura de Firestore: referencias y converters (`documents.ts`) y hooks sobre `onSnapshot` | `documents.ts` solo con imports relativos (E13) |
+| `operations/` | Escrituras y transacciones | Solo imports relativos; tests en `packages/firestore-rules/src/operations/` (E13) |
+| `lib/firebase/` | Configuración e inicialización de Firebase (`index.ts` Android, `index.web.ts` web) | — |
+| `theme/` | Colores y fuentes para props que no aceptan clases | Mismos valores que `tailwind.config.js` |
+| `types/` | Declaraciones `.d.ts` de librerías | — |
+
+Lo que sea lógica pura sin React ni Firebase (fechas, formato de fechas, reglas de negocio) va en `packages/shared`, no aquí.
+
+## Reglas
+
 - Stack: Expo + TypeScript, Expo Router, NativeWind, React Native Web. La librería de gráficas se elige en la fase 00 (debe funcionar en Android y web).
 - **Un solo código para ambas plataformas.** Nada de elementos del DOM (`div`, `span`) ni APIs exclusivas del navegador: se usan componentes de React Native. Si algo es exclusivo de una plataforma, se aísla con `Platform.OS` o archivos `.android.tsx` / `.web.tsx`.
 - Firebase con el SDK JavaScript modular y hooks propios sobre `onSnapshot` (`useDailyLog`, `useHabits`…). No usar `reactfire` ni `@react-native-firebase`.

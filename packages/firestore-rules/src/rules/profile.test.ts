@@ -2,8 +2,8 @@ import { assertFails, assertSucceeds } from '@firebase/rules-unit-testing';
 import { deleteDoc, doc, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
 import { beforeEach, describe, it } from 'vitest';
 
-import { ownerDb, useRulesTestEnvironment } from './support/env';
-import { paths, profileDoc, seedDocs } from './support/fixtures';
+import { ownerDb, useRulesTestEnvironment } from '../support/env';
+import { paths, profileDoc, seedDocs } from '../support/fixtures';
 
 useRulesTestEnvironment();
 
