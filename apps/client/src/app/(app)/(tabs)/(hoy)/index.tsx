@@ -9,13 +9,13 @@ import { HabitCheck } from '@/features/today/habit-check';
 import { TodayHero } from '@/features/today/today-hero';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ArrowIcon, CloudIcon, PlusIcon, StarIcon } from '@/components/ui/icons';
+import { Fab } from '@/components/ui/fab';
+import { ArrowIcon, CloudIcon, StarIcon } from '@/components/ui/icons';
 import { Screen } from '@/components/ui/screen';
 import { useUid } from '@/features/auth/session';
 import { useDailyLog, useGamificationState, useHabits } from '@/data/hooks';
 import { canMove, moveHabit, type MoveOffset } from '@/features/habits/habit-order';
 import { trackWrite } from '@/features/sync/write-errors';
-
 import { buildTodaySummary, type TodaySummary } from '@/features/today/today-summary';
 import { useToday } from '@/features/today/use-today';
 import { db } from '@/lib/firebase';
@@ -166,7 +166,7 @@ export default function TodayScreen() {
           <View className="h-16" />
         </View>
       </Screen>
-      {!isReordering && <AddHabitFab />}
+      {!isReordering && <Fab label="Crear hábito" onPress={() => router.push('/habits/new')} />}
     </View>
   );
 }
@@ -217,47 +217,6 @@ function MoveButton({
     >
       <ArrowIcon direction={direction} size={18} color={colors.emberStrong} />
     </Pressable>
-  );
-}
-
-/** Botón flotante para crear un hábito, alineado a la columna de contenido. */
-function AddHabitFab() {
-  return (
-    <View
-      pointerEvents="box-none"
-      style={{ position: 'absolute', left: 0, right: 0, bottom: 20, alignItems: 'center' }}
-    >
-      <View pointerEvents="box-none" className="w-full max-w-[480px] items-end px-4">
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Crear hábito"
-          onPress={() => router.push('/habits/new')}
-          className="rounded-full active:opacity-85"
-          style={{
-            shadowColor: colors.ember,
-            shadowOffset: { width: 0, height: 12 },
-            shadowOpacity: 0.35,
-            shadowRadius: 20,
-            elevation: 8,
-          }}
-        >
-          <LinearGradient
-            colors={emberGradient}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={{
-              width: 56,
-              height: 56,
-              borderRadius: 28,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <PlusIcon size={26} color={colors.inkOnFill} />
-          </LinearGradient>
-        </Pressable>
-      </View>
-    </View>
   );
 }
 

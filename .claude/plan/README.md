@@ -7,7 +7,8 @@
 - **Reglas para Claude:** [../rules/](../rules/)
 - **Repositorio:** https://github.com/RodriC98374/ascua
 - **Proyecto Firebase:** `ascua-a9e27` (plan Spark, Firestore en `southamerica-east1`)
-- **Estado:** fase 00 sin empezar. Documentación y plan listos; arquitectura sin servidor aprobada.
+- **Estado:** ver la tabla [Estado](#estado) y la [Bitácora](#bitácora).
+- **Web publicada:** https://ascua-a9e27.web.app
 
 ## Arquitectura en una frase
 
@@ -98,11 +99,14 @@ Decisiones de diseño derivadas (no requieren confirmación, pero no cambiarlas 
 | 04 | **hecha** | unida a `main` | Probada por el usuario en web: login, error de credenciales, sesión persistente, cuenta creada en Firestore y correo de recuperación. Prueba en el celular junto con la fase 05 |
 | 05 | **en curso** | `feat/05-habits-today` | Web probada por el usuario (hábitos, Hoy rediseñada, validaciones). Falta: Expo Go en el celular y sincronización celular ↔ PC (en casa) |
 | 06 | **en curso** | `feat/06-close-day` (sale de la rama de la 05) | Operación, tests, disparadores y UI hechos. Falta: uso real 3 días, APK y deploy web |
-| 07–10 | pendiente | — | — |
+| 07 | **en curso** | `feat/07-points-rewards` (sale de la 06) | Operaciones, tests y UI hechos. Falta: prueba del usuario y deploy |
+| 08–10 | pendiente | — | — |
 
 ## Bitácora
 
 Lo más reciente arriba. Una línea por sesión: fecha, máquina (oficina/casa), qué se hizo y qué queda a medias.
+
+- **22-09-2026 · oficina** — Web publicada en Hosting (desde la rama de la 06). APK pospuesta por decisión del usuario (cupo mensual de EAS). Fase 07 en `feat/07-points-rewards`: operaciones de recompensas y gasto con tests (incluido doble toque), pantalla Recompensas, canje en hoja, historial. Queda: prueba del usuario en web y volver a publicar.
 
 - **22-09-2026 · oficina** — Fase 06 empezada en paralelo (la 05 espera la prueba en el celular): `closePendingDays` con 9 tests contra el emulador (incluida concurrencia), resumen mensual movido a `shared`, cierre automático con `expo-network` y aviso en la UI. Queda: verlo cerrar un día real, APK y deploy.
 

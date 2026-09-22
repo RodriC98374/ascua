@@ -30,6 +30,7 @@ export const STREAK_FREEZE_COST = 150;
 export const MAX_STREAK_FREEZES = 2;
 
 /** Límites de una recompensa; los mismos que validan las reglas. */
+export const REWARD_NAME_MIN_LENGTH = 2;
 export const REWARD_NAME_MAX_LENGTH = 60;
 export const REWARD_DESCRIPTION_MAX_LENGTH = 200;
 export const REWARD_COST_MAX = 1_000_000;

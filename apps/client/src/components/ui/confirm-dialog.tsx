@@ -11,9 +11,14 @@ interface ConfirmDialogProps {
   confirmLabel: string;
   onConfirm: () => void;
   onCancel: () => void;
+  /** danger: acciones que no se deshacen (archivar). primary: acciones positivas (comprar). */
+  confirmVariant?: 'danger' | 'primary';
+  isConfirming?: boolean;
+  /** Error del último intento, bajo el mensaje. */
+  error?: string | null;
 }
 
-/** Modal centrado para confirmar una acción que no se puede deshacer. Tocar fuera cancela. */
+/** Modal centrado para confirmar una acción. Tocar fuera cancela (salvo mientras confirma). */
 export function ConfirmDialog({
   isVisible,
   title,
@@ -21,7 +26,13 @@ export function ConfirmDialog({
   confirmLabel,
   onConfirm,
   onCancel,
+  confirmVariant = 'danger',
+  isConfirming = false,
+  error,
 }: ConfirmDialogProps) {
+  const cancel = () => {
+    if (!isConfirming) onCancel();
+  };
   return (
     <Modal
       transparent
@@ -29,12 +40,12 @@ export function ConfirmDialog({
       animationType="fade"
       statusBarTranslucent
       navigationBarTranslucent
-      onRequestClose={onCancel}
+      onRequestClose={cancel}
     >
       <View className="flex-1 items-center justify-center px-4">
         <Pressable
           accessibilityLabel="Cancelar"
-          onPress={onCancel}
+          onPress={cancel}
           style={{ position: 'absolute', inset: 0, backgroundColor: colors.scrim }}
         />
         <View accessibilityViewIsModal className="w-full max-w-sm">
@@ -44,13 +55,28 @@ export function ConfirmDialog({
                 {title}
               </Text>
               <Text className="font-body text-body text-ink-muted">{message}</Text>
+              {error && (
+                <Text accessibilityRole="alert" className="font-body-bold text-caption text-error">
+                  {error}
+                </Text>
+              )}
             </View>
             <View className="flex-row gap-2">
               <View className="flex-1">
-                <Button label="Cancelar" variant="secondary" onPress={onCancel} />
+                <Button
+                  label="Cancelar"
+                  variant="secondary"
+                  isDisabled={isConfirming}
+                  onPress={cancel}
+                />
               </View>
               <View className="flex-1">
-                <Button label={confirmLabel} variant="danger" onPress={onConfirm} />
+                <Button
+                  label={confirmLabel}
+                  variant={confirmVariant}
+                  isLoading={isConfirming}
+                  onPress={onConfirm}
+                />
               </View>
             </View>
           </Card>
