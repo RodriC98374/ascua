@@ -3,6 +3,7 @@ import { useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { renderNavBar } from '@/components/nav-bar';
+import { DayClosingBanner } from '@/features/close-day/day-closing-banner';
 import { WriteErrorBanner } from '@/features/sync/write-error-banner';
 
 /** Ancho desde el que la navegación pasa a ser una columna a la izquierda (sistema de diseño). */
@@ -18,6 +19,7 @@ export default function TabsLayout() {
     <Tabs style={{ flex: 1, flexDirection: isWide ? 'row' : 'column' }}>
       {isWide && navBar}
       <View className="bg-surface-100 flex-1">
+        <DayClosingBanner />
         <WriteErrorBanner />
         <TabSlot style={{ flex: 1 }} />
       </View>

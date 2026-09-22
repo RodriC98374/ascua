@@ -2,17 +2,24 @@
 
 **Objetivo:** que al abrir la app se cierren solos los días anteriores (puntos al saldo, racha, protectores y resúmenes), sin duplicar nada aunque la app esté abierta en dos dispositivos.
 
+## Avance (22-09-2026, oficina) — rama `feat/06-close-day` (sale de `feat/05-habits-today`, que aún no está en `main`)
+
+- `shared`: `addClosedDay` / `addMonthlySpending` / `EMPTY_MONTHLY_COUNTERS` y tipos `MonthlyCounters` / `MonthlySummary` (antes vivían duplicados en los fixtures de test).
+- `operations/close-pending-days.ts` con 9 tests contra el emulador (todos los de abajo + reloj adelantado). **Hallazgo:** con dos dispositivos a la vez, el segundo no recibe un conflicto que el SDK reintente, sino `permission-denied` (sus movimientos ya existen y `lastClosedDateKey` avanzó). La operación lo distingue de un rechazo real releyendo el estado en el servidor y sigue con el día siguiente.
+- `features/close-day/`: `useClosePendingDays` (cierra cuando `lastClosedDateKey + 1 < hoy`, hay red —`expo-network`— y no está bloqueado; también al volver a primer plano), `DayClosingBanner` ("Actualizando tus días…", resultado con puntos, racha y protectores, o error con "Reintentar") y `closing-summary.ts` (textos, con tests). Primitiva nueva `components/ui/notice-bar.tsx`, que usa también el aviso de escrituras rechazadas.
+- Falta: probarlo en uso real (al abrir la app al día siguiente) y lo del celular, APK y deploy de la Definición de terminado.
+
 ## Tareas
 
-- [ ] Operación `closePendingDays` según `data-model.md` §7: por cada día desde `lastClosedDateKey + 1` hasta ayer, **una transacción por día**, en orden.
+- [x] Operación `closePendingDays` según `data-model.md` §7: por cada día desde `lastClosedDateKey + 1` hasta ayer, **una transacción por día**, en orden.
   1. Leer los hábitos fuera de la transacción.
   2. Dentro: leer `meta/gamification`, `dailyLogs/{D}` y `monthlySummaries/{mes}`; confirmar que `lastClosedDateKey + 1 == D` (si no, otro dispositivo ya lo cerró: salir sin hacer nada).
   3. Llamar a `evaluateDay` de `shared`. **Nada de lógica de negocio aquí.**
   4. Escribir `dailyLogs/{D}`, los `pointTransactions`, `meta/gamification` y `monthlySummaries`.
-- [ ] Disparadores: al abrir la app, al volver a primer plano y al pasar la medianoche de Bolivia con la app abierta.
-- [ ] Mientras cierra, la UI muestra un estado breve ("Actualizando tus días…") y después el resultado: puntos acreditados y cambios de racha, incluido si se usó un protector.
-- [ ] Sin conexión: no intenta cerrar; reintenta al recuperar la red.
-- [ ] Si las reglas rechazan un cierre (por ejemplo, reloj del dispositivo mal configurado), mostrar el error; no reintentar en bucle.
+- [x] Disparadores: al abrir la app, al volver a primer plano y al pasar la medianoche de Bolivia con la app abierta.
+- [x] Mientras cierra, la UI muestra un estado breve ("Actualizando tus días…") y después el resultado: puntos acreditados y cambios de racha, incluido si se usó un protector.
+- [x] Sin conexión: no intenta cerrar; reintenta al recuperar la red.
+- [x] Si las reglas rechazan un cierre (por ejemplo, reloj del dispositivo mal configurado), mostrar el error; no reintentar en bucle.
 
 ## Tests (emulador)
 

@@ -91,6 +91,7 @@ describe('closePendingDays', () => {
         status: 'completed',
         pointsEarned: expected.summary.pointsEarned,
         freezeUsed: false,
+        streakBeforeClose: 0,
         streakAfterClose: 1,
       },
     ]);

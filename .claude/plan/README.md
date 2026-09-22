@@ -97,11 +97,14 @@ Decisiones de diseño derivadas (no requieren confirmación, pero no cambiarlas 
 | 03 | **hecha** | unida a `main` | 110 tests de reglas, verificadas con mutaciones. Desplegadas en `ascua-a9e27` con el uid real en `allowedUids()` |
 | 04 | **hecha** | unida a `main` | Probada por el usuario en web: login, error de credenciales, sesión persistente, cuenta creada en Firestore y correo de recuperación. Prueba en el celular junto con la fase 05 |
 | 05 | **en curso** | `feat/05-habits-today` | Web probada por el usuario (hábitos, Hoy rediseñada, validaciones). Falta: Expo Go en el celular y sincronización celular ↔ PC (en casa) |
-| 06–10 | pendiente | — | — |
+| 06 | **en curso** | `feat/06-close-day` (sale de la rama de la 05) | Operación, tests, disparadores y UI hechos. Falta: uso real 3 días, APK y deploy web |
+| 07–10 | pendiente | — | — |
 
 ## Bitácora
 
 Lo más reciente arriba. Una línea por sesión: fecha, máquina (oficina/casa), qué se hizo y qué queda a medias.
+
+- **22-09-2026 · oficina** — Fase 06 empezada en paralelo (la 05 espera la prueba en el celular): `closePendingDays` con 9 tests contra el emulador (incluida concurrencia), resumen mensual movido a `shared`, cierre automático con `expo-network` y aviso en la UI. Queda: verlo cerrar un día real, APK y deploy.
 
 - **22-09-2026 · oficina** — Fase 05: typecheck arreglado, observaciones del usuario resueltas (navegación lateral, "+" flotante, menú ⋮ con modal de archivar, reordenar en Hoy, formularios con navegación visible, validaciones) y pasada de diseño de Hoy (brasero). Probado por el usuario en web. Proyecto reordenado por dominio (mapa en `rules/frontend.md`). Queda de la fase: probar en el celular con Expo Go y la sincronización celular ↔ PC, en casa.
 

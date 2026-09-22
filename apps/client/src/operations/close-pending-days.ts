@@ -37,6 +37,7 @@ export interface ClosedDay {
   status: ClosedDayStatus;
   pointsEarned: number;
   freezeUsed: boolean;
+  streakBeforeClose: number;
   streakAfterClose: number;
 }
 
@@ -167,6 +168,7 @@ async function closeNextDay(
       status: evaluation.status,
       pointsEarned: evaluation.summary.pointsEarned,
       freezeUsed: evaluation.freezeUsed,
+      streakBeforeClose: state.currentStreak,
       streakAfterClose: evaluation.summary.streakAfterClose,
     },
     state: evaluation.nextState,
