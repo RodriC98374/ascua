@@ -206,18 +206,20 @@ service cloud.firestore {
           && incoming().archivedDateKey == null
           && incoming().startDateKey >= todayKey();
         allow update: if isOwner(userId)
-          && onlyChanges(['name', 'description', 'icon', 'color', 'tier', 'sortOrder', 'status', 'archivedDateKey', 'updatedAt'])
+          && onlyChanges(['name', 'description', 'icon', 'color', 'category', 'tier', 'sortOrder', 'status', 'archivedDateKey', 'updatedAt'])
           && isValidHabit(incoming())
           && isTouchedNow()
           && isValidHabitStatusChange(existing(), incoming());
       }
 
       function isValidHabit(habit) {
-        return hasExactly(habit, ['name', 'description', 'icon', 'color', 'tier', 'schedule', 'status', 'sortOrder', 'startDateKey', 'archivedDateKey', 'createdAt', 'updatedAt', 'schemaVersion'])
+        return hasExactly(habit, ['name', 'description', 'icon', 'color', 'category', 'tier', 'schedule', 'status', 'sortOrder', 'startDateKey', 'archivedDateKey', 'createdAt', 'updatedAt', 'schemaVersion'])
           && isText(habit.name, 1, 60)
           && isOptionalText(habit.description, 200)
           && isText(habit.icon, 1, 40)
+          // La paleta se valida en la app, no aquí: cambiarla no debe obligar a publicar reglas.
           && habit.color is string && habit.color.matches('#[0-9A-Fa-f]{6}')
+          && habit.category in ['health', 'physical', 'mental', 'academic', 'other']
           && habit.tier in ['primary', 'secondary']
           && habit.schedule == {'type': 'daily'}
           && habit.status in ['active', 'archived']

@@ -42,6 +42,19 @@ describe('habits create', () => {
     await assertFails(setDoc(habit(), habitDoc({ points: 100 })));
   });
 
+  it('accepts every known category', async () => {
+    for (const category of ['health', 'physical', 'mental', 'academic', 'other']) {
+      await assertSucceeds(setDoc(habit(category), habitDoc({ category })));
+    }
+  });
+
+  it('rejects an unknown or missing category', async () => {
+    await assertFails(setDoc(habit(), habitDoc({ category: 'salud' })));
+    await assertFails(setDoc(habit(), habitDoc({ category: null })));
+    const { category: _omitted, ...withoutCategory } = habitDoc();
+    await assertFails(setDoc(habit(), withoutCategory));
+  });
+
   it('must be created active and not archived', async () => {
     await assertFails(setDoc(habit(), habitDoc({ status: 'archived', archivedDateKey: TODAY })));
   });
@@ -60,6 +73,19 @@ describe('habits update', () => {
         sortOrder: 3,
         updatedAt: serverTimestamp(),
       }),
+    );
+  });
+
+  it('edits category and color', async () => {
+    await assertSucceeds(
+      updateDoc(habit(), {
+        category: 'mental',
+        color: '#C4B2DE',
+        updatedAt: serverTimestamp(),
+      }),
+    );
+    await assertFails(
+      updateDoc(habit(), { category: 'deportes', updatedAt: serverTimestamp() }),
     );
   });
 
