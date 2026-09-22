@@ -16,6 +16,7 @@
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "emulators": "firebase emulators:start",
+    "seed:demo": "npm run seed:demo -w @ascua/firestore-rules",
     "build:web": "npm run build:web -w @ascua/client",
     "build:apk": "npm run build:apk -w @ascua/client",
     "deploy:web": "npm run build:web && firebase deploy --only hosting",

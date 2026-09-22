@@ -5,13 +5,15 @@
   "scripts": {
     "test": "firebase emulators:exec --only firestore --project demo-ascua \"vitest run\"",
     "test:watch": "firebase emulators:exec --only firestore --project demo-ascua \"vitest\"",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "seed:demo": "jiti scripts/seed-demo.ts"
   },
   "devDependencies": {
     "@ascua/shared": "*",
     "@firebase/rules-unit-testing": "^5.0.2",
     "@types/node": "^22.20.4",
     "firebase": "12.19.0",
+    "jiti": "^1.21.7",
     "typescript": "~6.0.3",
     "vitest": "^5.0.1"
   }
