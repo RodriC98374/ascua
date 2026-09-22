@@ -27,6 +27,8 @@ import {
   type HabitRecord,
   type HabitTier,
   type MonthKey,
+  type HabitCategory,
+  type HabitColor,
   type MonthlyCounters,
   type PointTransaction,
   type RewardRecord,
@@ -36,7 +38,7 @@ import { initializeTestEnvironment } from '@firebase/rules-unit-testing';
 import { doc, Timestamp, writeBatch, type DocumentData, type Firestore } from 'firebase/firestore';
 
 import { SCHEMA_VERSION } from '../../../apps/client/src/data/documents';
-import { DEFAULT_HABIT_COLOR, DEFAULT_HABIT_ICON } from '../../../apps/client/src/operations/habits';
+import { DEFAULT_HABIT_ICON } from '../../../apps/client/src/operations/habits';
 import { DEFAULT_REWARD_ICON } from '../../../apps/client/src/operations/rewards';
 
 const HOST = '127.0.0.1';
@@ -84,6 +86,8 @@ function habit(
   tier: HabitTier,
   sortOrder: number,
   startDateKey: DateKey,
+  category: HabitCategory,
+  color: HabitColor,
   archivedDateKey: DateKey | null = null,
 ): HabitRecord {
   return {
@@ -91,7 +95,8 @@ function habit(
     name,
     description: null,
     icon: DEFAULT_HABIT_ICON,
-    color: DEFAULT_HABIT_COLOR,
+    color,
+    category,
     tier,
     schedule: { type: 'daily' },
     status: archivedDateKey ? 'archived' : 'active',
@@ -147,12 +152,12 @@ function buildDemoData(uid: string): DemoData {
   const documents = new Map<string, DocumentData>();
 
   const habits = [
-    habit('leer', 'Leer 20 minutos', 'primary', 0, start),
-    habit('ejercicio', 'Ejercicio', 'primary', 1, start),
-    habit('meditar', 'Meditar 10 minutos', 'primary', 2, addDays(start, 20)),
-    habit('agua', 'Tomar 2 L de agua', 'secondary', 3, start),
-    habit('dormir', 'Dormir antes de las 23:00', 'secondary', 4, addDays(start, 10)),
-    habit('ingles', 'Inglés 15 minutos', 'secondary', 5, start, addDays(start, 50)),
+    habit('leer', 'Leer 20 minutos', 'primary', 0, start, 'academic', '#A3C4D9'),
+    habit('ejercicio', 'Ejercicio', 'primary', 1, start, 'physical', '#EFA98A'),
+    habit('meditar', 'Meditar 10 minutos', 'primary', 2, addDays(start, 20), 'mental', '#C4B2DE'),
+    habit('agua', 'Tomar 2 L de agua', 'secondary', 3, start, 'health', '#9FCBAC'),
+    habit('dormir', 'Dormir antes de las 23:00', 'secondary', 4, addDays(start, 10), 'health', '#96C7C0'),
+    habit('ingles', 'Inglés 15 minutos', 'secondary', 5, start, 'academic', '#E3CB8E', addDays(start, 50)),
   ];
   const chance: Record<string, number> = {
     leer: 0.97,
