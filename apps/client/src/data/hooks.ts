@@ -1,10 +1,13 @@
-import type { DateKey } from '@ascua/shared';
-import { limit, orderBy, query } from 'firebase/firestore';
+import type { DateKey, MonthKey } from '@ascua/shared';
+import { limit, orderBy, query, where } from 'firebase/firestore';
 
 import {
   dailyLogRef,
+  dailyLogsCollection,
   gamificationRef,
   habitsCollection,
+  monthlySummariesCollection,
+  monthlySummaryRef,
   pointTransactionsCollection,
   redemptionsCollection,
   rewardsCollection,
@@ -20,6 +23,36 @@ export function useHabits(uid: string) {
 
 export function useDailyLog(uid: string, dateKey: DateKey) {
   return useDocument(dailyLogRef(db, uid, dateKey), `dailyLogs/${uid}/${dateKey}`);
+}
+
+/** Los registros de una semana o un mes: a lo sumo 31 documentos (data-model.md §9). */
+export function useDailyLogsInRange(uid: string, startDateKey: DateKey, endDateKey: DateKey) {
+  return useQuery(
+    query(
+      dailyLogsCollection(db, uid),
+      where('dateKey', '>=', startDateKey),
+      where('dateKey', '<=', endDateKey),
+      orderBy('dateKey'),
+    ),
+    `dailyLogs/${uid}/${startDateKey}/${endDateKey}`,
+  );
+}
+
+export function useMonthlySummary(uid: string, monthKey: MonthKey) {
+  return useDocument(monthlySummaryRef(db, uid, monthKey), `monthlySummaries/${uid}/${monthKey}`);
+}
+
+/** Los resúmenes de los meses de un año ('YYYY'): a lo sumo 12 documentos. */
+export function useMonthlySummaries(uid: string, year: string) {
+  return useQuery(
+    query(
+      monthlySummariesCollection(db, uid),
+      where('monthKey', '>=', `${year}-01`),
+      where('monthKey', '<=', `${year}-12`),
+      orderBy('monthKey'),
+    ),
+    `monthlySummaries/${uid}/${year}`,
+  );
 }
 
 export function useGamificationState(uid: string) {

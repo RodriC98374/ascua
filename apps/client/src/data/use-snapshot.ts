@@ -52,8 +52,10 @@ export interface QueryState<T> {
   hasPendingWrites: boolean;
 }
 
+/** `key` identifica la consulta: las consultas se recrean en cada render. */
 export function useQuery<T>(query: Query<T>, key: string): QueryState<T> {
-  const [state, setState] = useState<QueryState<T>>({
+  const [state, setState] = useState<QueryState<T> & { key: string }>({
+    key,
     data: [],
     isLoading: true,
     hasPendingWrites: false,
@@ -66,6 +68,7 @@ export function useQuery<T>(query: Query<T>, key: string): QueryState<T> {
         { includeMetadataChanges: true },
         (snapshot) =>
           setState({
+            key,
             data: snapshot.docs.map((document) => document.data()),
             isLoading: false,
             hasPendingWrites: snapshot.metadata.hasPendingWrites,
@@ -76,5 +79,9 @@ export function useQuery<T>(query: Query<T>, key: string): QueryState<T> {
     [key],
   );
 
+  // Al cambiar de consulta (p. ej. al pasar a otro mes), no mostrar los datos de la anterior.
+  if (state.key !== key) {
+    return { data: [], isLoading: true, hasPendingWrites: false };
+  }
   return state;
 }

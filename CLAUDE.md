@@ -60,6 +60,7 @@ Desde la raíz (en la oficina, con el Node portable antepuesto al PATH):
 | `npm run typecheck` | TypeScript en todos los paquetes |
 | `npm test` | Vitest en `shared` y en las reglas (emulador, **requiere Java**) + Jest en `client` |
 | `npm run emulators` | Emuladores de Auth y Firestore (requiere Java 21+) |
+| `npm run seed:demo` | Datos de ejemplo en los emuladores (unos 80 días cerrados) para probar las vistas. Ver [08-statistics.md](.claude/plan/08-statistics.md) |
 | `npm run build:web` | Exporta la web a `apps/client/dist` |
 | `npm run deploy:web` / `npm run deploy:rules` | Publica la web en Hosting / las reglas de Firestore |
 | `npm run build:apk` | APK con EAS Build (perfil `preview`) |

@@ -1,5 +1,5 @@
 // Íconos propios del sistema de diseño (24×24, trazo 2 px o relleno, un solo color).
-// Los de Check a Gift son los del diseño aprobado; Settings, Plus, Arrow y Archive siguen el mismo estilo.
+// Los de Check a Gift y Snowflake son los del diseño aprobado; el resto sigue el mismo estilo.
 import Svg, { Circle, G, Line, Path, Rect } from 'react-native-svg';
 
 interface IconProps {
@@ -38,6 +38,19 @@ export function StarIcon({ size = 16, color }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24">
       <Path d="M12 3l1.9 5.6L19.4 10.4l-5.5 1.9L12 18l-1.9-5.7-5.5-1.9 5.5-1.8z" fill={color} />
+    </Svg>
+  );
+}
+
+/** Día protegido: el frío contrasta con la brasa ("se apagó un momento, pero sigue ahí"). */
+export function SnowflakeIcon({ size = 16, color }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <G {...stroke(color)}>
+        <Line x1={12} y1={3} x2={12} y2={21} />
+        <Line x1={5.5} y1={7} x2={18.5} y2={17} />
+        <Line x1={18.5} y1={7} x2={5.5} y2={17} />
+      </G>
     </Svg>
   );
 }
@@ -120,6 +133,26 @@ export function ArrowIcon({
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24">
       <Path d={paths[direction]} {...stroke(color)} />
+    </Svg>
+  );
+}
+
+export function ChevronIcon({
+  size = 20,
+  color,
+  direction,
+}: IconProps & { direction: 'left' | 'right' }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Path d={direction === 'left' ? 'M15 5l-7 7 7 7' : 'M9 5l7 7-7 7'} {...stroke(color)} />
+    </Svg>
+  );
+}
+
+export function CloseIcon({ size = 20, color }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Path d="M6 6l12 12M18 6L6 18" {...stroke(color)} />
     </Svg>
   );
 }

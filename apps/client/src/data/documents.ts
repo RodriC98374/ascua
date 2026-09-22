@@ -96,22 +96,33 @@ export function habitRef(
   return doc(habitsCollection(db, uid), habitId);
 }
 
+export function dailyLogsCollection(db: Firestore, uid: string): CollectionReference<DailyLog> {
+  return collection(db, 'users', uid, 'dailyLogs').withConverter(dailyLogConverter);
+}
+
 export function dailyLogRef(
   db: Firestore,
   uid: string,
   dateKey: DateKey,
 ): DocumentReference<DailyLog> {
-  return doc(db, 'users', uid, 'dailyLogs', dateKey).withConverter(dailyLogConverter);
+  return doc(dailyLogsCollection(db, uid), dateKey);
 }
 
 export const monthlySummaryConverter = domainConverter<MonthlySummary>();
+
+export function monthlySummariesCollection(
+  db: Firestore,
+  uid: string,
+): CollectionReference<MonthlySummary> {
+  return collection(db, 'users', uid, 'monthlySummaries').withConverter(monthlySummaryConverter);
+}
 
 export function monthlySummaryRef(
   db: Firestore,
   uid: string,
   monthKey: MonthKey,
 ): DocumentReference<MonthlySummary> {
-  return doc(db, 'users', uid, 'monthlySummaries', monthKey).withConverter(monthlySummaryConverter);
+  return doc(monthlySummariesCollection(db, uid), monthKey);
 }
 
 /** Documentos cuyo ID es parte del dominio (`id`), como hábitos, recompensas o movimientos. */

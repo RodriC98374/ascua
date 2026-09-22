@@ -1,6 +1,7 @@
-// Colores del sistema de diseño para las props que no aceptan clases (íconos, degradados).
+// Colores del sistema de diseño para las props que no aceptan clases (íconos, degradados, gráficas).
 // Mismos valores que tailwind.config.js (tema claro).
 export const colors = {
+  surface200: '#FFFBF6',
   surface300: '#FDEEDF',
   border: '#F1DFCB',
   ink: '#2B1B12',
@@ -14,6 +15,7 @@ export const colors = {
   protegido: '#0369A1',
   error: '#C0392B',
   onError: '#FFFFFF',
+  vacioSoft: '#FDEEDF',
   /** Fondo detrás de un modal: ink al 40%. */
   scrim: 'rgba(43, 27, 18, 0.4)',
 } as const;

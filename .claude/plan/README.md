@@ -100,7 +100,7 @@ Decisiones de diseño derivadas (no requieren confirmación, pero no cambiarlas 
 | 05 | **hecha en web** | unida a `main` | Probada por el usuario en web. La parte de Android (APK, sincronización celular ↔ PC, sin conexión) pasa a la fase 09 |
 | 06 | **hecha en web** | unida a `main` | Tests y UI hechos; web publicada. Hito de uso diario: 22-09-2026, en la web. Queda comprobar 3 cierres reales seguidos; la APK pasa a la fase 09 |
 | 07 | **hecha** | unida a `main` | Aprobada por el usuario y publicada. El gasto con saldo real se verá con el uso |
-| 08 | pendiente | — | — |
+| 08 | **en curso** | `feat/08-statistics` | Semana, mes y año con grilla, gráficas y filtros. Falta: prueba del usuario. Datos de ejemplo para probar: `npm run seed:demo` |
 | 09 | pendiente | — | Empieza con la primera APK y lo pendiente de Android de las fases 05 y 06 |
 | 10 | pendiente | — | — |
 
@@ -108,7 +108,7 @@ Decisiones de diseño derivadas (no requieren confirmación, pero no cambiarlas 
 
 Lo más reciente arriba. Una línea por sesión: fecha, máquina (oficina/casa), qué se hizo y qué queda a medias.
 
-- **22-09-2026 · oficina** — Fases 05, 06 y 07 unidas a `main` con el acuerdo del usuario (lo pendiente de Android pasa a la fase 09, que empieza con la primera APK) y web publicada con la fase 07. **Hito de uso diario: 22-09-2026, en la web.**
+- **22-09-2026 · oficina** — Fases 05, 06 y 07 unidas a `main` con el acuerdo del usuario (lo pendiente de Android pasa a la fase 09, que empieza con la primera APK) y web publicada con la fase 07. **Hito de uso diario: 22-09-2026, en la web.** Fase 08 en `feat/08-statistics`: periodos y estadísticas en `shared`, pestaña Mes con semana/mes/año, grilla, gráficas con toque propio y filtros. Datos de ejemplo para los emuladores (`npm run seed:demo`) y revisión en el navegador a 360 px y en escritorio. Queda: prueba del usuario.
 - **22-09-2026 · oficina** — Web publicada en Hosting (desde la rama de la 06). APK pospuesta por decisión del usuario (cupo mensual de EAS). Fase 07 en `feat/07-points-rewards`: operaciones de recompensas y gasto con tests (incluido doble toque), pantalla Recompensas, canje en hoja, historial. Queda: prueba del usuario en web y volver a publicar.
 
 - **22-09-2026 · oficina** — Fase 06 empezada en paralelo (la 05 espera la prueba en el celular): `closePendingDays` con 9 tests contra el emulador (incluida concurrencia), resumen mensual movido a `shared`, cierre automático con `expo-network` y aviso en la UI. Queda: verlo cerrar un día real, APK y deploy.

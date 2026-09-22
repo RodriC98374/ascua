@@ -10,9 +10,9 @@ paths:
 | Carpeta | Contenido | Regla |
 |---|---|---|
 | `app/` | Solo rutas de Expo Router (pantallas y `_layout.tsx`) | Nada que no sea ruta: todo archivo aquí es una pantalla. Las pantallas componen; la lógica va en `features/` |
-| `components/ui/` | Primitivas del sistema de diseño (botón, tarjeta, íconos, campos, modal, menú, `Screen`) | No conocen Firestore ni el dominio |
-| `components/` | Piezas de la app que no son de un dominio (`nav-bar`, `coming-soon`) | — |
-| `features/<dominio>/` | Todo lo de un dominio: componentes, hooks y lógica de UI con sus tests (`auth`, `habits`, `today`, `close-day`, `rewards`, `sync`…) | Una funcionalidad nueva = una carpeta nueva aquí |
+| `components/ui/` | Primitivas del sistema de diseño (botón, tarjeta, íconos, campos, modal, menú, control segmentado, `Screen`) | No conocen Firestore ni el dominio |
+| `components/` | Piezas de la app que no son de un dominio (`nav-bar`) | — |
+| `features/<dominio>/` | Todo lo de un dominio: componentes, hooks y lógica de UI con sus tests (`auth`, `habits`, `today`, `close-day`, `rewards`, `statistics`, `sync`…) | Una funcionalidad nueva = una carpeta nueva aquí |
 | `data/` | Lectura de Firestore: referencias y converters (`documents.ts`) y hooks sobre `onSnapshot` | `documents.ts` solo con imports relativos (E13) |
 | `operations/` | Escrituras y transacciones | Solo imports relativos; tests en `packages/firestore-rules/src/operations/` (E13) |
 | `lib/firebase/` | Configuración e inicialización de Firebase (`index.ts` Android, `index.web.ts` web) | — |
