@@ -140,7 +140,10 @@ async function closeNextDay(
   }
 
   for (const { id, ...fields } of evaluation.transactions) {
-    transaction.set(pointTransactionRef(db, uid, id), { ...fields, ...newDocumentFields() });
+    transaction.set(pointTransactionRef(db, uid, id).withConverter(null), {
+      ...fields,
+      ...newDocumentFields(),
+    });
   }
 
   transaction.update(gamificationRef(db, uid).withConverter(null), {

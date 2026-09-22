@@ -29,6 +29,13 @@ export const STREAK_BONUSES: readonly {
 export const STREAK_FREEZE_COST = 150;
 export const MAX_STREAK_FREEZES = 2;
 
+/** Límites de una recompensa; los mismos que validan las reglas. */
+export const REWARD_NAME_MAX_LENGTH = 60;
+export const REWARD_DESCRIPTION_MAX_LENGTH = 200;
+export const REWARD_COST_MAX = 1_000_000;
+/** Nota opcional de un canje. */
+export const REDEMPTION_NOTE_MAX_LENGTH = 200;
+
 /** Rangos sugeridos por nivel de recompensa. Solo orientan a la UI; no se validan. */
 export const REWARD_TIER_COST_RANGES: Readonly<Record<RewardTier, { min: number; max: number }>> = {
   small: { min: 50, max: 80 },

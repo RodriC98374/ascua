@@ -159,3 +159,21 @@ export interface Reward {
   cost: number;
   status: EntityStatus;
 }
+
+/** Recompensa completa, tal como la guarda y muestra la app. */
+export interface RewardRecord extends Reward {
+  description: string | null;
+  icon: string;
+  sortOrder: number;
+}
+
+/** Canje de una recompensa (documento `rewardRedemptions/{requestId}`). */
+export interface RewardRedemption {
+  id: string;
+  rewardId: string;
+  /** Foto de la recompensa al momento del canje. */
+  rewardSnapshot: { name: string; tier: RewardTier; cost: number };
+  pointTransactionId: string;
+  dateKey: DateKey;
+  note: string | null;
+}

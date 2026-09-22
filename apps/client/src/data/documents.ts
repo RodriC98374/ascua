@@ -8,6 +8,9 @@ import type {
   HabitRecord,
   MonthKey,
   MonthlySummary,
+  PointTransaction,
+  RewardRecord,
+  RewardRedemption,
   UserProfile,
 } from '@ascua/shared';
 import {
@@ -57,14 +60,7 @@ export const userProfileConverter = domainConverter<UserProfile>();
 export const gamificationConverter = domainConverter<GamificationState>();
 
 // El ID del documento es el ID del hábito.
-const baseHabitConverter = domainConverter<Omit<HabitRecord, 'id'>>();
-export const habitConverter: FirestoreDataConverter<HabitRecord, DocumentData> = {
-  toFirestore: (data) => data as DocumentData,
-  fromFirestore: (snapshot, options) => ({
-    id: snapshot.id,
-    ...baseHabitConverter.fromFirestore(snapshot, options),
-  }),
-};
+export const habitConverter = withIdConverter<HabitRecord>();
 
 // Cada marca guarda también su updatedAt; el dominio solo necesita `completed`.
 const baseDailyLogConverter = domainConverter<DailyLog>();
@@ -118,11 +114,61 @@ export function monthlySummaryRef(
   return doc(db, 'users', uid, 'monthlySummaries', monthKey).withConverter(monthlySummaryConverter);
 }
 
-/** Movimiento del historial de puntos. Solo se crean; se escriben sin converter. */
+/** Documentos cuyo ID es parte del dominio (`id`), como hábitos, recompensas o movimientos. */
+function withIdConverter<T extends { id: string }>(): FirestoreDataConverter<T, DocumentData> {
+  const base = domainConverter<Omit<T, 'id'>>();
+  return {
+    toFirestore: (data) => data as DocumentData,
+    fromFirestore: (snapshot, options) =>
+      ({ id: snapshot.id, ...base.fromFirestore(snapshot, options) }) as T,
+  };
+}
+
+export const pointTransactionConverter = withIdConverter<PointTransaction>();
+
+export function pointTransactionsCollection(
+  db: Firestore,
+  uid: string,
+): CollectionReference<PointTransaction> {
+  return collection(db, 'users', uid, 'pointTransactions').withConverter(pointTransactionConverter);
+}
+
+/** Movimiento del historial de puntos. Solo se crean. */
 export function pointTransactionRef(
   db: Firestore,
   uid: string,
   transactionId: string,
-): DocumentReference {
-  return doc(db, 'users', uid, 'pointTransactions', transactionId);
+): DocumentReference<PointTransaction> {
+  return doc(pointTransactionsCollection(db, uid), transactionId);
+}
+
+export const rewardConverter = withIdConverter<RewardRecord>();
+
+export function rewardsCollection(db: Firestore, uid: string): CollectionReference<RewardRecord> {
+  return collection(db, 'users', uid, 'rewards').withConverter(rewardConverter);
+}
+
+export function rewardRef(
+  db: Firestore,
+  uid: string,
+  rewardId: string,
+): DocumentReference<RewardRecord> {
+  return doc(rewardsCollection(db, uid), rewardId);
+}
+
+export const redemptionConverter = withIdConverter<RewardRedemption>();
+
+export function redemptionsCollection(
+  db: Firestore,
+  uid: string,
+): CollectionReference<RewardRedemption> {
+  return collection(db, 'users', uid, 'rewardRedemptions').withConverter(redemptionConverter);
+}
+
+export function redemptionRef(
+  db: Firestore,
+  uid: string,
+  requestId: string,
+): DocumentReference<RewardRedemption> {
+  return doc(redemptionsCollection(db, uid), requestId);
 }
