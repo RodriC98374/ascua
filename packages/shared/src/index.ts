@@ -2,6 +2,7 @@ export * from './category-stats';
 export * from './constants';
 export * from './dates';
 export * from './day-evaluation';
+export * from './export';
 export * from './format-date';
 export * from './gamification-state';
 export * from './habit-appearance';

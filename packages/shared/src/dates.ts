@@ -51,16 +51,33 @@ export function msUntilNextDay(now: Date = new Date()): number {
 }
 
 /**
+ * Diferencia en milisegundos entre la hora de pared de Bolivia y UTC en ese instante (Intl, sin
+ * offset fijo). Negativa: Bolivia va detrás de UTC.
+ */
+function boliviaOffsetMs(instant: Date): number {
+  const wallClockMs = toUtcMs(toDateKey(instant)) + boliviaSecondsOfDay(instant) * 1000;
+  return wallClockMs - (instant.getTime() - instant.getUTCMilliseconds());
+}
+
+/** Instante en ISO 8601 con la hora y el offset de Bolivia: '2026-09-23T10:05:09.123-04:00'. */
+export function toBoliviaIsoString(instant: Date): string {
+  const offsetMinutes = Math.round(boliviaOffsetMs(instant) / 60_000);
+  const wallClock = new Date(instant.getTime() + offsetMinutes * 60_000).toISOString().slice(0, 23);
+  // Bolivia siempre da '-'; se calcula igual para no atar el formato a un offset fijo.
+  const sign = '+-'.charAt(Number(offsetMinutes < 0));
+  const absolute = Math.abs(offsetMinutes);
+  const pad = (value: number) => String(value).padStart(2, '0');
+  return `${wallClock}${sign}${pad(Math.floor(absolute / 60))}:${pad(absolute % 60)}`;
+}
+
+/**
  * Instante en que el reloj de Bolivia marca `time` ('HH:mm') el día `dateKey`. Sirve para
  * programar avisos a una hora de Bolivia sin depender de la zona del dispositivo.
  */
 export function toInstant(dateKey: DateKey, time: string): Date {
   const [hours, minutes] = time.split(':').map(Number) as [number, number];
   const wallClockMs = toUtcMs(dateKey) + (hours * 60 + minutes) * 60 * 1000;
-  // Diferencia entre la hora de pared de Bolivia y UTC, medida con Intl en ese mismo momento.
-  const guess = new Date(wallClockMs);
-  const offsetMs = toUtcMs(toDateKey(guess)) + boliviaSecondsOfDay(guess) * 1000 - wallClockMs;
-  return new Date(wallClockMs - offsetMs);
+  return new Date(wallClockMs - boliviaOffsetMs(new Date(wallClockMs)));
 }
 
 export function toMonthKey(dateKey: DateKey): MonthKey {

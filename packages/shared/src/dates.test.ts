@@ -8,6 +8,7 @@ import {
   msUntilNextDay,
   pendingDateKeysToClose,
   startOfWeek,
+  toBoliviaIsoString,
   toDateKey,
   toInstant,
   toMonthKey,
@@ -166,6 +167,36 @@ describe('msUntilNextDay', () => {
   it('does not depend on the time zone of the device', () => {
     vi.stubEnv('TZ', 'Asia/Tokyo');
     expect(msUntilNextDay(new Date('2026-09-22T03:59:30.500Z'))).toBe(29_500);
+    vi.unstubAllEnvs();
+  });
+});
+
+describe('toBoliviaIsoString', () => {
+  it('writes the instant in Bolivia time with its offset', () => {
+    expect(toBoliviaIsoString(new Date('2026-09-23T14:05:09.123Z'))).toBe(
+      '2026-09-23T10:05:09.123-04:00',
+    );
+  });
+
+  it('handles the midnight edges of Bolivia', () => {
+    expect(toBoliviaIsoString(new Date('2026-09-22T03:59:59.999Z'))).toBe(
+      '2026-09-21T23:59:59.999-04:00',
+    );
+    expect(toBoliviaIsoString(new Date('2026-09-22T04:00:00Z'))).toBe(
+      '2026-09-22T00:00:00.000-04:00',
+    );
+  });
+
+  it('points to the same instant', () => {
+    const instant = new Date('2027-01-01T03:30:00.500Z');
+    expect(new Date(toBoliviaIsoString(instant)).getTime()).toBe(instant.getTime());
+  });
+
+  it('does not depend on the time zone of the device', () => {
+    vi.stubEnv('TZ', 'Asia/Tokyo');
+    expect(toBoliviaIsoString(new Date('2026-09-23T14:05:09.123Z'))).toBe(
+      '2026-09-23T10:05:09.123-04:00',
+    );
     vi.unstubAllEnvs();
   });
 });
