@@ -11,10 +11,15 @@ import {
   pointTransactionsCollection,
   redemptionsCollection,
   rewardsCollection,
+  userProfileRef,
 } from '@/data/documents';
 import { db } from '@/lib/firebase';
 
 import { useDocument, useQuery } from './use-snapshot';
+
+export function useUserProfile(uid: string) {
+  return useDocument(userProfileRef(db, uid), `users/${uid}`);
+}
 
 /** Todos los hábitos (activos y archivados), en el orden elegido por el usuario. */
 export function useHabits(uid: string) {
