@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Screen } from '@/components/ui/screen';
 import { signOut, useSession, useUid } from '@/features/auth/session';
 import { useHabits } from '@/data/hooks';
+import { ReminderSettingsSection } from '@/features/reminders/reminder-settings';
 
 /** Preferencias y cuenta. Los hábitos se crean, editan y ordenan desde Hoy. */
 export default function SettingsScreen() {
@@ -31,6 +32,8 @@ export default function SettingsScreen() {
             <Button label="Cerrar sesión" variant="secondary" onPress={signOut} />
           </Card>
         </View>
+
+        <ReminderSettingsSection />
 
         {archived.length > 0 && (
           <View className="gap-3">

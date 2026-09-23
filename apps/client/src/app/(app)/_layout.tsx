@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
 import { signOut, useSession } from '@/features/auth/session';
 import { useAccountInitialization } from '@/features/auth/use-account-initialization';
+import { RemindersProvider } from '@/features/reminders/reminders-provider';
 
 export default function AppLayout() {
   const { user } = useSession();
@@ -47,5 +48,9 @@ function AccountGate({ user }: { user: User }) {
     );
   }
 
-  return <Stack screenOptions={{ headerShown: false }} />;
+  return (
+    <RemindersProvider uid={user.uid}>
+      <Stack screenOptions={{ headerShown: false }} />
+    </RemindersProvider>
+  );
 }
