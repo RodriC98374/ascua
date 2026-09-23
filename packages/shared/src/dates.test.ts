@@ -9,6 +9,7 @@ import {
   pendingDateKeysToClose,
   startOfWeek,
   toDateKey,
+  toInstant,
   toMonthKey,
   todayDateKey,
 } from './dates';
@@ -165,6 +166,36 @@ describe('msUntilNextDay', () => {
   it('does not depend on the time zone of the device', () => {
     vi.stubEnv('TZ', 'Asia/Tokyo');
     expect(msUntilNextDay(new Date('2026-09-22T03:59:30.500Z'))).toBe(29_500);
+    vi.unstubAllEnvs();
+  });
+});
+
+describe('toInstant', () => {
+  it('returns the instant at which Bolivia shows that day and time', () => {
+    expect(toInstant('2026-09-23', '08:00').toISOString()).toBe('2026-09-23T12:00:00.000Z');
+  });
+
+  it('falls on the next UTC day for evening times', () => {
+    expect(toInstant('2026-09-23', '21:30').toISOString()).toBe('2026-09-24T01:30:00.000Z');
+  });
+
+  it('handles the midnight edges of Bolivia', () => {
+    expect(toInstant('2026-09-22', '00:00').toISOString()).toBe('2026-09-22T04:00:00.000Z');
+    expect(toInstant('2026-09-21', '23:59').toISOString()).toBe('2026-09-22T03:59:00.000Z');
+  });
+
+  it('handles the new year boundary', () => {
+    expect(toInstant('2026-12-31', '23:00').toISOString()).toBe('2027-01-01T03:00:00.000Z');
+  });
+
+  it('round-trips with toDateKey', () => {
+    expect(toDateKey(toInstant('2026-09-21', '23:59'))).toBe('2026-09-21');
+    expect(toDateKey(toInstant('2026-09-22', '00:00'))).toBe('2026-09-22');
+  });
+
+  it('does not depend on the time zone of the device', () => {
+    vi.stubEnv('TZ', 'Asia/Tokyo');
+    expect(toInstant('2026-09-23', '08:00').toISOString()).toBe('2026-09-23T12:00:00.000Z');
     vi.unstubAllEnvs();
   });
 });

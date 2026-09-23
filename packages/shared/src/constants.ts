@@ -29,6 +29,12 @@ export const STREAK_BONUSES: readonly {
 export const STREAK_FREEZE_COST = 150;
 export const MAX_STREAK_FREEZES = 2;
 
+/**
+ * Días hacia adelante que se programan los recordatorios locales. La app los reprograma cada vez
+ * que se abre, así que solo dejan de llegar si pasa todo este tiempo sin abrirla.
+ */
+export const REMINDER_PLAN_DAYS = 30;
+
 /** Límites de una recompensa; los mismos que validan las reglas. */
 export const REWARD_NAME_MIN_LENGTH = 2;
 export const REWARD_NAME_MAX_LENGTH = 60;

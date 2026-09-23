@@ -34,19 +34,33 @@ export function todayDateKey(now: Date = new Date()): DateKey {
   return toDateKey(now);
 }
 
-/**
- * Milisegundos hasta la próxima medianoche de Bolivia, para cambiar de día con la app abierta.
- * Se calcula con la hora local de Bolivia (Intl), sin offset fijo.
- */
-export function msUntilNextDay(now: Date = new Date()): number {
+/** Segundos transcurridos desde la medianoche de Bolivia en ese instante (Intl, sin offset fijo). */
+function boliviaSecondsOfDay(instant: Date): number {
   // 'HH:mm:ss' siempre tiene tres partes.
-  const [hours, minutes, seconds] = boliviaTimeFormatter.format(now).split(':').map(Number) as [
+  const [hours, minutes, seconds] = boliviaTimeFormatter.format(instant).split(':').map(Number) as [
     number,
     number,
     number,
   ];
-  const elapsedSeconds = hours * 3600 + minutes * 60 + seconds;
-  return MS_PER_DAY - elapsedSeconds * 1000 - now.getUTCMilliseconds();
+  return hours * 3600 + minutes * 60 + seconds;
+}
+
+/** Milisegundos hasta la próxima medianoche de Bolivia, para cambiar de día con la app abierta. */
+export function msUntilNextDay(now: Date = new Date()): number {
+  return MS_PER_DAY - boliviaSecondsOfDay(now) * 1000 - now.getUTCMilliseconds();
+}
+
+/**
+ * Instante en que el reloj de Bolivia marca `time` ('HH:mm') el día `dateKey`. Sirve para
+ * programar avisos a una hora de Bolivia sin depender de la zona del dispositivo.
+ */
+export function toInstant(dateKey: DateKey, time: string): Date {
+  const [hours, minutes] = time.split(':').map(Number) as [number, number];
+  const wallClockMs = toUtcMs(dateKey) + (hours * 60 + minutes) * 60 * 1000;
+  // Diferencia entre la hora de pared de Bolivia y UTC, medida con Intl en ese mismo momento.
+  const guess = new Date(wallClockMs);
+  const offsetMs = toUtcMs(toDateKey(guess)) + boliviaSecondsOfDay(guess) * 1000 - wallClockMs;
+  return new Date(wallClockMs - offsetMs);
 }
 
 export function toMonthKey(dateKey: DateKey): MonthKey {

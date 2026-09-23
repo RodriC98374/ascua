@@ -10,6 +10,7 @@ export * from './monthly-summary';
 export * from './periods';
 export * from './points';
 export * from './primary-habits';
+export * from './reminders';
 export * from './statistics';
 export * from './transaction-ids';
 export * from './user-profile';
