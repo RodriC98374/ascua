@@ -439,6 +439,7 @@ No hay servidor: estas operaciones las ejecuta la app como **transacciones de Fi
 - **Recordatorio diario:** se repite todos los días a `dailyReminderTime`.
 - **Racha en riesgo:** se programa para `streakRiskReminderTime`. Al cumplirse la meta del día en el celular, se cancela la de hoy y queda programada la de mañana.
 - Los horarios se editan en Ajustes desde cualquier dispositivo; el celular los aplica la próxima vez que se abre la app.
+- **Cómo se programan:** `planReminders` (`packages/shared`) calcula los instantes exactos en hora de Bolivia para los próximos `REMINDER_PLAN_DAYS` días y la app los programa como avisos de fecha fija (no con el trigger diario del sistema, que usa la hora local del celular). Cada vez que se abre la app se reprograma la ventana completa.
 - En la web no hay notificaciones (decisión del usuario).
 - **Limitación conocida:** si la meta se cumple desde la PC y el celular no se abre antes de la hora del aviso, el aviso de racha en riesgo llega igual. Es aceptable porque completar el día desde la PC es poco frecuente.
 

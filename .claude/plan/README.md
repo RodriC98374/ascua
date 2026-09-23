@@ -101,7 +101,7 @@ Decisiones de diseño derivadas (no requieren confirmación, pero no cambiarlas 
 | 06 | **hecha en web** | unida a `main` | Tests y UI hechos; web publicada. Hito de uso diario: 22-09-2026, en la web. Queda comprobar 3 cierres reales seguidos; la APK pasa a la fase 09 |
 | 07 | **hecha** | unida a `main` | Aprobada por el usuario y publicada. El gasto con saldo real se verá con el uso |
 | 08 | **hecha en web** | unida a `main` | Semana, mes y año con grilla, gráficas y filtros; paleta revisada (neutrales fríos, categorías y color por hábito en pastel), donut de la semana y radar por categoría del año. Aprobada por el usuario y publicada (reglas y web). Verla en Android pasa a la fase 09; las lecturas en el panel de uso de Firestore se comprueban con datos reales |
-| 09 | pendiente | — | Empieza con la primera APK y lo pendiente de Android de las fases 05 y 06 |
+| 09 | **en curso** | `feat/09-notifications` | Código de recordatorios hecho y probado en web (lógica en `shared`, programación local, Ajustes). Falta: primera APK (`build:apk`, con permiso del usuario por el cupo de EAS) y probar en el celular los recordatorios y lo pendiente de Android de 05, 06 y 08 |
 | 10 | pendiente | — | — |
 
 ## Bitácora
@@ -109,6 +109,7 @@ Decisiones de diseño derivadas (no requieren confirmación, pero no cambiarlas 
 Lo más reciente arriba. Una línea por sesión: fecha, máquina (oficina/casa), qué se hizo y qué queda a medias.
 
 - **23-09-2026 · oficina** — Fase 08 y revisión de paleta aprobadas por el usuario. Typecheck, lint y tests en verde (shared 164, reglas 151, cliente 81). Publicadas las reglas y luego la web; `feat/08-statistics` y `feat/01-palette-categories` unidas a `main` (fast-forward). Siguiente: fase 09 (primera APK, lo pendiente de Android de 05, 06 y 08, y recordatorios locales); depende del cupo mensual de EAS.
+  Misma sesión: fase 09 empezada en `feat/09-notifications`. Todo el código de recordatorios antes de la APK para gastar un solo build: `toInstant` y `planReminders` en `shared` (180 tests, 100%), `updateReminderSettings` (reglas 153), `expo-notifications` con triggers de fecha en hora de Bolivia, `RemindersProvider`, sección Recordatorios en Ajustes con `Toggle` y `TimeField` nuevos (cliente 85). Probado en web con emuladores. Queda: `build:apk` y la prueba en el celular.
 - **22-09-2026 · oficina** — Probada la fase 08: al usuario no le gustó la paleta (muy naranja, poca
   variedad de color). Rama nueva `feat/01-palette-categories` sobre `feat/08-statistics` (no
   atados al mockup, con permiso del usuario). Primera vuelta: neutrales fríos (`surface`/`ink`/
