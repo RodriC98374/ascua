@@ -100,7 +100,7 @@ Decisiones de diseño derivadas (no requieren confirmación, pero no cambiarlas 
 | 05 | **hecha en web** | unida a `main` | Probada por el usuario en web. La parte de Android (APK, sincronización celular ↔ PC, sin conexión) pasa a la fase 09 |
 | 06 | **hecha en web** | unida a `main` | Tests y UI hechos; web publicada. Hito de uso diario: 22-09-2026, en la web. Queda comprobar 3 cierres reales seguidos; la APK pasa a la fase 09 |
 | 07 | **hecha** | unida a `main` | Aprobada por el usuario y publicada. El gasto con saldo real se verá con el uso |
-| 08 | **en curso** | `feat/08-statistics` → `feat/01-palette-categories` | Semana, mes y año con grilla, gráficas y filtros. Probada por el usuario, que pidió más color: paleta revisada (neutrales fríos, categorías y color por hábito en pastel) y se sumaron el donut de la semana y el radar por categoría del año. Falta: revisión final del usuario, `deploy:rules` + `deploy:web` y unir ambas ramas a `main` |
+| 08 | **hecha en web** | unida a `main` | Semana, mes y año con grilla, gráficas y filtros; paleta revisada (neutrales fríos, categorías y color por hábito en pastel), donut de la semana y radar por categoría del año. Aprobada por el usuario y publicada (reglas y web). Verla en Android pasa a la fase 09; las lecturas en el panel de uso de Firestore se comprueban con datos reales |
 | 09 | pendiente | — | Empieza con la primera APK y lo pendiente de Android de las fases 05 y 06 |
 | 10 | pendiente | — | — |
 
@@ -108,6 +108,7 @@ Decisiones de diseño derivadas (no requieren confirmación, pero no cambiarlas 
 
 Lo más reciente arriba. Una línea por sesión: fecha, máquina (oficina/casa), qué se hizo y qué queda a medias.
 
+- **23-09-2026 · oficina** — Fase 08 y revisión de paleta aprobadas por el usuario. Typecheck, lint y tests en verde (shared 164, reglas 151, cliente 81). Publicadas las reglas y luego la web; `feat/08-statistics` y `feat/01-palette-categories` unidas a `main` (fast-forward). Siguiente: fase 09 (primera APK, lo pendiente de Android de 05, 06 y 08, y recordatorios locales); depende del cupo mensual de EAS.
 - **22-09-2026 · oficina** — Probada la fase 08: al usuario no le gustó la paleta (muy naranja, poca
   variedad de color). Rama nueva `feat/01-palette-categories` sobre `feat/08-statistics` (no
   atados al mockup, con permiso del usuario). Primera vuelta: neutrales fríos (`surface`/`ink`/

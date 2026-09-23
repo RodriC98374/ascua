@@ -33,7 +33,9 @@
   `react-native-svg` porque `react-native-gifted-charts` no trae uno; su agregación es
   `buildCategoryStats` en `shared`, que suma los días de cada categoría en vez de promediar los
   porcentajes de sus hábitos.
-- Falta: prueba del usuario y verlo en Android (fase 09).
+- **23-09-2026:** aprobada por el usuario, reglas y web publicadas, ramas unidas a `main`. Queda
+  verla en Android (fase 09) y comprobar las lecturas en el panel de uso de Firestore cuando haya
+  datos reales.
 
 ## Cómo probarlo con datos
 
