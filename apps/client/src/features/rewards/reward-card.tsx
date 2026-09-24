@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/card';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { ArchiveIcon, EditIcon } from '@/components/ui/icons';
 import { PopoverMenu } from '@/components/ui/popover-menu';
+import { ProgressBar } from '@/components/ui/progress-bar';
 import { useUid } from '@/features/auth/session';
 import { trackWrite } from '@/features/sync/write-errors';
 import { db } from '@/lib/firebase';
@@ -22,7 +23,10 @@ interface RewardCardProps {
   onRedeem: () => void;
 }
 
-/** Una recompensa del catálogo: nombre, nivel, costo y el botón de canje (o cuánto falta). */
+/**
+ * Una recompensa del catálogo: nombre, nivel, costo y el botón de canje. Si todavía no alcanza,
+ * en lugar de un botón apagado muestra cuánto se avanzó hacia ella: una meta cercana motiva más.
+ */
 export function RewardCard({ reward, state, onRedeem }: RewardCardProps) {
   const uid = useUid();
   const check = canRedeemReward(state, reward);
@@ -67,14 +71,32 @@ export function RewardCard({ reward, state, onRedeem }: RewardCardProps) {
           ]}
         />
       </View>
-      <View className="mt-3">
-        <Button
-          label={redeemButtonLabel(check)}
-          variant={check.ok ? 'primary' : 'secondary'}
-          isDisabled={!check.ok}
-          onPress={onRedeem}
-        />
-      </View>
+      {!check.ok && check.reason === 'insufficient_points' ? (
+        <View
+          accessible
+          accessibilityLabel={`${state.pointsBalance} de ${reward.cost} puntos. ${redeemButtonLabel(check)}`}
+          className="mt-4 gap-2"
+        >
+          <ProgressBar value={(state.pointsBalance / reward.cost) * 100} />
+          <View className="flex-row justify-between gap-2">
+            <Text className="font-body-semibold text-caption text-ink-muted">
+              {state.pointsBalance} de {reward.cost} pts
+            </Text>
+            <Text className="font-body-bold text-caption text-ember-strong">
+              {redeemButtonLabel(check)}
+            </Text>
+          </View>
+        </View>
+      ) : (
+        <View className="mt-3">
+          <Button
+            label={redeemButtonLabel(check)}
+            variant={check.ok ? 'primary' : 'secondary'}
+            isDisabled={!check.ok}
+            onPress={onRedeem}
+          />
+        </View>
+      )}
       <ConfirmDialog
         isVisible={isConfirmingArchive}
         title={`¿Archivar “${reward.name}”?`}

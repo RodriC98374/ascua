@@ -2,15 +2,24 @@ import { REDEMPTION_NOTE_MAX_LENGTH, type RewardRecord } from '@ascua/shared';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useState } from 'react';
 import { Modal, Pressable, Text, View } from 'react-native';
+import Animated, {
+  interpolate,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/button';
 import { StarIcon } from '@/components/ui/icons';
+import { Sparks } from '@/components/ui/sparks';
 import { TextField } from '@/components/ui/text-field';
 import { useUid } from '@/features/auth/session';
+import { celebrationFeedback } from '@/features/celebration/haptics';
 import { db } from '@/lib/firebase';
 import { redeemReward } from '@/operations/spending';
 import { useThemeColors } from '@/theme/colors';
+import { SPRING_POP } from '@/theme/motion';
 
 import { spendErrorMessage } from './reward-catalog';
 import { RewardChip } from './reward-chip';
@@ -35,6 +44,11 @@ export function RedeemSheet({ reward, pointsBalance, onClose }: RedeemSheetProps
   const [isRedeeming, setIsRedeeming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [newBalance, setNewBalance] = useState<number | null>(null);
+  // Al confirmarse el canje, la medalla rebota y saltan chispas: "¡Te lo ganaste!".
+  const medal = useSharedValue(1);
+  const medalStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: interpolate(medal.value, [0, 1], [0.6, 1]) }],
+  }));
 
   async function redeem() {
     setIsRedeeming(true);
@@ -42,6 +56,9 @@ export function RedeemSheet({ reward, pointsBalance, onClose }: RedeemSheetProps
     try {
       await redeemReward(db, uid, { requestId, rewardId: reward.id, note });
       setNewBalance(pointsBalance - reward.cost);
+      celebrationFeedback();
+      medal.set(0);
+      medal.set(withSpring(1, SPRING_POP));
     } catch (redeemError) {
       setError(spendErrorMessage(redeemError));
     } finally {
@@ -82,20 +99,25 @@ export function RedeemSheet({ reward, pointsBalance, onClose }: RedeemSheetProps
           }}
         >
           <View className="items-center gap-3">
-            <LinearGradient
-              colors={colors.emberGradient}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={{
-                width: 56,
-                height: 56,
-                borderRadius: 28,
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <StarIcon size={26} color={colors.inkOnFill} />
-            </LinearGradient>
+            <View>
+              <Animated.View style={medalStyle}>
+                <LinearGradient
+                  colors={colors.emberGradient}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={{
+                    width: 56,
+                    height: 56,
+                    borderRadius: 28,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <StarIcon size={26} color={colors.inkOnFill} />
+                </LinearGradient>
+              </Animated.View>
+              <Sparks burst={isDone ? 1 : 0} radius={52} count={12} />
+            </View>
             <View className="items-center gap-1">
               <Text accessibilityRole="header" className="font-heading text-heading-lg text-ink">
                 {isDone ? '¡Te lo ganaste!' : `¿Canjear “${reward.name}”?`}
