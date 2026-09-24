@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import { CheckIcon } from '@/components/ui/icons';
-import { colors } from '@/theme/colors';
+import { useThemeColors } from '@/theme/colors';
 
 interface HabitCheckProps {
   name: string;
@@ -35,6 +35,7 @@ export function HabitCheck({
   onToggle,
   trailing,
 }: HabitCheckProps) {
+  const colors = useThemeColors();
   const isPrimary = tier === 'primary';
   return (
     <View
@@ -42,7 +43,7 @@ export function HabitCheck({
       style={
         isPrimary
           ? {
-              shadowColor: colors.ink,
+              shadowColor: colors.shadowNeutral,
               shadowOffset: { width: 0, height: 1 },
               shadowOpacity: 0.08,
               shadowRadius: 2,

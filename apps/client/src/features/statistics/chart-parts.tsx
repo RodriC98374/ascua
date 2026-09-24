@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { LineChart } from 'react-native-gifted-charts';
 
-import { colors } from '@/theme/colors';
+import { useThemeColors, type ThemeColors } from '@/theme/colors';
 
 /** Ancho disponible para la gráfica: se mide al montar y al cambiar el tamaño de la pantalla. */
 export function useLayoutWidth(): [number, (event: LayoutChangeEvent) => void] {
@@ -29,31 +29,41 @@ const TOOLTIP_HEIGHT = 28;
 const TOOLTIP_WIDTH = 112;
 const EDGE_SPACING = 12;
 
-export const axisTextStyle: TextStyle = {
-  color: colors.inkMuted,
-  fontSize: 11,
-  fontFamily: 'Nunito_600SemiBold',
-};
+function buildChartStyle(colors: ThemeColors) {
+  const axisTextStyle: TextStyle = {
+    color: colors.inkMuted,
+    fontSize: 11,
+    fontFamily: 'Nunito_600SemiBold',
+  };
+  return {
+    axisTextStyle,
+    /** Props de estilo compartidas por las gráficas de línea y de barras. */
+    chartStyle: {
+      yAxisLabelWidth: Y_AXIS_WIDTH,
+      yAxisTextStyle: axisTextStyle,
+      xAxisLabelTextStyle: axisTextStyle,
+      yAxisThickness: 0,
+      xAxisThickness: 1,
+      xAxisColor: colors.border,
+      rulesColor: colors.border,
+      rulesType: 'solid',
+      disableScroll: true,
+      // En web la animación de gifted-charts usa un Rect SVG animado que rompe (decisión E8).
+      isAnimated: Platform.OS !== 'web',
+    } as const,
+  };
+}
 
-/** Props de estilo compartidas por las gráficas de línea y de barras. */
-export const chartStyle = {
-  yAxisLabelWidth: Y_AXIS_WIDTH,
-  yAxisTextStyle: axisTextStyle,
-  xAxisLabelTextStyle: axisTextStyle,
-  yAxisThickness: 0,
-  xAxisThickness: 1,
-  xAxisColor: colors.border,
-  rulesColor: colors.border,
-  rulesType: 'solid',
-  disableScroll: true,
-  // En web la animación de gifted-charts usa un Rect SVG animado que rompe (decisión E8).
-  isAnimated: Platform.OS !== 'web',
-} as const;
+/** Estilo de los ejes con los colores del tema que se ve. */
+export function useChartStyle() {
+  return buildChartStyle(useThemeColors());
+}
 
 const AXIS_LABEL_WIDTH = 36;
 
 /** Etiqueta del eje horizontal centrada bajo su punto, más ancha que el espacio entre puntos. */
 function AxisLabel({ text, spacing }: { text: string; spacing: number }) {
+  const { axisTextStyle } = useChartStyle();
   return (
     <View style={{ width: AXIS_LABEL_WIDTH, marginLeft: (spacing - AXIS_LABEL_WIDTH) / 2 }}>
       <Text numberOfLines={1} style={[axisTextStyle, { textAlign: 'center' }]}>
@@ -79,7 +89,7 @@ interface TouchLineChartProps {
   onSelect: (index: number) => void;
   /** Texto del globo y de accesibilidad de cada punto. */
   describePoint: (index: number) => string;
-  /** Trazo de la línea; por defecto la brasa. Al filtrar por hábito, su tono oscuro. */
+  /** Trazo de la línea; por defecto la brasa. Al filtrar por hábito, su color. */
   color?: string;
   /** Relleno del área bajo la línea; por defecto el mismo trazo. */
   areaColor?: string;
@@ -94,9 +104,12 @@ export function TouchLineChart({
   selectedIndex,
   onSelect,
   describePoint,
-  color = colors.ember,
-  areaColor = color,
+  color: lineColor,
+  areaColor,
 }: TouchLineChartProps) {
+  const colors = useThemeColors();
+  const { chartStyle } = useChartStyle();
+  const color = lineColor ?? colors.ember;
   const [width, onLayout] = useLayoutWidth();
   const plotWidth = Math.max(0, width - Y_AXIS_WIDTH - 8);
   const spacing =
@@ -131,8 +144,8 @@ export function TouchLineChart({
             color={color}
             thickness={3}
             areaChart
-            startFillColor={areaColor}
-            endFillColor={areaColor}
+            startFillColor={areaColor ?? color}
+            endFillColor={areaColor ?? color}
             startOpacity={0.45}
             endOpacity={0.06}
             dataPointsColor={color}

@@ -1,6 +1,6 @@
 import { Pressable, Text, View } from 'react-native';
 
-import { colors } from '@/theme/colors';
+import { useThemeColors } from '@/theme/colors';
 
 interface SegmentedControlProps<T extends string> {
   options: readonly { value: T; label: string }[];
@@ -16,6 +16,7 @@ export function SegmentedControl<T extends string>({
   onChange,
   accessibilityLabel,
 }: SegmentedControlProps<T>) {
+  const colors = useThemeColors();
   return (
     <View
       accessibilityRole="tablist"
@@ -30,12 +31,13 @@ export function SegmentedControl<T extends string>({
             accessibilityRole="tab"
             accessibilityState={{ selected: isSelected }}
             onPress={() => onChange(option.value)}
-            className={`min-h-11 flex-1 items-center justify-center rounded-sm ${isSelected ? 'bg-surface-200' : ''}`}
+            // En oscuro las superficies se aclaran al subir: la elegida va un tono sobre la pista.
+            className={`min-h-11 flex-1 items-center justify-center rounded-sm ${isSelected ? 'bg-surface-200 dark:bg-border' : ''}`}
             style={
               isSelected
                 ? {
                     // shadow-sm del diseño.
-                    shadowColor: colors.ink,
+                    shadowColor: colors.shadowNeutral,
                     shadowOffset: { width: 0, height: 1 },
                     shadowOpacity: 0.08,
                     shadowRadius: 2,

@@ -1,55 +1,37 @@
 /** @type {import('tailwindcss').Config} */
-// Tokens del sistema de diseño "Brasa Viva" (.claude/plan/01-design-system.md), tema claro.
-// El modo oscuro se decide en la fase 05 (variables CSS por tema o pares `-dark`).
+// Tokens del sistema de diseño "Brasa Viva" (.claude/plan/01-design-system.md).
+// Los colores salen de src/theme/palette.json, la misma fuente que usan las props que no aceptan
+// clases (src/theme/colors.ts). Cada color es una variable CSS con un valor por tema: la clase
+// `bg-surface-100` cambia sola al pasar a oscuro, sin pares `dark:` (decisión D17).
+const plugin = require('tailwindcss/plugin');
+
+const palette = require('./src/theme/palette.json');
+
+/** '#FF6B35' → '255 107 53', para poder usar `<alpha-value>`. */
+function toChannels(hex) {
+  const value = parseInt(hex.slice(1), 16);
+  return `${(value >> 16) & 255} ${(value >> 8) & 255} ${value & 255}`;
+}
+
+function cssVariables(theme) {
+  return Object.fromEntries(
+    Object.entries(theme).map(([name, hex]) => [`--color-${name}`, toChannels(hex)]),
+  );
+}
+
 module.exports = {
   content: ['./src/**/*.{js,jsx,ts,tsx}'],
   presets: [require('nativewind/preset')],
+  // La app elige el tema (Automático / Claro / Oscuro en Ajustes) y NativeWind lo aplica.
+  darkMode: 'class',
   theme: {
     extend: {
-      colors: {
-        // Neutrales fríos: la brasa es lo único cálido, así resalta y los colores de los
-        // hábitos no se apagan contra el fondo.
-        'surface-100': '#FFFFFF',
-        'surface-200': '#FAFAF9',
-        'surface-300': '#F1F0EE',
-        border: '#E0DEDA',
-        ink: '#1C1917',
-        'ink-muted': '#57534E',
-        'ink-faint': '#A8A29E',
-        'ink-on-fill': '#1C1917',
-        ember: '#FF6B35',
-        'ember-strong': '#C2410C',
-        'ember-glow': '#FFB238',
-        'focus-ring': '#C2410C',
-        success: '#15803D',
-        'success-fill': '#15803D',
-        'on-success': '#FFFFFF',
-        'success-soft': '#DCF5E3',
-        warning: '#B45309',
-        'warning-fill': '#B45309',
-        'on-warning': '#FFFFFF',
-        'warning-soft': '#FFE9C2',
-        error: '#C0392B',
-        'error-fill': '#C0392B',
-        'on-error': '#FFFFFF',
-        'error-soft': '#FBDEDB',
-        protegido: '#0369A1',
-        'protegido-fill': '#0369A1',
-        'on-protegido': '#FFFFFF',
-        'protegido-soft': '#DBEEFC',
-        vacio: '#A8A29E',
-        'vacio-soft': '#F1F0EE',
-        'week-morado': '#7C3AED',
-        'week-morado-soft': '#EEE7FD',
-        'week-azul': '#2563EB',
-        'week-azul-soft': '#E1EBFE',
-        'week-turquesa': '#097267',
-        'week-turquesa-soft': '#DCF3EF',
-        'week-rosa': '#DB2777',
-        'week-rosa-soft': '#FCE4F1',
-        'week-verde': '#16A34A',
-        'week-verde-soft': '#DEF5E3',
-      },
+      colors: Object.fromEntries(
+        Object.keys(palette.light).map((name) => [
+          name,
+          `rgb(var(--color-${name}) / <alpha-value>)`,
+        ]),
+      ),
       // Un archivo por peso (@expo-google-fonts), cargados en src/app/_layout.tsx.
       fontFamily: {
         heading: ['Baloo2_700Bold'],
@@ -80,5 +62,12 @@ module.exports = {
       },
     },
   },
-  plugins: [],
+  plugins: [
+    plugin(({ addBase }) => {
+      addBase({
+        ':root': cssVariables(palette.light),
+        '.dark:root': cssVariables(palette.dark),
+      });
+    }),
+  ],
 };

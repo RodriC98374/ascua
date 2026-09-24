@@ -5,7 +5,7 @@ import type { ComponentType } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import { CalendarIcon, GiftIcon, HomeIcon, SettingsIcon } from '@/components/ui/icons';
-import { colors } from '@/theme/colors';
+import { useThemeColors } from '@/theme/colors';
 
 type IconComponent = ComponentType<{ size?: number; color: string }>;
 
@@ -30,6 +30,7 @@ function NavButton({
   style: _triggerStyle,
   ...props
 }: NavButtonProps) {
+  const colors = useThemeColors();
   const color = isFocused ? colors.emberStrong : colors.inkFaint;
   return (
     <Pressable

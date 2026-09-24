@@ -7,6 +7,7 @@ import { Screen } from '@/components/ui/screen';
 import { signOut, useSession } from '@/features/auth/session';
 import { useAccountInitialization } from '@/features/auth/use-account-initialization';
 import { RemindersProvider } from '@/features/reminders/reminders-provider';
+import { useThemeColors } from '@/theme/colors';
 
 export default function AppLayout() {
   const { user } = useSession();
@@ -17,12 +18,13 @@ export default function AppLayout() {
 
 /** No muestra la app hasta que el perfil y el estado de puntos existen. */
 function AccountGate({ user }: { user: User }) {
+  const colors = useThemeColors();
   const { status, retry } = useAccountInitialization(user);
 
   if (status === 'initializing') {
     return (
       <View className="bg-surface-100 flex-1 items-center justify-center">
-        <ActivityIndicator color="#C2410C" size="large" />
+        <ActivityIndicator color={colors.emberStrong} size="large" />
       </View>
     );
   }

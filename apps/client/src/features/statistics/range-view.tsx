@@ -11,7 +11,7 @@ import { ActivityIndicator, Text, View } from 'react-native';
 
 import { Card } from '@/components/ui/card';
 import { useDailyLogsInRange, useMonthlySummary } from '@/data/hooks';
-import { colors } from '@/theme/colors';
+import { useThemeColors } from '@/theme/colors';
 
 import { DayDetail } from './day-detail';
 import { HabitBars } from './habit-bars';
@@ -73,6 +73,7 @@ function RangeContent({
   isLoading: boolean;
   pointsSpent: number | null;
 }) {
+  const colors = useThemeColors();
   const [selectedDateKey, setSelectedDateKey] = useState<DateKey | null>(null);
   const [selectedHabitId, setSelectedHabitId] = useState<string | null>(null);
 

@@ -2,10 +2,11 @@ import { MAX_STREAK_FREEZES } from '@ascua/shared';
 import { Text, View } from 'react-native';
 
 import { ShieldIcon } from '@/components/ui/icons';
-import { colors } from '@/theme/colors';
+import { useThemeColors } from '@/theme/colors';
 
 /** Protectores disponibles (0–2): escudo, un punto por cupo y la cifra. */
 export function ProtectorIndicator({ active }: { active: number }) {
+  const colors = useThemeColors();
   return (
     <View
       accessibilityLabel={`${active} de ${MAX_STREAK_FREEZES} protectores`}

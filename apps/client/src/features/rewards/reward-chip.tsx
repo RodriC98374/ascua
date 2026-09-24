@@ -2,7 +2,7 @@ import type { RewardTier } from '@ascua/shared';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Text, View } from 'react-native';
 
-import { emberGradient } from '@/theme/colors';
+import { useThemeColors } from '@/theme/colors';
 
 import { TIER_LABELS } from './reward-catalog';
 
@@ -13,12 +13,13 @@ const PLAIN_TIERS = {
 
 /** Nivel de una recompensa. La grande lleva el degradado de marca: es el premio mayor. */
 export function RewardChip({ tier }: { tier: RewardTier }) {
+  const colors = useThemeColors();
   const label = TIER_LABELS[tier].singular;
   const text = 'font-body-extrabold text-label uppercase';
   if (tier === 'large') {
     return (
       <LinearGradient
-        colors={emberGradient}
+        colors={colors.emberGradient}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={{

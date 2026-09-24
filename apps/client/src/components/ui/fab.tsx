@@ -2,13 +2,14 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Pressable, View } from 'react-native';
 
 import { PlusIcon } from '@/components/ui/icons';
-import { colors, emberGradient } from '@/theme/colors';
+import { useThemeColors } from '@/theme/colors';
 
 /**
  * Botón flotante "+" abajo a la derecha, alineado a la columna de contenido (480 px en
  * escritorio). La pantalla debe dejar ~64 px libres al final para que no tape la última fila.
  */
 export function Fab({ label, onPress }: { label: string; onPress: () => void }) {
+  const colors = useThemeColors();
   return (
     <View
       pointerEvents="box-none"
@@ -21,7 +22,7 @@ export function Fab({ label, onPress }: { label: string; onPress: () => void }) 
           onPress={onPress}
           className="rounded-full active:opacity-85"
           style={{
-            shadowColor: colors.ember,
+            shadowColor: colors.shadowWarm,
             shadowOffset: { width: 0, height: 12 },
             shadowOpacity: 0.35,
             shadowRadius: 20,
@@ -29,7 +30,7 @@ export function Fab({ label, onPress }: { label: string; onPress: () => void }) 
           }}
         >
           <LinearGradient
-            colors={emberGradient}
+            colors={colors.emberGradient}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={{

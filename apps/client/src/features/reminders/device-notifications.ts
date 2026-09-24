@@ -3,7 +3,7 @@
 import * as Notifications from 'expo-notifications';
 import { useEffect } from 'react';
 
-import { colors } from '@/theme/colors';
+import { lightColors } from '@/theme/colors';
 
 import {
   REMINDER_CHANNEL_ID,
@@ -38,7 +38,8 @@ function ensureChannel(): Promise<unknown> {
     name: 'Recordatorios',
     description: 'Avisos diarios y de racha en riesgo, a la hora que elijas en Ajustes.',
     importance: Notifications.AndroidImportance.HIGH,
-    lightColor: colors.ember,
+    // Luz de aviso del celular: la brasa, sin depender del tema.
+    lightColor: lightColors.ember,
   }).catch((error: unknown) => {
     channelReady = null;
     throw error;

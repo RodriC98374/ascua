@@ -21,9 +21,10 @@ import { useToday } from '@/features/today/use-today';
 import { db } from '@/lib/firebase';
 import { setHabitCompletion } from '@/operations/daily-log';
 import { reorderHabits } from '@/operations/habits';
-import { colors, emberGradient } from '@/theme/colors';
+import { useThemeColors } from '@/theme/colors';
 
 export default function TodayScreen() {
+  const colors = useThemeColors();
   const uid = useUid();
   const today = useToday();
   const habits = useHabits(uid);
@@ -208,6 +209,7 @@ function MoveButton({
   isEnabled: boolean;
   onPress: () => void;
 }) {
+  const colors = useThemeColors();
   return (
     <Pressable
       accessibilityRole="button"
@@ -222,9 +224,10 @@ function MoveButton({
 }
 
 function PerfectDayBanner() {
+  const colors = useThemeColors();
   return (
     <LinearGradient
-      colors={emberGradient}
+      colors={colors.emberGradient}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={{
@@ -248,6 +251,7 @@ function PerfectDayBanner() {
 }
 
 function PendingSyncChip() {
+  const colors = useThemeColors();
   return (
     <View
       accessibilityLabel="Hay cambios pendientes de sincronizar"

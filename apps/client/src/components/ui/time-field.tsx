@@ -3,7 +3,7 @@ import { Modal, Pressable, Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { colors } from '@/theme/colors';
+import { useThemeColors } from '@/theme/colors';
 
 interface TimeFieldProps {
   label: string;
@@ -30,6 +30,7 @@ function splitTime(value: string): [number, number] {
  * en web, sin selectores nativos.
  */
 export function TimeField({ label, value, onChange, hint, isDisabled = false }: TimeFieldProps) {
+  const colors = useThemeColors();
   const [draft, setDraft] = useState<[number, number] | null>(null);
   const [hours, minutes] = draft ?? splitTime(value);
   // Una hora guardada que no cae en múltiplo de 5 igual se puede conservar.

@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Text, TextInput, View, type TextInputProps } from 'react-native';
 
+import { useThemeColors } from '@/theme/colors';
+
 interface TextFieldProps extends Omit<TextInputProps, 'className' | 'style'> {
   label: string;
   /** Mensaje de error bajo el campo; también pinta el borde en rojo. */
@@ -18,6 +20,7 @@ export function TextField({
   onBlur,
   ...inputProps
 }: TextFieldProps) {
+  const colors = useThemeColors();
   const [isFocused, setIsFocused] = useState(false);
   const borderClass = error ? 'border-error' : isFocused ? 'border-focus-ring' : 'border-border';
   // Multilínea = área de texto: alto de ~4 líneas y el texto empieza arriba.
@@ -28,7 +31,7 @@ export function TextField({
       <TextInput
         accessibilityLabel={label}
         accessibilityHint={error ?? undefined}
-        placeholderTextColor="#8A7862"
+        placeholderTextColor={colors.inkFaint}
         multiline={multiline}
         numberOfLines={multiline ? 4 : undefined}
         textAlignVertical={multiline ? 'top' : 'center'}

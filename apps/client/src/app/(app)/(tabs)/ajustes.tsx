@@ -4,6 +4,7 @@ import { Text, View } from 'react-native';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Screen } from '@/components/ui/screen';
+import { AppearanceSection } from '@/features/appearance/appearance-section';
 import { signOut, useSession, useUid } from '@/features/auth/session';
 import { useHabits } from '@/data/hooks';
 import { ExportSection } from '@/features/export/export-section';
@@ -35,6 +36,8 @@ export default function SettingsScreen() {
         </View>
 
         <ReminderSettingsSection />
+
+        <AppearanceSection />
 
         <ExportSection />
         {archived.length > 0 && (

@@ -2,10 +2,11 @@ import { router, type Href } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
 
 import { ArrowIcon } from '@/components/ui/icons';
-import { colors } from '@/theme/colors';
+import { useThemeColors } from '@/theme/colors';
 
 /** Encabezado de una pantalla apilada, con botón para volver. */
 export function ScreenHeader({ title, fallbackHref }: { title: string; fallbackHref: Href }) {
+  const colors = useThemeColors();
   function goBack() {
     if (router.canGoBack()) router.back();
     else router.replace(fallbackHref);

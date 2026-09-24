@@ -2,13 +2,7 @@ import type { DayStatsStatus } from '@ascua/shared';
 import { LinearGradient } from 'expo-linear-gradient';
 import { View } from 'react-native';
 
-import { colors, emberGradient } from '@/theme/colors';
-
-const DOT_COLORS: Partial<Record<DayStatsStatus, string>> = {
-  completed: colors.success,
-  frozen: colors.protegido,
-  missed: colors.error,
-};
+import { useThemeColors } from '@/theme/colors';
 
 /**
  * Punto de estado del día, como en la grilla del diseño. Nunca va solo: siempre lo acompaña
@@ -23,6 +17,7 @@ export function DayDot({
   isToday?: boolean;
   size?: number;
 }) {
+  const colors = useThemeColors();
   const shape = { width: size, height: size, borderRadius: size / 2 };
   if (isToday && status === 'open') {
     return <View style={{ ...shape, borderWidth: 2, borderColor: colors.emberStrong }} />;
@@ -30,7 +25,7 @@ export function DayDot({
   if (status === 'perfect') {
     return (
       <LinearGradient
-        colors={emberGradient}
+        colors={colors.emberGradient}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={shape}
@@ -49,7 +44,14 @@ export function DayDot({
       />
     );
   }
-  const color = DOT_COLORS[status];
+  const color =
+    status === 'completed'
+      ? colors.success
+      : status === 'frozen'
+        ? colors.protegido
+        : status === 'missed'
+          ? colors.error
+          : undefined;
   // Abiertos del pasado, sin datos y futuros: sin punto, pero ocupando su lugar.
   return <View style={{ ...shape, backgroundColor: color ?? 'transparent' }} />;
 }

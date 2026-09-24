@@ -10,7 +10,7 @@ import { TextField } from '@/components/ui/text-field';
 import { useUid } from '@/features/auth/session';
 import { db } from '@/lib/firebase';
 import { redeemReward } from '@/operations/spending';
-import { colors, emberGradient } from '@/theme/colors';
+import { useThemeColors } from '@/theme/colors';
 
 import { spendErrorMessage } from './reward-catalog';
 import { RewardChip } from './reward-chip';
@@ -27,6 +27,7 @@ interface RedeemSheetProps {
  * es un intento nuevo con su propio ID; los reintentos dentro de la hoja reutilizan ese ID.
  */
 export function RedeemSheet({ reward, pointsBalance, onClose }: RedeemSheetProps) {
+  const colors = useThemeColors();
   const uid = useUid();
   const { bottom } = useSafeAreaInsets();
   const [requestId] = useState(newRequestId);
@@ -73,7 +74,7 @@ export function RedeemSheet({ reward, pointsBalance, onClose }: RedeemSheetProps
           className="bg-surface-200 w-full max-w-[480px] gap-5 rounded-t-xl px-5 pt-7"
           style={{
             paddingBottom: bottom + 24,
-            shadowColor: colors.ember,
+            shadowColor: colors.shadowWarm,
             shadowOffset: { width: 0, height: -6 },
             shadowOpacity: 0.25,
             shadowRadius: 20,
@@ -82,7 +83,7 @@ export function RedeemSheet({ reward, pointsBalance, onClose }: RedeemSheetProps
         >
           <View className="items-center gap-3">
             <LinearGradient
-              colors={emberGradient}
+              colors={colors.emberGradient}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={{

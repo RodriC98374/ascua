@@ -5,7 +5,7 @@ import Svg, { Circle, Defs, LinearGradient, Path, Stop } from 'react-native-svg'
 import { View } from 'react-native';
 
 import { EmberIcon } from '@/components/ui/icons';
-import { colors } from '@/theme/colors';
+import { useThemeColors } from '@/theme/colors';
 
 const SIZE = 112;
 const STROKE = 10;
@@ -35,6 +35,7 @@ interface StreakHearthProps {
 }
 
 export function StreakHearth({ done, total, isStreakAlive }: StreakHearthProps) {
+  const colors = useThemeColors();
   const segment = total > 0 ? 360 / total : 360;
   const stroke = (isLit: boolean) => ({
     fill: 'none',

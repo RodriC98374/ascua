@@ -2,28 +2,37 @@ import '../global.css';
 
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
+import Head from 'expo-router/head';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { View } from 'react-native';
 
+import { ThemeProvider, useThemePreference } from '@/features/appearance/theme-provider';
 import { SessionProvider, useSession } from '@/features/auth/session';
 import { appFonts } from '@/theme/fonts';
 
-// El splash queda visible hasta tener las fuentes y saber si hay una sesión guardada.
+// El splash queda visible hasta tener las fuentes, el tema y saber si hay una sesión guardada.
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts(appFonts);
   return (
-    <SessionProvider>
-      <RootNavigator areFontsReady={fontsLoaded || fontError !== null} />
-    </SessionProvider>
+    <ThemeProvider>
+      {/* Título de la pestaña del navegador; en Android no hace nada. */}
+      <Head>
+        <title>Ascua</title>
+      </Head>
+      <SessionProvider>
+        <RootNavigator areFontsReady={fontsLoaded || fontError !== null} />
+      </SessionProvider>
+    </ThemeProvider>
   );
 }
 
 function RootNavigator({ areFontsReady }: { areFontsReady: boolean }) {
   const { user, isLoading } = useSession();
-  const isReady = areFontsReady && !isLoading;
+  const { preference } = useThemePreference();
+  const isReady = areFontsReady && !isLoading && preference !== null;
 
   useEffect(() => {
     if (isReady) SplashScreen.hideAsync();

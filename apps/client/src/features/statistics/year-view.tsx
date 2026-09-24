@@ -15,7 +15,7 @@ import { Card } from '@/components/ui/card';
 import { ChevronIcon } from '@/components/ui/icons';
 import { ProgressBar } from '@/components/ui/progress-bar';
 import { useGamificationState, useMonthlySummaries } from '@/data/hooks';
-import { colors } from '@/theme/colors';
+import { useActiveColorScheme, useThemeColors } from '@/theme/colors';
 
 import { monthRate, yearPoints } from './chart-data';
 import { TouchLineChart } from './chart-parts';
@@ -38,6 +38,8 @@ export function YearView({
   habits: readonly HabitRecord[];
   onOpenMonth: (monthKey: MonthKey) => void;
 }) {
+  const colors = useThemeColors();
+  const isDark = useActiveColorScheme() === 'dark';
   const year = period.startDateKey.slice(0, 4);
   const summaries = useMonthlySummaries(uid, year);
   const gamification = useGamificationState(uid);
@@ -117,7 +119,11 @@ export function YearView({
                   maxValue={100}
                   noOfSections={4}
                   yAxisLabelSuffix="%"
-                  color={selectedHabit && strongHabitColor(selectedHabit.color)}
+                  // El tono oscuro del hábito se pierde sobre el fondo oscuro: ahí va el pastel.
+                  color={
+                    selectedHabit &&
+                    (isDark ? selectedHabit.color : strongHabitColor(selectedHabit.color))
+                  }
                   areaColor={selectedHabit?.color}
                   selectedIndex={points.findIndex((point) => point.monthKey === selectedMonthKey)}
                   onSelect={(index) => setSelectedMonthKey(points[index]?.monthKey ?? null)}

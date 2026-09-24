@@ -2,7 +2,7 @@ import { useRef, useState, type ComponentType } from 'react';
 import { Modal, Pressable, Text, useWindowDimensions, View } from 'react-native';
 
 import { MoreVerticalIcon } from '@/components/ui/icons';
-import { colors } from '@/theme/colors';
+import { useThemeColors } from '@/theme/colors';
 
 export interface MenuItem {
   label: string;
@@ -27,6 +27,7 @@ export function PopoverMenu({ label, items }: { label: string; items: MenuItem[]
   const triggerRef = useRef<View>(null);
   const [anchor, setAnchor] = useState<Anchor | null>(null);
   const window = useWindowDimensions();
+  const colors = useThemeColors();
 
   function open() {
     triggerRef.current?.measureInWindow((x, y, width, height) =>
@@ -89,7 +90,7 @@ export function PopoverMenu({ label, items }: { label: string; items: MenuItem[]
               position: 'absolute',
               width: MENU_WIDTH,
               ...position,
-              shadowColor: colors.ember,
+              shadowColor: colors.shadowWarm,
               shadowOffset: { width: 0, height: 6 },
               shadowOpacity: 0.18,
               shadowRadius: 12,

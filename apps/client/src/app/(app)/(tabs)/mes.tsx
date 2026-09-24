@@ -13,7 +13,7 @@ import { PeriodHeader } from '@/features/statistics/period-header';
 import { MonthView, WeekView } from '@/features/statistics/range-view';
 import { YearView } from '@/features/statistics/year-view';
 import { useToday } from '@/features/today/use-today';
-import { colors } from '@/theme/colors';
+import { useThemeColors } from '@/theme/colors';
 
 const KIND_OPTIONS = [
   { value: 'week', label: 'Semana' },
@@ -23,6 +23,7 @@ const KIND_OPTIONS = [
 
 /** Progreso por semana, mes y año: grilla, gráficas y cumplimiento por hábito. */
 export default function ProgressScreen() {
+  const colors = useThemeColors();
   const uid = useUid();
   const today = useToday();
   const habits = useHabits(uid);

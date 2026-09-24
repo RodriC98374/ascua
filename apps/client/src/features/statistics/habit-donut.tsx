@@ -8,7 +8,7 @@ import { Pressable, Text, View } from 'react-native';
 import { PieChart } from 'react-native-gifted-charts';
 
 import { Card } from '@/components/ui/card';
-import { colors } from '@/theme/colors';
+import { useThemeColors } from '@/theme/colors';
 
 import { formatPercent, plural } from './statistics-text';
 
@@ -28,6 +28,7 @@ export function HabitDonut({
   selectedHabitId: string | null;
   onSelectHabit: (habitId: string) => void;
 }) {
+  const colors = useThemeColors();
   const rows = stats.habits.filter((row) => row.completedDays > 0);
   const total = rows.reduce((sum, row) => sum + row.completedDays, 0);
 

@@ -1,7 +1,7 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { View } from 'react-native';
 
-import { colors, emberGradient } from '@/theme/colors';
+import { useThemeColors } from '@/theme/colors';
 
 /**
  * 8 px de alto. `value` 0..100; siempre va acompañada de la cifra en texto.
@@ -16,6 +16,7 @@ export function ProgressBar({
   tone?: 'ember' | 'success';
   color?: string;
 }) {
+  const colors = useThemeColors();
   const width = `${Math.max(0, Math.min(100, value))}%` as const;
   const fill = color ?? (tone === 'success' ? colors.success : null);
   return (
@@ -26,7 +27,7 @@ export function ProgressBar({
     >
       {fill === null ? (
         <LinearGradient
-          colors={emberGradient}
+          colors={colors.emberGradient}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
           style={{ height: '100%', width, borderRadius: 999 }}

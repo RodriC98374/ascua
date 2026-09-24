@@ -13,9 +13,10 @@ import { FreezeCard } from '@/features/rewards/freeze-card';
 import { RedeemSheet } from '@/features/rewards/redeem-sheet';
 import { RewardCard } from '@/features/rewards/reward-card';
 import { catalogByTier } from '@/features/rewards/reward-catalog';
-import { colors } from '@/theme/colors';
+import { useThemeColors } from '@/theme/colors';
 
 export default function RewardsScreen() {
+  const colors = useThemeColors();
   const uid = useUid();
   const gamification = useGamificationState(uid);
   const rewards = useRewards(uid);

@@ -6,7 +6,7 @@ import { Card } from '@/components/ui/card';
 import { buildExportFile } from '@/data/export-files';
 import { useUid } from '@/features/auth/session';
 import { db } from '@/lib/firebase';
-import { colors } from '@/theme/colors';
+import { useThemeColors } from '@/theme/colors';
 
 import { SAVE_ACTION_LABEL, saveExportFile } from './save-export-file';
 
@@ -26,6 +26,7 @@ const OPTIONS: readonly { kind: ExportKind; title: string; hint: string }[] = [
 
 /** Exportación de los datos del usuario (fase 10): respaldo JSON y CSV para hojas de cálculo. */
 export function ExportSection() {
+  const colors = useThemeColors();
   const uid = useUid();
   const [busyKind, setBusyKind] = useState<ExportKind | null>(null);
   const [error, setError] = useState<string | null>(null);

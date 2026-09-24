@@ -8,7 +8,7 @@ import { Pressable, Text, View } from 'react-native';
 
 import { Card } from '@/components/ui/card';
 import { CheckIcon, CloseIcon } from '@/components/ui/icons';
-import { colors } from '@/theme/colors';
+import { useThemeColors } from '@/theme/colors';
 
 import { describeDay } from './statistics-text';
 import { StatusChip } from './status-chip';
@@ -23,6 +23,7 @@ export function DayDetail({
   rows: readonly HabitPeriodStats<HabitRecord>[];
   onClose: () => void;
 }) {
+  const colors = useThemeColors();
   const habitsOfDay = rows.filter((row) => day.habits[row.habit.id] !== undefined);
   return (
     <Card className="gap-3">

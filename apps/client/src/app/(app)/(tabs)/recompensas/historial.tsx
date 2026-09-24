@@ -6,10 +6,11 @@ import { Screen } from '@/components/ui/screen';
 import { usePointTransactions, useRedemptions } from '@/data/hooks';
 import { useUid } from '@/features/auth/session';
 import { historyByDay } from '@/features/rewards/points-history';
-import { colors } from '@/theme/colors';
+import { useThemeColors } from '@/theme/colors';
 
 /** Movimientos de puntos (lo ganado al cerrar cada día y lo gastado), del más reciente. */
 export default function HistoryScreen() {
+  const colors = useThemeColors();
   const uid = useUid();
   const movements = usePointTransactions(uid);
   const redemptions = useRedemptions(uid);

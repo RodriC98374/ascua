@@ -1,7 +1,7 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 
-import { colors, emberGradient } from '@/theme/colors';
+import { useThemeColors } from '@/theme/colors';
 
 interface ButtonProps {
   label: string;
@@ -36,6 +36,7 @@ export function Button({
   isLoading = false,
   isDisabled = false,
 }: ButtonProps) {
+  const colors = useThemeColors();
   const isInactive = isDisabled || isLoading;
   const content = isLoading ? (
     <ActivityIndicator
@@ -61,7 +62,7 @@ export function Button({
     >
       {variant === 'primary' ? (
         <LinearGradient
-          colors={emberGradient}
+          colors={colors.emberGradient}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={{ borderRadius: 12 }}

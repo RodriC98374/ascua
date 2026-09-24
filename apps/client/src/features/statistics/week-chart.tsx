@@ -2,27 +2,23 @@ import type { DateKey, DayStats, DayStatsStatus } from '@ascua/shared';
 import { Text, View } from 'react-native';
 import { BarChart } from 'react-native-gifted-charts';
 
-import { colors } from '@/theme/colors';
+import { useThemeColors, type ThemeColors } from '@/theme/colors';
 
 import { weekBars } from './chart-data';
-import {
-  axisTextStyle,
-  CHART_HEIGHT,
-  chartStyle,
-  useLayoutWidth,
-  Y_AXIS_WIDTH,
-} from './chart-parts';
+import { CHART_HEIGHT, useChartStyle, useLayoutWidth, Y_AXIS_WIDTH } from './chart-parts';
 
-const BAR_COLORS: Record<DayStatsStatus, string> = {
-  completed: colors.success,
-  perfect: colors.ember,
-  frozen: colors.protegido,
-  missed: colors.error,
-  inactive: colors.vacioSoft,
-  open: colors.inkFaint,
-  no_data: 'transparent',
-  future: 'transparent',
-};
+function barColors(colors: ThemeColors): Record<DayStatsStatus, string> {
+  return {
+    completed: colors.success,
+    perfect: colors.ember,
+    frozen: colors.protegido,
+    missed: colors.error,
+    inactive: colors.vacioSoft,
+    open: colors.inkFaint,
+    no_data: 'transparent',
+    future: 'transparent',
+  };
+}
 const SIDE_SPACING = 10;
 
 /**
@@ -38,6 +34,9 @@ export function WeekChart({
   selectedDateKey: DateKey | null;
   onSelectDay: (dateKey: DateKey) => void;
 }) {
+  const colors = useThemeColors();
+  const { axisTextStyle, chartStyle } = useChartStyle();
+  const colorByStatus = barColors(colors);
   const [width, onLayout] = useLayoutWidth();
   const bars = weekBars(days);
   const plotWidth = Math.max(0, width - Y_AXIS_WIDTH - 8);
@@ -55,7 +54,7 @@ export function WeekChart({
             return {
               value: bar.value,
               label: bar.label,
-              frontColor: isOpenToday ? 'transparent' : BAR_COLORS[bar.status],
+              frontColor: isOpenToday ? 'transparent' : colorByStatus[bar.status],
               showGradient: bar.status === 'perfect',
               gradientColor: colors.emberGlow,
               barBorderWidth: isOpenToday ? 2 : 0,

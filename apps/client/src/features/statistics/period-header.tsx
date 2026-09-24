@@ -9,7 +9,7 @@ import {
 import { Pressable, Text, View } from 'react-native';
 
 import { ChevronIcon } from '@/components/ui/icons';
-import { colors } from '@/theme/colors';
+import { useThemeColors } from '@/theme/colors';
 
 const STEP_LABELS: Record<PeriodKind, { previous: string; next: string }> = {
   week: { previous: 'Semana anterior', next: 'Semana siguiente' },
@@ -66,6 +66,7 @@ function StepButton({
   target: Period | null;
   onChange: (period: Period) => void;
 }) {
+  const colors = useThemeColors();
   return (
     <Pressable
       accessibilityRole="button"

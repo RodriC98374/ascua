@@ -2,7 +2,7 @@ import { Modal, Pressable, Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { colors } from '@/theme/colors';
+import { useThemeColors } from '@/theme/colors';
 
 interface ConfirmDialogProps {
   isVisible: boolean;
@@ -30,6 +30,7 @@ export function ConfirmDialog({
   isConfirming = false,
   error,
 }: ConfirmDialogProps) {
+  const colors = useThemeColors();
   const cancel = () => {
     if (!isConfirming) onCancel();
   };

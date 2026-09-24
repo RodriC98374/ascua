@@ -9,7 +9,7 @@ import { Text, View } from 'react-native';
 import Svg, { Circle, Line, Polygon, Text as SvgText } from 'react-native-svg';
 
 import { Card } from '@/components/ui/card';
-import { colors } from '@/theme/colors';
+import { useThemeColors } from '@/theme/colors';
 
 import { formatPercent } from './statistics-text';
 
@@ -86,6 +86,7 @@ export function CategoryRadar({ rows }: { rows: readonly HabitPeriodStats<HabitR
 }
 
 function RadarShape({ stats }: { stats: readonly CategoryStats[] }) {
+  const colors = useThemeColors();
   const count = stats.length;
   const shape = stats.map((entry, index) => pointAt(index, count, entry.completionRate ?? 0));
 

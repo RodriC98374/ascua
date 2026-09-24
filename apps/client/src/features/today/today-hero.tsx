@@ -5,7 +5,7 @@ import { Text, View } from 'react-native';
 import { StreakHearth } from '@/features/today/streak-hearth';
 import { CheckIcon, ShieldIcon } from '@/components/ui/icons';
 import type { TodaySummary } from '@/features/today/today-summary';
-import { colors } from '@/theme/colors';
+import { useThemeColors } from '@/theme/colors';
 
 interface TodayHeroProps {
   summary: TodaySummary;
@@ -14,12 +14,13 @@ interface TodayHeroProps {
 }
 
 export function TodayHero({ summary, pointsBalance, streakFreezesAvailable }: TodayHeroProps) {
+  const colors = useThemeColors();
   const { primaryProgress, streakDays } = summary;
   return (
     <View
       className="bg-surface-200 rounded-xl"
       style={{
-        shadowColor: colors.ember,
+        shadowColor: colors.shadowWarm,
         shadowOffset: { width: 0, height: 12 },
         shadowOpacity: 0.22,
         shadowRadius: 20,
@@ -78,6 +79,7 @@ export function TodayHero({ summary, pointsBalance, streakFreezesAvailable }: To
 }
 
 function GoalStatus({ summary }: { summary: TodaySummary }) {
+  const colors = useThemeColors();
   const { primaryProgress, isGoalMet } = summary;
   if (primaryProgress.total === 0) {
     return (
