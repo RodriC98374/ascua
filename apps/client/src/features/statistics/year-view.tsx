@@ -14,8 +14,9 @@ import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { Card } from '@/components/ui/card';
 import { ChevronIcon } from '@/components/ui/icons';
 import { ProgressBar } from '@/components/ui/progress-bar';
-import { useGamificationState, useMonthlySummaries } from '@/data/hooks';
+import { useDailyLog, useGamificationState, useMonthlySummaries } from '@/data/hooks';
 import { MilestonesCard } from '@/features/milestones/milestones-card';
+import { buildTodaySummary } from '@/features/today/today-summary';
 import { useActiveColorScheme, useThemeColors } from '@/theme/colors';
 
 import { monthRate, yearPoints } from './chart-data';
@@ -44,6 +45,7 @@ export function YearView({
   const year = period.startDateKey.slice(0, 4);
   const summaries = useMonthlySummaries(uid, year);
   const gamification = useGamificationState(uid);
+  const todayLog = useDailyLog(uid, today);
   const [selectedMonthKey, setSelectedMonthKey] = useState<MonthKey | null>(null);
   const [selectedHabitId, setSelectedHabitId] = useState<string | null>(null);
 
@@ -58,6 +60,9 @@ export function YearView({
   const points = yearPoints(stats.months, habitFilter);
   const monthsWithData = stats.months.filter((month) => monthRate(month, habitFilter) !== null);
   const state = gamification.data;
+  // Rachas con hoy incluido en cuanto se cumple la meta, como en Hoy y en su celebración.
+  const streak =
+    state && buildTodaySummary({ today, habits, entries: todayLog.data?.entries ?? {}, state });
 
   function monthRowCaption(month: MonthStats): string {
     const habitStats = habitFilter ? month.habitStats[habitFilter] : undefined;
@@ -75,12 +80,12 @@ export function YearView({
         isCurrent={today.startsWith(year)}
       />
 
-      {state && state.longestStreak > 0 && (
+      {streak && streak.longestStreak > 0 && (
         <Card className="flex-row gap-4">
           <View className="flex-1 gap-0.5">
             <Text className="font-body-bold text-label text-ink-muted uppercase">Racha actual</Text>
             <Text className="font-heading text-heading-lg text-ember-strong">
-              {plural(state.currentStreak, 'día', 'días')}
+              {plural(streak.streakDays, 'día', 'días')}
             </Text>
           </View>
           <View className="flex-1 gap-0.5">
@@ -88,15 +93,15 @@ export function YearView({
               Tu mejor racha
             </Text>
             <Text className="font-heading text-heading-lg text-ink">
-              {plural(state.longestStreak, 'día', 'días')}
+              {plural(streak.longestStreak, 'día', 'días')}
             </Text>
           </View>
         </Card>
       )}
 
       {/* Las insignias son de todos los tiempos: se muestran solo en el año actual. */}
-      {state && today.startsWith(year) && (
-        <MilestonesCard longestStreak={state.longestStreak} currentStreak={state.currentStreak} />
+      {streak && today.startsWith(year) && (
+        <MilestonesCard longestStreak={streak.longestStreak} currentStreak={streak.streakDays} />
       )}
 
       <Card className="gap-2">

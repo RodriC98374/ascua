@@ -82,6 +82,24 @@ describe('buildTodaySummary', () => {
     });
   });
 
+  it('raises the best streak with today only once the goal is met', () => {
+    const best = { ...state, longestStreak: 6 };
+    const pending = buildTodaySummary({ today: TODAY, habits, entries: done('run'), state: best });
+    expect(pending.longestStreak).toBe(6);
+    const met = buildTodaySummary({
+      today: TODAY,
+      habits,
+      entries: done('run', 'read'),
+      state: best,
+    });
+    expect(met.longestStreak).toBe(7);
+    // Una mejor racha más larga no cambia.
+    expect(
+      buildTodaySummary({ today: TODAY, habits, entries: done('run', 'read'), state })
+        .longestStreak,
+    ).toBe(10);
+  });
+
   it('detects the perfect day and its bonus', () => {
     const summary = buildTodaySummary({
       today: TODAY,

@@ -34,6 +34,8 @@ export interface TodaySummary {
   isPerfectDay: boolean;
   /** Racha actual; incluye hoy en cuanto se cumple la meta. */
   streakDays: number;
+  /** Mejor racha, también con hoy en cuanto se cumple la meta (las insignias salen de aquí). */
+  longestStreak: number;
   pointsToday: number;
   pointsBreakdown: { primary: number; secondary: number; perfectDay: number; streak: number };
 }
@@ -77,6 +79,7 @@ export function buildTodaySummary({ today, habits, entries, state }: TodayInput)
     isGoalMet: preview.isGoalMet,
     isPerfectDay: preview.summary.isPerfectDay,
     streakDays: preview.isGoalMet ? preview.nextState.currentStreak : state.currentStreak,
+    longestStreak: preview.isGoalMet ? preview.nextState.longestStreak : state.longestStreak,
     pointsToday: preview.summary.pointsEarned,
     pointsBreakdown,
   };
