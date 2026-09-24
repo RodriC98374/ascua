@@ -40,15 +40,24 @@
 ## Cómo probarlo con datos
 
 La cuenta real recién empieza, así que las vistas se prueban con datos de ejemplo **en los
-emuladores locales**; el proyecto real no se toca.
+emuladores locales**; el proyecto real no se toca. Todo con un comando (necesita Java en el PATH):
 
-1. `npm run emulators` (necesita Java).
-2. En otra terminal, `npm run seed:demo`: vacía los emuladores y siembra unos 80 días cerrados,
-   compras de protectores y canjes, generados con la lógica real de `shared`.
-3. Desde `apps/client`, con los emuladores encendidos:
-   `$env:EXPO_PUBLIC_USE_EMULATORS="true"; npx expo start --web --port 8082`. El puerto distinto
-   del habitual evita que la caché del navegador se mezcle con la de producción.
-4. Entrar con `demo@ascua.test` / `demo1234`.
+- `npm run demo`: enciende los emuladores de Auth y Firestore (o usa los que ya estén
+  encendidos), siembra unos 80 días cerrados con compras de protectores y canjes (lógica real de
+  `shared`) y abre la web de desarrollo en `http://localhost:8082` conectada a ellos. El puerto
+  distinto del habitual evita que la caché del navegador se mezcle con la de producción.
+- Entrar con `demo@ascua.test` / `demo1234`. Datos en vivo en la UI de emuladores (`:4000`).
+- **Ctrl+C** cierra Expo y apaga los emuladores: los datos desaparecen (viven en memoria).
+- Opciones: `npm run demo -- --streak=6` llega a hoy con esa racha exacta y dos principales
+  sin marcar; la historia anterior nunca la supera, así que al marcarlos se celebra el hito
+  (6 → insignia de 7, 29 → de 30, 99 → de 100, 364 → de 365; 0 → franja "enciende tu racha").
+  `--risk` pone la hora de racha en riesgo a las 00:00 para ver la franja a cualquier hora.
+- `npm run seed:demo` (mismas opciones) solo vuelve a sembrar, con los emuladores encendidos.
+- La celebración de racha sale una vez por día en cada navegador: para repetirla, ventana
+  privada. En modo desarrollo sale un aviso rojo "Unknown event handler property" al abrir
+  gráficas de línea: viene de `react-native-gifted-charts` en web, no afecta y no sale en la
+  web publicada.
+- Código: `packages/firestore-rules/scripts/` (`demo-data.ts` siembra, `demo.ts` orquesta).
 
 ## Tareas
 

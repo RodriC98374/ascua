@@ -6,7 +6,8 @@
     "test": "firebase emulators:exec --only firestore --project demo-ascua \"vitest run\"",
     "test:watch": "firebase emulators:exec --only firestore --project demo-ascua \"vitest\"",
     "typecheck": "tsc --noEmit",
-    "seed:demo": "jiti scripts/seed-demo.ts"
+    "seed:demo": "jiti scripts/seed-demo.ts",
+    "demo": "jiti scripts/demo.ts"
   },
   "devDependencies": {
     "@ascua/shared": "*",

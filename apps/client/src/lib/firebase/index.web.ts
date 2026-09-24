@@ -22,6 +22,9 @@ export const db = initializeFirestore(app, {
 });
 
 if (emulatorConfig.enabled) {
-  connectAuthEmulator(auth, `http://${emulatorConfig.host}:${emulatorConfig.authPort}`);
+  // Sin el aviso fijo de Firebase al pie: tapaba los botones de abajo en la demo.
+  connectAuthEmulator(auth, `http://${emulatorConfig.host}:${emulatorConfig.authPort}`, {
+    disableWarnings: true,
+  });
   connectFirestoreEmulator(db, emulatorConfig.host, emulatorConfig.firestorePort);
 }
