@@ -1,10 +1,11 @@
 // Tarjeta principal de Hoy: el brasero con la racha, qué falta para asegurarla y los puntos.
-import { MAX_STREAK_FREEZES } from '@ascua/shared';
+import { MAX_STREAK_FREEZES, type StreakRisk } from '@ascua/shared';
 import { Text, View } from 'react-native';
 
 import { StreakHearth } from '@/features/today/streak-hearth';
 import { CheckIcon, ShieldIcon } from '@/components/ui/icons';
 import { RollingNumber } from '@/components/ui/rolling-number';
+import { StreakRiskBand } from '@/features/today/streak-risk-band';
 import type { TodaySummary } from '@/features/today/today-summary';
 import { useThemeColors } from '@/theme/colors';
 
@@ -12,9 +13,16 @@ interface TodayHeroProps {
   summary: TodaySummary;
   pointsBalance: number;
   streakFreezesAvailable: number;
+  /** Desde la hora de racha en riesgo y sin la meta cumplida. */
+  risk: StreakRisk | null;
 }
 
-export function TodayHero({ summary, pointsBalance, streakFreezesAvailable }: TodayHeroProps) {
+export function TodayHero({
+  summary,
+  pointsBalance,
+  streakFreezesAvailable,
+  risk,
+}: TodayHeroProps) {
   const colors = useThemeColors();
   const { primaryProgress, streakDays } = summary;
   return (
@@ -28,6 +36,7 @@ export function TodayHero({ summary, pointsBalance, streakFreezesAvailable }: To
         elevation: 4,
       }}
     >
+      {risk && <StreakRiskBand risk={risk} streakDays={streakDays} />}
       <View className="flex-row items-center gap-5 p-5">
         <StreakHearth
           done={primaryProgress.done}

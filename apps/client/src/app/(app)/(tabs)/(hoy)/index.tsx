@@ -1,7 +1,9 @@
 import {
+  DEFAULT_REMINDER_SETTINGS,
   formatLongDate,
   MAX_PRIMARY_HABITS,
   PERFECT_DAY_BONUS,
+  streakRiskAt,
   type DateKey,
   type GamificationState,
   type HabitRecord,
@@ -30,10 +32,11 @@ import { celebrationFeedback } from '@/features/celebration/haptics';
 import { StreakCelebrationModal } from '@/features/celebration/streak-celebration';
 import { useTodayMoments } from '@/features/celebration/use-today-moments';
 import { useUid } from '@/features/auth/session';
-import { useDailyLog, useGamificationState, useHabits } from '@/data/hooks';
+import { useDailyLog, useGamificationState, useHabits, useUserProfile } from '@/data/hooks';
 import { canMove, moveHabit, type MoveOffset } from '@/features/habits/habit-order';
 import { trackWrite } from '@/features/sync/write-errors';
 import { buildTodaySummary, type TodaySummary } from '@/features/today/today-summary';
+import { useMinuteClock } from '@/features/today/use-minute-clock';
 import { useToday } from '@/features/today/use-today';
 import { db } from '@/lib/firebase';
 import { setHabitCompletion } from '@/operations/daily-log';
@@ -48,6 +51,8 @@ export default function TodayScreen() {
   const habits = useHabits(uid);
   const log = useDailyLog(uid, today);
   const gamification = useGamificationState(uid);
+  // El perfil no frena la pantalla: mientras llega se usa la hora por defecto.
+  const profile = useUserProfile(uid);
 
   if (habits.isLoading || log.isLoading || !gamification.data) {
     return (
@@ -58,7 +63,17 @@ export default function TodayScreen() {
   }
 
   return (
-    <TodayContent uid={uid} today={today} habits={habits} log={log} state={gamification.data} />
+    <TodayContent
+      uid={uid}
+      today={today}
+      habits={habits}
+      log={log}
+      state={gamification.data}
+      riskTime={
+        profile.data?.reminderSettings.streakRiskReminderTime ??
+        DEFAULT_REMINDER_SETTINGS.streakRiskReminderTime
+      }
+    />
   );
 }
 
@@ -68,11 +83,14 @@ interface TodayContentProps {
   habits: ReturnType<typeof useHabits>;
   log: ReturnType<typeof useDailyLog>;
   state: GamificationState;
+  /** 'HH:mm' desde la que Hoy avisa que la racha está en riesgo. */
+  riskTime: string;
 }
 
 /** Hoy con los datos ya cargados: aquí viven los momentos de logro, que comparan render a render. */
-function TodayContent({ uid, today, habits, log, state }: TodayContentProps) {
+function TodayContent({ uid, today, habits, log, state, riskTime }: TodayContentProps) {
   const [isReordering, setIsReordering] = useState(false);
+  const now = useMinuteClock();
   const summary = buildTodaySummary({
     today,
     habits: habits.data,
@@ -85,6 +103,14 @@ function TodayContent({ uid, today, habits, log, state }: TodayContentProps) {
     isPerfectDay: summary.isPerfectDay,
     streakDays: summary.streakDays,
     streakBonus: summary.pointsBreakdown.streak,
+  });
+  const risk = streakRiskAt({
+    now,
+    riskTime,
+    isGoalMet: summary.isGoalMet,
+    hasPrimaries: summary.primaries.length > 0,
+    currentStreak: state.currentStreak,
+    streakFreezesAvailable: state.streakFreezesAvailable,
   });
   const canReorder = habits.data.filter((habit) => habit.status === 'active').length > 1;
 
@@ -170,6 +196,7 @@ function TodayContent({ uid, today, habits, log, state }: TodayContentProps) {
                 summary={summary}
                 pointsBalance={state.pointsBalance}
                 streakFreezesAvailable={state.streakFreezesAvailable}
+                risk={risk}
               />
               {summary.isPerfectDay && <PerfectDayBanner burst={moments.perfectDayBurst} />}
 
