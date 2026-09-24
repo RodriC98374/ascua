@@ -26,6 +26,10 @@ export const STREAK_BONUSES: readonly {
   { everyDays: 30, points: 100, type: 'streak_bonus_30_days' },
 ];
 
+/** Hitos de racha con insignia propia (fase 12). Distintos de los bonos: se ganan una vez. */
+export const STREAK_MILESTONES = [7, 30, 100, 365] as const;
+export type StreakMilestone = (typeof STREAK_MILESTONES)[number];
+
 export const STREAK_FREEZE_COST = 150;
 export const MAX_STREAK_FREEZES = 2;
 
