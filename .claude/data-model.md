@@ -72,6 +72,8 @@ const STREAK_BONUSES = [
 ] as const;
 const STREAK_FREEZE_COST = 150;
 const MAX_STREAK_FREEZES = 2;
+// Fase 12: hitos con insignia. Se derivan de longestStreak (no se guardan): una insignia no se pierde.
+const STREAK_MILESTONES = [7, 30, 100, 365] as const;
 // Solo sugerencia para la UI; no se valida (ver sección 11).
 const REWARD_TIER_COST_RANGES: Record<RewardTier, { min: number; max: number }> = {
   small: { min: 50, max: 80 },
