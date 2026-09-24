@@ -1,5 +1,7 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Text, View } from 'react-native';
+
+import { PressableScale } from '@/components/ui/pressable-scale';
 
 import { useThemeColors } from '@/theme/colors';
 
@@ -53,7 +55,7 @@ export function Button({
   );
 
   return (
-    <Pressable
+    <PressableScale
       accessibilityRole="button"
       accessibilityState={{ disabled: isInactive, busy: isLoading }}
       disabled={isInactive}
@@ -72,6 +74,6 @@ export function Button({
       ) : (
         <View className={containerStyles[variant]}>{content}</View>
       )}
-    </Pressable>
+    </PressableScale>
   );
 }

@@ -1,7 +1,8 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 
 import { PlusIcon } from '@/components/ui/icons';
+import { PressableScale } from '@/components/ui/pressable-scale';
 import { useThemeColors } from '@/theme/colors';
 
 /**
@@ -16,7 +17,8 @@ export function Fab({ label, onPress }: { label: string; onPress: () => void }) 
       style={{ position: 'absolute', left: 0, right: 0, bottom: 20, alignItems: 'center' }}
     >
       <View pointerEvents="box-none" className="w-full max-w-[480px] items-end px-4">
-        <Pressable
+        <PressableScale
+          pressedScale={0.9}
           accessibilityRole="button"
           accessibilityLabel={label}
           onPress={onPress}
@@ -43,7 +45,7 @@ export function Fab({ label, onPress }: { label: string; onPress: () => void }) 
           >
             <PlusIcon size={26} color={colors.inkOnFill} />
           </LinearGradient>
-        </Pressable>
+        </PressableScale>
       </View>
     </View>
   );
