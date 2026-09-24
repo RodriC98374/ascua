@@ -1,7 +1,7 @@
 # 11 — Movimiento, pulido de la interfaz e ideas para crecer
 
-**Rama:** `feat/11-motion-polish` (sale de `main`). **No se une a `main` sin el visto bueno del
-usuario** (pedido del 24-09-2026). Libertad creativa dada por el usuario, con la inspiración de
+**Rama:** `feat/11-motion-polish`, **aprobada por el usuario y unida a `main` el 24-09-2026**
+(la revisó en un canal de vista previa de Hosting). Libertad creativa dada por el usuario, con la inspiración de
 Duolingo: animaciones sencillas pero agradables que den la "dopamina" de cumplir la racha.
 
 ## Lenguaje de movimiento: "la brasa se aviva"
@@ -56,9 +56,10 @@ interruptor y recompensas. Typecheck, lint y tests en verde (cliente 106).
 7. **Descartado por ahora:** confeti con física en Skia (suma varios MB y en web carga CanvasKit
    en WebAssembly) y transiciones de elemento compartido entre pantallas (experimentales).
 
-## Ideas de funcionalidades (backlog, sin implementar)
+## Ideas de funcionalidades
 
-Ordenadas por lo que recomiendo hacer primero. Todas respetan el costo cero salvo donde se dice.
+Lista propuesta al usuario. **Las que eligió están ordenadas en fases en
+[roadmap.md](roadmap.md) (D18)**; esta lista queda como registro de la propuesta.
 
 **Sobre lo que ya existe**
 1. Racha en riesgo e hitos (puntos 3 y 4 de arriba): poca complejidad y mucha motivación.
@@ -91,6 +92,6 @@ Ordenadas por lo que recomiendo hacer primero. Todas respetan el costo cero salv
 
 ## Pendiente
 
-- [ ] Revisión del usuario (web) y su visto bueno para unir a `main`.
+- [x] Revisión del usuario (web) y su visto bueno para unir a `main` (24-09-2026).
 - [ ] Ver en el celular con el próximo build: vibraciones, fluidez en Android, sombras del botón
       que se hunde.

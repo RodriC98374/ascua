@@ -33,6 +33,7 @@ En orden. Cada fase es autocontenida, pero asume las decisiones de este README. 
 | 09 | [09-notifications.md](09-notifications.md) | Recordatorios locales en Android | 06 |
 | 10 | [10-export-launch.md](10-export-launch.md) | Exportación CSV/JSON, calibración de puntos, APK final, cierre del MVP | 07, 08, 09 |
 | 11 | [11-motion-polish.md](11-motion-polish.md) | Animaciones de logro (estilo Duolingo), pulido de la interfaz e ideas para crecer | 10 |
+| 12–19 | [roadmap.md](roadmap.md) | Después del MVP (D18): racha en riesgo e hitos, sonidos y llama animada, task tracker, check-in, hábitos no diarios, recordatorios por hábito, metas, respaldo y PWA | 11 |
 
 Las fases 07, 08 y 09 son independientes entre sí; se pueden hacer en cualquier orden.
 
@@ -59,6 +60,7 @@ Confirmadas por el usuario. **No volver a preguntarlas ni cambiarlas durante la 
 | D15 | 21-09-2026 | Sistema de diseño en **Claude Design** en lugar de mockups HTML | Lo lee Claude como código; Figma queda descartado |
 | D16 | 21-09-2026 | **Navegación de 4 pestañas: Hoy / Mes / Recompensas / Ajustes** | Elegida por el usuario (el diseño tenía 3). Todo lo de hábitos vive en Hoy (22-09-2026): crear con el botón flotante "+", editar y archivar con el menú de tres puntos (archivar con modal), "Ordenar" en la cabecera de la lista. Los formularios se abren dentro de la pestaña Hoy, con la navegación visible. Ajustes queda para cuenta y preferencias |
 | D17 | 21-09-2026 | **Modo oscuro en la fase 10** | Todo nace en tema claro; se agrega al pulir. Hecho el 24-09-2026: selector Automático / Claro / Oscuro en Ajustes, guardado en cada dispositivo (elegido por el usuario) |
+| D18 | 24-09-2026 | **Hoja de ruta después del MVP** elegida por el usuario: racha en riesgo e hitos, sonidos y llama animada, deslizar para marcar, task tracker, check-in diario, hábitos no diarios y con cantidad, recordatorios por hábito, nuevas estadísticas, metas, reflexión, ahorro, restaurar respaldo y PWA en la PC | Fases 12–19 en [roadmap.md](roadmap.md). El MVP no cambia; lo que pide servidor (Calendar, pasos, amigos) queda para después |
 
 Decisiones de diseño derivadas (no requieren confirmación, pero no cambiarlas sin avisar):
 
@@ -82,7 +84,7 @@ Decisiones de diseño derivadas (no requieren confirmación, pero no cambiarlas 
 
 **Dentro del MVP:** todo lo de las fases 00–10.
 
-**Fuera (no implementar aunque parezca relacionado):**
+**Fuera del MVP** (no implementar aunque parezca relacionado; desde el 24-09-2026 varias de estas ideas tienen fase propia **después** del MVP en [roadmap.md](roadmap.md), decisión D18):
 - Task tracker, check-in de ánimo/mindset, metas, diario. El modelo ya los contempla (`data-model.md` §12).
 - Notificaciones en la web o en iPhone.
 - Recordatorios avanzados o por hábito: el MVP tiene dos (diario y racha en riesgo).
@@ -104,12 +106,13 @@ Decisiones de diseño derivadas (no requieren confirmación, pero no cambiarlas 
 | 08 | **hecha en web** | unida a `main` | Semana, mes y año con grilla, gráficas y filtros; paleta revisada (neutrales fríos, categorías y color por hábito en pastel), donut de la semana y radar por categoría del año. Aprobada por el usuario y publicada (reglas y web). Verla en Android pasa a la fase 09; las lecturas en el panel de uso de Firestore se comprueban con datos reales |
 | 09 | **en prueba en el celular** | unida a `main` | Código hecho y probado en web. Primera APK construida (23-09-2026) y en uso por el usuario desde el 24-09-2026: queda confirmar los recordatorios y lo pendiente de Android de 05, 06 y 08 |
 | 10 | **código completo** | unida a `main` | Exportación, modo oscuro e íconos de marca hechos, probados en web y publicados. Quedan: calibración de puntos desde ~13-10-2026 (3 semanas de uso), APK final con todo (exportación en Android, oscuro e íconos llegan con ese build) y revisar la cuota de Spark |
-| 11 | **en revisión** | `feat/11-motion-polish` (**no unir a `main` sin el visto bueno del usuario**) | Animaciones de logro, celebración de racha, pulido de primitivas y barra de avance en recompensas. Plan de lo complejo e ideas (task tracker y más) en su archivo |
+| 11 | **hecha en web** | unida a `main` | Aprobada por el usuario (24-09-2026). Animaciones de logro, celebración de racha, primitivas animadas y avance hacia recompensas. Vibraciones y fluidez en Android: con el próximo build |
 
 ## Bitácora
 
 Lo más reciente arriba. Una línea por sesión: fecha, máquina (oficina/casa), qué se hizo y qué queda a medias.
 
+- **24-09-2026 · oficina** — El usuario aprobó la fase 11 (vista en el canal de vista previa de Hosting): unida a `main`. Eligió las ideas para después del MVP (D18): hoja de ruta en fases 12–19 en `roadmap.md`. Siguiente: la fase que elija el usuario (propuesta: 12, racha en riesgo e hitos); el MVP sigue esperando la calibración (~13-10) y la APK final.
 - **24-09-2026 · oficina** — Fase 11 en `feat/11-motion-polish` (pedido del usuario, con libertad creativa e inspiración de Duolingo; no se une a `main` sin su visto bueno): lenguaje de movimiento "la brasa se aviva" con Reanimated (`theme/motion.ts`), casilla con rebote y "+10", brasero que destella, números que ruedan, celebración de racha a pantalla completa con la semana L–D (una vez por día), día perfecto animado, barra de avance hacia cada recompensa y canje con chispas, primitivas animadas y `expo-haptics`. Revisado con Edge headless contra emuladores; cliente 106 tests. Plan de lo complejo y backlog de ideas en `11-motion-polish.md`. Queda: revisión del usuario.
 - **24-09-2026 · oficina** — El usuario ya usa la APK y pidió terminar todo lo que no dependa del uso, probándolo en la web (sin builds de EAS). Fase 10 en `feat/10-dark-mode`: modo oscuro con variables CSS por tema desde `theme/palette.json` y selector Automático / Claro / Oscuro en Ajustes (por dispositivo, decisión del usuario); `+html.tsx` sin parpadeo y con `lang="es"`; íconos, splash y favicon de marca en lugar de los de plantilla (`scripts/generate-icons.mjs`). Revisado con Edge headless contra emuladores (claro sin cambios; oscuro, Automático, modales y escritorio). Typecheck, lint y tests en verde (shared 197, reglas 157, cliente 102). Ramas 09 y 10 unidas a `main` y web publicada (reglas sin cambios desde la 08). Queda: prueba del usuario en web y celular, calibración desde ~13-10 y APK final.
 - **23-09-2026 · oficina** — Fase 08 y revisión de paleta aprobadas por el usuario. Typecheck, lint y tests en verde (shared 164, reglas 151, cliente 81). Publicadas las reglas y luego la web; `feat/08-statistics` y `feat/01-palette-categories` unidas a `main` (fast-forward). Siguiente: fase 09 (primera APK, lo pendiente de Android de 05, 06 y 08, y recordatorios locales); depende del cupo mensual de EAS.
