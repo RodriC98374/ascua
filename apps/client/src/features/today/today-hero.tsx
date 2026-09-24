@@ -4,6 +4,7 @@ import { Text, View } from 'react-native';
 
 import { StreakHearth } from '@/features/today/streak-hearth';
 import { CheckIcon, ShieldIcon } from '@/components/ui/icons';
+import { RollingNumber } from '@/components/ui/rolling-number';
 import type { TodaySummary } from '@/features/today/today-summary';
 import { useThemeColors } from '@/theme/colors';
 
@@ -35,9 +36,11 @@ export function TodayHero({ summary, pointsBalance, streakFreezesAvailable }: To
         />
         <View className="flex-1 gap-1">
           <View>
-            <Text className="font-heading-extrabold text-display-lg text-ember-strong">
-              {streakDays}
-            </Text>
+            <RollingNumber
+              value={streakDays}
+              lineHeight={44}
+              className="font-heading-extrabold text-display-lg text-ember-strong"
+            />
             <Text className="font-body-bold text-body text-ink-muted">
               {streakDays === 1 ? 'día de racha' : 'días de racha'}
             </Text>
@@ -48,9 +51,19 @@ export function TodayHero({ summary, pointsBalance, streakFreezesAvailable }: To
 
       <View className="border-border flex-row items-start gap-4 border-t px-5 py-4">
         <View className="flex-1">
-          <Text className="font-heading text-heading-md text-ember-strong">
-            +{summary.pointsToday} hoy
-          </Text>
+          <View
+            accessible
+            accessibilityLabel={`+${summary.pointsToday} hoy`}
+            className="flex-row items-center"
+          >
+            <Text className="font-heading text-heading-md text-ember-strong">+</Text>
+            <RollingNumber
+              value={summary.pointsToday}
+              lineHeight={24}
+              className="font-heading text-heading-md text-ember-strong"
+            />
+            <Text className="font-heading text-heading-md text-ember-strong"> hoy</Text>
+          </View>
           <Text className="font-body-semibold text-caption text-ink-muted">disponibles mañana</Text>
         </View>
         <View className="flex-1">

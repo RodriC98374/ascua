@@ -1,8 +1,21 @@
-import { formatLongDate, MAX_PRIMARY_HABITS, type HabitRecord } from '@ascua/shared';
+import {
+  formatLongDate,
+  MAX_PRIMARY_HABITS,
+  PERFECT_DAY_BONUS,
+  type DateKey,
+  type GamificationState,
+  type HabitRecord,
+} from '@ascua/shared';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import Animated, {
+  interpolate,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
 
 import { HabitActions } from '@/features/habits/habit-actions';
 import { HabitCheck } from '@/features/today/habit-check';
@@ -12,6 +25,10 @@ import { Card } from '@/components/ui/card';
 import { Fab } from '@/components/ui/fab';
 import { ArrowIcon, CloudIcon, StarIcon } from '@/components/ui/icons';
 import { Screen } from '@/components/ui/screen';
+import { Sparks } from '@/components/ui/sparks';
+import { celebrationFeedback } from '@/features/celebration/haptics';
+import { StreakCelebrationModal } from '@/features/celebration/streak-celebration';
+import { useTodayMoments } from '@/features/celebration/use-today-moments';
 import { useUid } from '@/features/auth/session';
 import { useDailyLog, useGamificationState, useHabits } from '@/data/hooks';
 import { canMove, moveHabit, type MoveOffset } from '@/features/habits/habit-order';
@@ -22,6 +39,7 @@ import { db } from '@/lib/firebase';
 import { setHabitCompletion } from '@/operations/daily-log';
 import { reorderHabits } from '@/operations/habits';
 import { useThemeColors } from '@/theme/colors';
+import { SPRING_POP } from '@/theme/motion';
 
 export default function TodayScreen() {
   const colors = useThemeColors();
@@ -30,7 +48,6 @@ export default function TodayScreen() {
   const habits = useHabits(uid);
   const log = useDailyLog(uid, today);
   const gamification = useGamificationState(uid);
-  const [isReordering, setIsReordering] = useState(false);
 
   if (habits.isLoading || log.isLoading || !gamification.data) {
     return (
@@ -40,12 +57,34 @@ export default function TodayScreen() {
     );
   }
 
-  const state = gamification.data;
+  return (
+    <TodayContent uid={uid} today={today} habits={habits} log={log} state={gamification.data} />
+  );
+}
+
+interface TodayContentProps {
+  uid: string;
+  today: DateKey;
+  habits: ReturnType<typeof useHabits>;
+  log: ReturnType<typeof useDailyLog>;
+  state: GamificationState;
+}
+
+/** Hoy con los datos ya cargados: aquí viven los momentos de logro, que comparan render a render. */
+function TodayContent({ uid, today, habits, log, state }: TodayContentProps) {
+  const [isReordering, setIsReordering] = useState(false);
   const summary = buildTodaySummary({
     today,
     habits: habits.data,
     entries: log.data?.entries ?? {},
     state,
+  });
+  const moments = useTodayMoments({
+    today,
+    isGoalMet: summary.isGoalMet,
+    isPerfectDay: summary.isPerfectDay,
+    streakDays: summary.streakDays,
+    streakBonus: summary.pointsBreakdown.streak,
   });
   const canReorder = habits.data.filter((habit) => habit.status === 'active').length > 1;
 
@@ -132,7 +171,7 @@ export default function TodayScreen() {
                 pointsBalance={state.pointsBalance}
                 streakFreezesAvailable={state.streakFreezesAvailable}
               />
-              {summary.isPerfectDay && <PerfectDayBanner />}
+              {summary.isPerfectDay && <PerfectDayBanner burst={moments.perfectDayBurst} />}
 
               {hasPrimaries && (
                 <HabitSection
@@ -169,6 +208,12 @@ export default function TodayScreen() {
         </View>
       </Screen>
       {!isReordering && <Fab label="Crear hábito" onPress={() => router.push('/habits/new')} />}
+      <StreakCelebrationModal
+        uid={uid}
+        today={today}
+        celebration={moments.celebration}
+        onClose={moments.dismissCelebration}
+      />
     </View>
   );
 }
@@ -223,30 +268,58 @@ function MoveButton({
   );
 }
 
-function PerfectDayBanner() {
+/**
+ * Aparece al completar todo. Si el día se vuelve perfecto con la pantalla abierta (`burst`), entra
+ * con un rebote, la estrella gira y saltan chispas.
+ */
+function PerfectDayBanner({ burst }: { burst: number }) {
   const colors = useThemeColors();
+  const pop = useSharedValue(1);
+
+  useEffect(() => {
+    if (burst === 0) return;
+    celebrationFeedback();
+    pop.set(0);
+    pop.set(withSpring(1, SPRING_POP));
+  }, [burst, pop]);
+
+  const bannerStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(pop.value, [0, 0.4], [0, 1], 'clamp'),
+    transform: [{ scale: interpolate(pop.value, [0, 1], [0.85, 1]) }],
+  }));
+  const starStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${interpolate(pop.value, [0, 1], [-180, 0])}deg` }],
+  }));
+
   return (
-    <LinearGradient
-      colors={colors.emberGradient}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={{
-        borderRadius: 18,
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 10,
-      }}
-    >
-      <StarIcon size={20} color={colors.inkOnFill} />
-      <View>
-        <Text className="font-body-bold text-body text-ink-on-fill">Día perfecto</Text>
-        <Text className="font-body-semibold text-caption text-ink-on-fill">
-          Ganaste +5 pts extra por completar todo
-        </Text>
-      </View>
-    </LinearGradient>
+    <Animated.View style={bannerStyle}>
+      <LinearGradient
+        colors={colors.emberGradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{
+          borderRadius: 18,
+          paddingHorizontal: 16,
+          paddingVertical: 12,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 10,
+        }}
+      >
+        <View>
+          <Animated.View style={starStyle}>
+            <StarIcon size={20} color={colors.inkOnFill} />
+          </Animated.View>
+          <Sparks burst={burst} radius={34} count={8} />
+        </View>
+        <View>
+          <Text className="font-body-bold text-body text-ink-on-fill">Día perfecto</Text>
+          <Text className="font-body-semibold text-caption text-ink-on-fill">
+            Ganaste +{PERFECT_DAY_BONUS} pts extra por completar todo
+          </Text>
+        </View>
+      </LinearGradient>
+    </Animated.View>
   );
 }
 
