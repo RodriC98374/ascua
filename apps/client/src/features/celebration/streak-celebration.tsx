@@ -21,6 +21,8 @@ import { CheckIcon, SnowflakeIcon, StarIcon } from '@/components/ui/icons';
 import { RollingNumber } from '@/components/ui/rolling-number';
 import { Sparks } from '@/components/ui/sparks';
 import { useDailyLogsInRange } from '@/data/hooks';
+import { MILESTONE_MESSAGES } from '@/features/milestones/milestones-card';
+import { StreakBadge } from '@/features/milestones/streak-badge';
 import { useThemeColors } from '@/theme/colors';
 import { DURATION, EASE_OUT, SPRING_POP } from '@/theme/motion';
 
@@ -118,6 +120,8 @@ function CelebrationContent({
   }));
 
   const dayWord = celebration.to === 1 ? 'día de racha' : 'días de racha';
+  // Un hito (7, 30, 100, 365) cambia la brasa por su insignia y el mensaje.
+  const { milestone } = celebration;
   const circle = { position: 'absolute' as const, width: 168, height: 168, borderRadius: 84 };
   return (
     <View
@@ -131,9 +135,18 @@ function CelebrationContent({
           <Animated.View
             style={[circle, { borderWidth: 3, borderColor: colors.ember }, ringStyle]}
           />
-          <Sparks burst={sparksBurst} radius={120} count={16} size={10} />
+          <Sparks
+            burst={sparksBurst}
+            radius={milestone ? 136 : 120}
+            count={milestone ? 24 : 16}
+            size={10}
+          />
           <Animated.View style={flameStyle}>
-            <EmberFlame size={FLAME_SIZE} />
+            {milestone ? (
+              <StreakBadge days={milestone} size={FLAME_SIZE + 16} isEarned />
+            ) : (
+              <EmberFlame size={FLAME_SIZE} />
+            )}
           </Animated.View>
         </View>
 
@@ -156,10 +169,12 @@ function CelebrationContent({
             <StreakWeekRow uid={uid} today={today} />
             <View className="items-center gap-1">
               <Text className="font-heading text-heading-lg text-ink text-center">
-                ¡Racha de hoy asegurada!
+                {milestone ? `¡Insignia de ${milestone} días!` : '¡Racha de hoy asegurada!'}
               </Text>
               <Text className="font-body text-body text-ink-muted text-center">
-                Cumpliste tus principales. Vuelve mañana para mantenerla encendida.
+                {milestone
+                  ? MILESTONE_MESSAGES[milestone]
+                  : 'Cumpliste tus principales. Vuelve mañana para mantenerla encendida.'}
               </Text>
             </View>
             {(celebration.isPerfectDay || celebration.streakBonus > 0) && (

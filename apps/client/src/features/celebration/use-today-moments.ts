@@ -1,6 +1,6 @@
 // Detecta los logros del día que merecen celebrarse, solo cuando ocurren con la pantalla abierta
 // (no al abrir la app con la meta ya cumplida).
-import type { DateKey } from '@ascua/shared';
+import { milestoneReached, type DateKey, type StreakMilestone } from '@ascua/shared';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useState } from 'react';
 
@@ -21,6 +21,8 @@ export interface StreakCelebration {
   to: number;
   isPerfectDay: boolean;
   streakBonus: number;
+  /** Hito de 7, 30, 100 o 365 días que se alcanza hoy, si toca. */
+  milestone: StreakMilestone | null;
 }
 
 export function useTodayMoments(input: TodayMomentsInput) {
@@ -57,6 +59,7 @@ export function useTodayMoments(input: TodayMomentsInput) {
           to: input.streakDays,
           isPerfectDay: input.isPerfectDay,
           streakBonus: input.streakBonus,
+          milestone: milestoneReached(previous.streakDays, input.streakDays),
         });
       }
     } else if (isSameDay && input.isPerfectDay && !previous.isPerfectDay) {

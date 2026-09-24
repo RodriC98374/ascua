@@ -15,6 +15,7 @@ import { Card } from '@/components/ui/card';
 import { ChevronIcon } from '@/components/ui/icons';
 import { ProgressBar } from '@/components/ui/progress-bar';
 import { useGamificationState, useMonthlySummaries } from '@/data/hooks';
+import { MilestonesCard } from '@/features/milestones/milestones-card';
 import { useActiveColorScheme, useThemeColors } from '@/theme/colors';
 
 import { monthRate, yearPoints } from './chart-data';
@@ -91,6 +92,11 @@ export function YearView({
             </Text>
           </View>
         </Card>
+      )}
+
+      {/* Las insignias son de todos los tiempos: se muestran solo en el año actual. */}
+      {state && today.startsWith(year) && (
+        <MilestonesCard longestStreak={state.longestStreak} currentStreak={state.currentStreak} />
       )}
 
       <Card className="gap-2">
