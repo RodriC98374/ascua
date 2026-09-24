@@ -43,11 +43,18 @@ dos puntos es este archivo** hasta que el artefacto se actualice (pendiente 5).
 ## Pendientes de implementación
 
 1. ~~**Navegación**~~ Resuelto por D16: 4 pestañas, Hoy / Mes / Recompensas / Ajustes.
-2. **Modo oscuro** (fase 10, D17): el bloque del README duplica cada color (`bg-surface-100 dark:bg-surface-100-dark`). Antes de copiarlo, verificar en la documentación de NativeWind si se pueden usar variables CSS por tema en `global.css`, para que cada clase cambie sola de tema. Si no es posible, usar los pares tal como vienen.
+2. ~~**Modo oscuro**~~ Resuelto el 24-09-2026 (fase 10): NativeWind sí admite variables CSS por
+   tema (`:root` y `.dark:root` con `darkMode: 'class'`), así que no se usan los pares `-dark`
+   del README. Los valores de los dos temas viven en `apps/client/src/theme/palette.json`, fuente
+   de verdad de los colores en el código. Oscuro: neutrales fríos derivados de la revisión de
+   abajo (`surface-100` `#121110`, `surface-200` `#1C1A18`, `surface-300` `#292624`, `border`
+   `#3A3633`, `ink` `#F5F5F4`, `ink-muted` `#BDB7B1`, `ink-faint` `#8C857F`); marca, estados y
+   semanas con los `-dark` del diseño. En oscuro las superficies se aclaran al subir (la opción
+   elegida del control segmentado va en `border`) y el pulgar del interruptor va claro.
 3. **Sombras en Android** (fase 09, con la primera APK): `boxShadow` funciona en web; en Android revisar el soporte de NativeWind o usar `elevation`.
 4. ~~**Regla de racha**~~ Resuelto: el README del diseño dice "los 3 principales"; la regla real es **todos los principales programados** (pueden ser menos de 3). En el código manda `data-model.md`, y los textos de la app lo dicen así.
 5. **Sincronizar el artefacto de Claude Design** con la revisión de la paleta de arriba (neutrales
    fríos y colores por hábito). Hasta entonces, en esos dos puntos manda este archivo, no el
-   artefacto. Al hacerlo, revisar también los pares `-dark` del punto 2 con los nuevos neutrales.
+   artefacto. Al hacerlo, pasarle también los valores oscuros de `palette.json` (punto 2).
 
-Hecho en la fase 04: los tokens del **tema claro** ya están en `apps/client/tailwind.config.js` (sin los pares `-dark`, que dependen del punto 2) y las fuentes se cargan en `src/theme/fonts.ts`. **Ojo:** el README del diseño llama a la fuente `BalooTwo_*`, pero el paquete la exporta como `Baloo2_*`; en el código manda `Baloo2_*`.
+Hecho en la fase 04: tokens en `apps/client/tailwind.config.js` (desde la fase 10 salen de `src/theme/palette.json`, con los dos temas) y fuentes en `src/theme/fonts.ts`. **Ojo:** el README del diseño llama a la fuente `BalooTwo_*`, pero el paquete la exporta como `Baloo2_*`; en el código manda `Baloo2_*`.

@@ -65,6 +65,7 @@ Desde la raíz (en la oficina, con el Node portable antepuesto al PATH):
 | `npm run build:web` | Exporta la web a `apps/client/dist` |
 | `npm run deploy:web` / `npm run deploy:rules` | Publica la web en Hosting / las reglas de Firestore |
 | `npm run build:apk` | APK con EAS Build (perfil `preview`) |
+| `node scripts/generate-icons.mjs` (desde `apps/client`) | Regenera ícono, splash, favicon e ícono de notificación con Edge headless |
 
 Cobertura de `shared` (mínimo 95%, hoy 100%): `npm run test:coverage -w @ascua/shared`.
 

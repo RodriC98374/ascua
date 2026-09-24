@@ -33,6 +33,8 @@ solo build del cupo de EAS.
   alarma es exacta en Android 12+).
 - Probado en web con los emuladores: la sección, el selector y el guardado. **Sin probar en
   Android:** todo lo que depende de la APK.
+- 24-09-2026 (fase 10): el aviso usa un ícono propio, `notification-icon.png` (la brasa en
+  blanco), en lugar del monocromo de plantilla. Llega con el próximo build.
 
 ## Tareas
 
