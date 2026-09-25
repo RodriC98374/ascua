@@ -6,9 +6,11 @@ import Head from 'expo-router/head';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { View } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { ThemeProvider, useThemePreference } from '@/features/appearance/theme-provider';
 import { SessionProvider, useSession } from '@/features/auth/session';
+import { SoundsProvider } from '@/features/sounds/sounds-provider';
 import { appFonts } from '@/theme/fonts';
 
 // El splash queda visible hasta tener las fuentes, el tema y saber si hay una sesión guardada.
@@ -17,15 +19,20 @@ SplashScreen.preventAutoHideAsync();
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts(appFonts);
   return (
-    <ThemeProvider>
-      {/* Título de la pestaña del navegador; en Android no hace nada. */}
-      <Head>
-        <title>Ascua</title>
-      </Head>
-      <SessionProvider>
-        <RootNavigator areFontsReady={fontsLoaded || fontError !== null} />
-      </SessionProvider>
-    </ThemeProvider>
+    // Raíz de los gestos (deslizar un hábito para marcarlo).
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ThemeProvider>
+        {/* Título de la pestaña del navegador; en Android no hace nada. */}
+        <Head>
+          <title>Ascua</title>
+        </Head>
+        <SoundsProvider>
+          <SessionProvider>
+            <RootNavigator areFontsReady={fontsLoaded || fontError !== null} />
+          </SessionProvider>
+        </SoundsProvider>
+      </ThemeProvider>
+    </GestureHandlerRootView>
   );
 }
 

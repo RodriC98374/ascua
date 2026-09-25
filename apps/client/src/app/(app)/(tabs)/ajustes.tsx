@@ -9,6 +9,7 @@ import { signOut, useSession, useUid } from '@/features/auth/session';
 import { useHabits } from '@/data/hooks';
 import { ExportSection } from '@/features/export/export-section';
 import { ReminderSettingsSection } from '@/features/reminders/reminder-settings';
+import { SoundsSection } from '@/features/sounds/sounds-section';
 
 /** Preferencias y cuenta. Los hábitos se crean, editan y ordenan desde Hoy. */
 export default function SettingsScreen() {
@@ -38,6 +39,8 @@ export default function SettingsScreen() {
         <ReminderSettingsSection />
 
         <AppearanceSection />
+
+        <SoundsSection />
 
         <ExportSection />
         {archived.length > 0 && (

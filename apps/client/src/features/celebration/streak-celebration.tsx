@@ -16,13 +16,14 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/button';
-import { EmberFlame } from '@/components/ui/ember-flame';
 import { CheckIcon, SnowflakeIcon, StarIcon } from '@/components/ui/icons';
+import { LivingFlame } from '@/components/ui/living-flame';
 import { RollingNumber } from '@/components/ui/rolling-number';
 import { Sparks } from '@/components/ui/sparks';
 import { useDailyLogsInRange } from '@/data/hooks';
 import { MILESTONE_MESSAGES } from '@/features/milestones/milestones-card';
 import { StreakBadge } from '@/features/milestones/streak-badge';
+import { playSound } from '@/features/sounds/sounds';
 import { useThemeColors } from '@/theme/colors';
 import { DURATION, EASE_OUT, SPRING_POP } from '@/theme/motion';
 
@@ -89,6 +90,7 @@ function CelebrationContent({
     text.set(withDelay(TIMING.text, withTiming(1, { duration: DURATION.slow, easing: EASE_OUT })));
     const burstTimer = setTimeout(() => {
       celebrationFeedback();
+      playSound(celebration.milestone ? 'milestone' : 'streak');
       setSparksBurst(1);
     }, TIMING.burst);
     const numberTimer = setTimeout(() => setShownStreak(celebration.to), TIMING.number);
@@ -96,7 +98,7 @@ function CelebrationContent({
       clearTimeout(burstTimer);
       clearTimeout(numberTimer);
     };
-  }, [celebration.to, flame, ring, text]);
+  }, [celebration.to, celebration.milestone, flame, ring, text]);
 
   const flameStyle = useAnimatedStyle(() => ({
     opacity: interpolate(flame.value, [0, 0.3], [0, 1], 'clamp'),
@@ -145,7 +147,7 @@ function CelebrationContent({
             {milestone ? (
               <StreakBadge days={milestone} size={FLAME_SIZE + 16} isEarned />
             ) : (
-              <EmberFlame size={FLAME_SIZE} />
+              <LivingFlame size={FLAME_SIZE} isContinuous />
             )}
           </Animated.View>
         </View>

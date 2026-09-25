@@ -1,7 +1,7 @@
 // El brasero: un anillo con un segmento por hábito principal de hoy. Cada principal cumplido
 // enciende su segmento con el degradado de marca; con todos encendidos, la racha de hoy está
 // asegurada (la meta de racha es cumplir todos los principales).
-import { useEffect, useId, useRef } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { View } from 'react-native';
 import Animated, {
   interpolate,
@@ -15,6 +15,7 @@ import Animated, {
 import Svg, { Circle, Defs, LinearGradient, Path, Stop } from 'react-native-svg';
 
 import { EmberIcon } from '@/components/ui/icons';
+import { LivingFlame } from '@/components/ui/living-flame';
 import { useThemeColors } from '@/theme/colors';
 import { DURATION, EASE_OUT, SPRING_POP } from '@/theme/motion';
 
@@ -25,6 +26,8 @@ const CENTER = SIZE / 2;
 /** Separación entre segmentos, en grados (los extremos redondeados se comen parte). */
 const GAP_DEGREES = 26;
 const FLARE_DURATION = 520;
+/** Con racha viva, la llama de marca (a color) es un poco más grande que la brasa apagada. */
+const FLAME_SIZE = 42;
 
 function pointAt(degrees: number) {
   const radians = ((degrees - 90) * Math.PI) / 180;
@@ -56,6 +59,12 @@ interface StreakHearthProps {
 export function StreakHearth({ done, total, isStreakAlive }: StreakHearthProps) {
   const colors = useThemeColors();
   const gradientId = `hearth-${useId().replace(/[^a-zA-Z0-9]/g, '')}`;
+  // La llama se aviva al abrir Hoy (1) y cada vez que se enciende un segmento; desmarcar no la
+  // mueve. Se compara con el render anterior durante el render (estado derivado, sin efecto).
+  const [ignition, setIgnition] = useState({ done, count: 1 });
+  if (ignition.done !== done) {
+    setIgnition({ done, count: done > ignition.done ? ignition.count + 1 : ignition.count });
+  }
   // Destello del segmento recién encendido (o del anillo entero al completar la meta).
   const flare = useSharedValue(1);
   const ember = useSharedValue(1);
@@ -109,7 +118,11 @@ export function StreakHearth({ done, total, isStreakAlive }: StreakHearthProps) 
       </Svg>
       <Flare total={total} done={done} color={colors.ember} progress={flare} />
       <Animated.View style={emberStyle}>
-        <EmberIcon size={40} color={isStreakAlive ? colors.emberStrong : colors.inkFaint} />
+        {isStreakAlive ? (
+          <LivingFlame size={FLAME_SIZE} burst={ignition.count} />
+        ) : (
+          <EmberIcon size={40} color={colors.inkFaint} />
+        )}
       </Animated.View>
     </View>
   );

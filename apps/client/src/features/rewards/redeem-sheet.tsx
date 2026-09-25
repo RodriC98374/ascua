@@ -16,6 +16,7 @@ import { Sparks } from '@/components/ui/sparks';
 import { TextField } from '@/components/ui/text-field';
 import { useUid } from '@/features/auth/session';
 import { celebrationFeedback } from '@/features/celebration/haptics';
+import { playSound } from '@/features/sounds/sounds';
 import { db } from '@/lib/firebase';
 import { redeemReward } from '@/operations/spending';
 import { useThemeColors } from '@/theme/colors';
@@ -57,6 +58,7 @@ export function RedeemSheet({ reward, pointsBalance, onClose }: RedeemSheetProps
       await redeemReward(db, uid, { requestId, rewardId: reward.id, note });
       setNewBalance(pointsBalance - reward.cost);
       celebrationFeedback();
+      playSound('chime');
       medal.set(0);
       medal.set(withSpring(1, SPRING_POP));
     } catch (redeemError) {

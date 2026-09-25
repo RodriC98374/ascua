@@ -31,6 +31,7 @@ import { Sparks } from '@/components/ui/sparks';
 import { celebrationFeedback } from '@/features/celebration/haptics';
 import { StreakCelebrationModal } from '@/features/celebration/streak-celebration';
 import { useTodayMoments } from '@/features/celebration/use-today-moments';
+import { playSound } from '@/features/sounds/sounds';
 import { useUid } from '@/features/auth/session';
 import { useDailyLog, useGamificationState, useHabits, useUserProfile } from '@/data/hooks';
 import { canMove, moveHabit, type MoveOffset } from '@/features/habits/habit-order';
@@ -306,6 +307,7 @@ function PerfectDayBanner({ burst }: { burst: number }) {
   useEffect(() => {
     if (burst === 0) return;
     celebrationFeedback();
+    playSound('chime');
     pop.set(0);
     pop.set(withSpring(1, SPRING_POP));
   }, [burst, pop]);
