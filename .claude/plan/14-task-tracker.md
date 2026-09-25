@@ -55,12 +55,14 @@ verificadas con 11 mutaciones: todas hacen fallar algún test. `closePendingDays
 más si no hay días pendientes.
 
 **App**
-- [ ] Converter y hooks; "+N hoy" y el desglose de puntos con las tareas.
-- [ ] Sección "Tareas" en Hoy (marcar, deslizar, vencidas, tope visible), formulario con días
+- [x] Converter y hooks; "+N hoy" y el desglose de puntos con las tareas.
+- [x] Sección "Tareas" en Hoy (marcar, deslizar, vencidas, tope visible), formulario con días
       rápidos (Hoy, Mañana y la semana) y lista de próximas.
 - [ ] Mes → Semana: un donut por día con las tareas cumplidas y pendientes.
 - [x] Exportación: el respaldo JSON incluye las tareas y el CSV nombra el movimiento nuevo.
-- [ ] Datos de la demo con tareas.
+- [x] Datos de la demo con tareas (historia y hoy; azar propio para no cambiar la de hábitos).
+
+App revisada con Edge headless contra la demo (claro y oscuro): marcar, próximas, crear con el formulario, menú (mover a mañana), tope pasado ("Llegaste al tope…", el día suma 30 por tareas). Cliente 142 tests.
 
 **Cierre**
 - [ ] Revisión en web, typecheck, lint y tests; revisión del usuario; publicar reglas antes que
