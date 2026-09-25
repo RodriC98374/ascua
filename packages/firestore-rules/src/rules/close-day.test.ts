@@ -1,4 +1,10 @@
-import { addDays, EMPTY_MONTHLY_COUNTERS, toMonthKey, transactionIds } from '@ascua/shared';
+import {
+  addDays,
+  DAILY_TASK_POINTS_CAP,
+  EMPTY_MONTHLY_COUNTERS,
+  toMonthKey,
+  transactionIds,
+} from '@ascua/shared';
 import { assertFails, assertSucceeds } from '@firebase/rules-unit-testing';
 import { serverTimestamp } from 'firebase/firestore';
 import { describe, expect, it } from 'vitest';
@@ -17,6 +23,7 @@ import {
   seedDocs,
   tamper,
   testHabit,
+  testTask,
   TODAY,
   without,
   YESTERDAY,
@@ -107,7 +114,32 @@ describe('closePendingDays: allowed', () => {
     await assertSucceeds(commit(ownerDb(), writes));
   });
 
-  it('fits the rules access limit in the largest close (10 habits, both streak bonuses)', async () => {
+  it('closes a day with tasks, credited in a single movement', async () => {
+    const input: CloseInput = {
+      ...perfectDay(),
+      completedTasks: [testTask('call', 'small', YESTERDAY), testTask('bill', 'medium', YESTERDAY)],
+    };
+    const { evaluation, writes } = await prepared(input);
+    const movement = evaluation.transactions.find((t) => t.type === 'task_completion');
+    expect(movement?.id).toBe(transactionIds.dayTasks(YESTERDAY));
+    expect(movement?.amount).toBe(15);
+    await assertSucceeds(commit(ownerDb(), writes));
+  });
+
+  it('credits the daily cap when the tasks go over it, even on a day without habits', async () => {
+    const input: CloseInput = {
+      state: pendingState(),
+      habits: [],
+      logExists: false,
+      completedTasks: [testTask('a', 'large', YESTERDAY), testTask('b', 'large', YESTERDAY)],
+    };
+    const { evaluation, writes } = await prepared(input);
+    expect(evaluation.status).toBe('inactive');
+    expect(evaluation.summary.pointsEarned).toBe(DAILY_TASK_POINTS_CAP);
+    await assertSucceeds(commit(ownerDb(), writes));
+  });
+
+  it('fits the rules access limit in the largest close (10 habits, tasks, both streak bonuses)', async () => {
     const habits = Array.from({ length: 10 }, (_, i) =>
       testHabit(`h${i}`, i < 3 ? 'primary' : 'secondary'),
     );
@@ -123,10 +155,11 @@ describe('closePendingDays: allowed', () => {
       }),
       habits,
       entries: done(...habits.map((habit) => habit.id)),
+      completedTasks: Array.from({ length: 12 }, (_, i) => testTask(`t${i}`, 'large', YESTERDAY)),
       monthly: { ...EMPTY_MONTHLY_COUNTERS, closedDays: 20, completedDays: 20, pointsEarned: 900 },
     };
     const { evaluation, writes } = await prepared(input);
-    expect(evaluation.transactions).toHaveLength(13);
+    expect(evaluation.transactions).toHaveLength(14);
     await assertSucceeds(commit(ownerDb(), writes));
   });
 });
@@ -207,6 +240,56 @@ describe('closePendingDays: denied', () => {
       },
     };
     await assertFails(commit(ownerDb(), [...writes, bonus]));
+  });
+
+  describe('tasks movement', () => {
+    /** Día sin hábitos con 30 pts de tareas: el movimiento de tareas es el único del cierre. */
+    const tasksOnlyDay = (): CloseInput => ({
+      state: pendingState({ pointsBalance: 100, lifetimePointsEarned: 100 }),
+      habits: [],
+      logExists: false,
+      completedTasks: [testTask('a', 'large', YESTERDAY), testTask('b', 'medium', YESTERDAY)],
+    });
+    const movementPath = paths.transaction(transactionIds.dayTasks(YESTERDAY));
+
+    it('rejects more than the daily cap, even when everything else adds up', async () => {
+      const { writes } = await prepared(tasksOnlyDay());
+      const summary = writes.find((write) => write.path === yesterdayLog)?.data.summary;
+      const extra = 5;
+      let tampered = tamper(writes, movementPath, {
+        amount: DAILY_TASK_POINTS_CAP + extra,
+        balanceAfter: 100 + DAILY_TASK_POINTS_CAP + extra,
+      });
+      tampered = tamper(tampered, yesterdayLog, {
+        summary: { ...summary, pointsEarned: DAILY_TASK_POINTS_CAP + extra },
+      });
+      tampered = tamper(tampered, gamificationPath, {
+        pointsBalance: 100 + DAILY_TASK_POINTS_CAP + extra,
+        lifetimePointsEarned: 100 + DAILY_TASK_POINTS_CAP + extra,
+      });
+      tampered = tamper(tampered, yesterdayMonth, { pointsEarned: DAILY_TASK_POINTS_CAP + extra });
+      await assertFails(commit(ownerDb(), tampered));
+    });
+
+    it('rejects a tasks movement with an id that is not the day one', async () => {
+      const { writes } = await prepared(tasksOnlyDay());
+      const renamed = writes.map((write) =>
+        write.path === movementPath
+          ? { ...write, path: paths.transaction(`tasks_${YESTERDAY}_extra`) }
+          : write,
+      );
+      await assertFails(commit(ownerDb(), renamed));
+    });
+
+    it('rejects a tasks movement outside a close', async () => {
+      const { writes } = await prepared(tasksOnlyDay());
+      await assertFails(
+        commit(
+          ownerDb(),
+          writes.filter((write) => write.path === movementPath),
+        ),
+      );
+    });
   });
 
   it('rejects raising streakFreezesAvailable during a close', async () => {

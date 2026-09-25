@@ -35,6 +35,7 @@ const USER_COLLECTIONS = [
   'pointTransactions',
   'rewards',
   'rewardRedemptions',
+  'tasks',
 ] as const;
 
 /** Documentos tal como están en Firestore, sin converter: el respaldo no pierde ningún campo. */

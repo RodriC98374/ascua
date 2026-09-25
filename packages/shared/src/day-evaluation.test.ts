@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { evaluateDay, previewDay } from './day-evaluation';
-import type { DailyEntries, GamificationState, Habit } from './types';
+import type { DailyEntries, GamificationState, Habit, Task } from './types';
 
 const DAY = '2026-09-21';
 
@@ -334,6 +334,109 @@ describe('evaluateDay', () => {
       });
       expect(result.transactions.map((t) => t.type)).toContain('streak_bonus_7_days');
       expect(result.nextState.daysWithoutFreeze).toBe(7);
+    });
+  });
+
+  describe('tasks', () => {
+    function task(id: string, size: Task['size'], completedDateKey: string | null = DAY): Task {
+      return { id, title: id, size, dueDateKey: DAY, completedDateKey };
+    }
+
+    it('credits the tasks completed that day in a single movement after the habits', () => {
+      const result = evaluateDay({
+        dateKey: DAY,
+        habits: HABITS,
+        entries: done('read', 'exercise'),
+        completedTasks: [task('call', 'small'), task('report', 'medium')],
+        state: state(),
+      });
+      const movement = result.transactions.find((t) => t.type === 'task_completion');
+      expect(movement).toEqual({
+        id: `tasks_${DAY}`,
+        type: 'task_completion',
+        amount: 15,
+        balanceAfter: 135,
+        dateKey: DAY,
+        sourceType: 'daily_log',
+        sourceId: DAY,
+        description: 'Tareas cumplidas: 2',
+      });
+      expect(result.transactions.map((t) => t.type)).toEqual([
+        'habit_completion',
+        'habit_completion',
+        'task_completion',
+      ]);
+      expect(result.summary.pointsEarned).toBe(35);
+      expect(result.nextState.pointsBalance).toBe(135);
+    });
+
+    it('stops at the daily cap', () => {
+      const result = evaluateDay({
+        dateKey: DAY,
+        habits: HABITS,
+        entries: {},
+        completedTasks: [task('a', 'large'), task('b', 'large')],
+        state: state({ streakFreezesAvailable: 0 }),
+      });
+      expect(result.transactions.find((t) => t.type === 'task_completion')?.amount).toBe(30);
+    });
+
+    it('ignores tasks completed on another day', () => {
+      const result = evaluateDay({
+        dateKey: DAY,
+        habits: HABITS,
+        entries: done('read', 'exercise'),
+        completedTasks: [task('old', 'large', '2026-09-20')],
+        state: state(),
+      });
+      expect(result.transactions.map((t) => t.type)).not.toContain('task_completion');
+      expect(result.summary.pointsEarned).toBe(20);
+    });
+
+    it('does not touch the streak or the perfect day', () => {
+      const result = evaluateDay({
+        dateKey: DAY,
+        habits: HABITS,
+        entries: done('read'),
+        completedTasks: [task('a', 'large')],
+        state: state({ streakFreezesAvailable: 0 }),
+      });
+      expect(result.status).toBe('missed');
+      expect(result.summary.isPerfectDay).toBe(false);
+      expect(result.nextState.currentStreak).toBe(0);
+      expect(result.summary.pointsEarned).toBe(30);
+    });
+
+    it('credits tasks on a day without habits, which stays inactive', () => {
+      const result = evaluateDay({
+        dateKey: DAY,
+        habits: [],
+        entries: {},
+        completedTasks: [task('a', 'medium')],
+        state: state(),
+      });
+      expect(result.status).toBe('inactive');
+      expect(result.nextState.currentStreak).toBe(3);
+      expect(result.summary.pointsEarned).toBe(10);
+      expect(result.nextState.lifetimePointsEarned).toBe(110);
+    });
+
+    it('puts the tasks before the perfect day and streak bonuses', () => {
+      const result = evaluateDay({
+        dateKey: DAY,
+        habits: HABITS,
+        entries: done('read', 'exercise', 'water'),
+        completedTasks: [task('a', 'small')],
+        state: state({ daysWithoutFreeze: 6 }),
+      });
+      expect(result.transactions.map((t) => t.type)).toEqual([
+        'habit_completion',
+        'habit_completion',
+        'habit_completion',
+        'task_completion',
+        'perfect_day_bonus',
+        'streak_bonus_7_days',
+      ]);
     });
   });
 

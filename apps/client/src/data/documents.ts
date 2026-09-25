@@ -1,6 +1,6 @@
 // Referencias tipadas a los documentos de Firestore y los campos comunes de todo documento.
 // Sin imports con alias (`@/`): las operaciones se prueban también desde packages/firestore-rules.
-import { categoryOf, isHabitColor } from '@ascua/shared';
+import { categoryOf, isHabitColor, toDateKey, todayDateKey } from '@ascua/shared';
 import type {
   DailyEntries,
   DailyLog,
@@ -12,6 +12,8 @@ import type {
   PointTransaction,
   RewardRecord,
   RewardRedemption,
+  TaskRecord,
+  TaskSize,
   UserProfile,
 } from '@ascua/shared';
 import {
@@ -23,6 +25,7 @@ import {
   type DocumentReference,
   type Firestore,
   type FirestoreDataConverter,
+  type Timestamp,
 } from 'firebase/firestore';
 
 /** Versión del esquema de los documentos que escribe esta versión de la app. */
@@ -179,6 +182,32 @@ export function rewardRef(
   rewardId: string,
 ): DocumentReference<RewardRecord> {
   return doc(rewardsCollection(db, uid), rewardId);
+}
+
+// El ID del documento es el de la tarea. `createdDateKey` sale de `createdAt` en hora de Bolivia;
+// mientras la creación no llega al servidor, `createdAt` todavía no existe y se toma hoy.
+export const taskConverter: FirestoreDataConverter<TaskRecord, DocumentData> = {
+  toFirestore: (data) => data as DocumentData,
+  fromFirestore: (snapshot, options) => {
+    const data = snapshot.data(options);
+    const createdAt = data.createdAt as Timestamp | null;
+    return {
+      id: snapshot.id,
+      title: data.title as string,
+      size: data.size as TaskSize,
+      dueDateKey: data.dueDateKey as DateKey,
+      completedDateKey: (data.completedDateKey as DateKey | null) ?? null,
+      createdDateKey: createdAt ? toDateKey(createdAt.toDate()) : todayDateKey(),
+    };
+  },
+};
+
+export function tasksCollection(db: Firestore, uid: string): CollectionReference<TaskRecord> {
+  return collection(db, 'users', uid, 'tasks').withConverter(taskConverter);
+}
+
+export function taskRef(db: Firestore, uid: string, taskId: string): DocumentReference<TaskRecord> {
+  return doc(tasksCollection(db, uid), taskId);
 }
 
 export const redemptionConverter = withIdConverter<RewardRedemption>();

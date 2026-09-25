@@ -3,14 +3,16 @@
 import {
   addClosedDay,
   addDays,
+  DAILY_TASK_POINTS_CAP,
   EMPTY_MONTHLY_COUNTERS,
   evaluateDay,
   toMonthKey,
+  transactionIds as transactionIdsOf,
   type DailyEntries,
   type GamificationState,
   type Habit,
 } from '@ascua/shared';
-import { collection, getDoc, getDocs, doc, type Firestore } from 'firebase/firestore';
+import { collection, getDoc, getDocs, doc, Timestamp, type Firestore } from 'firebase/firestore';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -26,6 +28,7 @@ import {
   paths,
   pendingState,
   seedDocs,
+  taskDoc,
   testHabit,
   TODAY,
   YESTERDAY,
@@ -133,6 +136,44 @@ describe('closePendingDays', () => {
       status: 'missed',
       entries: {},
     });
+  });
+
+  it('credits the tasks completed on each pending day, with the daily cap', async () => {
+    const past = Timestamp.fromDate(new Date('2026-01-01T12:00:00Z'));
+    const completedOn = (dateKey: string, size: string) =>
+      taskDoc({
+        size,
+        dueDateKey: dateKey,
+        completedDateKey: dateKey,
+        completedAt: past,
+        createdAt: past,
+        updatedAt: past,
+      });
+    const twoDaysAgo = addDays(TODAY, -2);
+    await seed({ state: stateClosedDaysAgo(3, { pointsBalance: 50, lifetimePointsEarned: 50 }) });
+    await seedDocs({
+      [paths.task('a')]: completedOn(twoDaysAgo, 'small'),
+      [paths.task('b')]: completedOn(YESTERDAY, 'large'),
+      [paths.task('c')]: completedOn(YESTERDAY, 'large'),
+      // Ya cerrado antes y todavía abierto hoy: ninguno se acredita.
+      [paths.task('closed')]: completedOn(addDays(TODAY, -5), 'large'),
+      [paths.task('today')]: taskDoc({ completedDateKey: TODAY, completedAt: past }),
+      [paths.task('open')]: taskDoc(),
+    });
+
+    const db = ownerDb();
+    const result = await closePendingDays(db, OWNER, TODAY);
+
+    expect(result.closedDays.map((day) => day.pointsEarned)).toEqual([5, DAILY_TASK_POINTS_CAP]);
+    expect(await transactionIds(db)).toEqual(
+      [transactionIdsOf.dayTasks(twoDaysAgo), transactionIdsOf.dayTasks(YESTERDAY)].sort(),
+    );
+    expect(await read(db, paths.transaction(transactionIdsOf.dayTasks(YESTERDAY)))).toMatchObject({
+      type: 'task_completion',
+      amount: DAILY_TASK_POINTS_CAP,
+      description: 'Tareas cumplidas: 2',
+    });
+    expect(result.state?.pointsBalance).toBe(50 + 5 + DAILY_TASK_POINTS_CAP);
   });
 
   it('does nothing when there are no pending days', async () => {

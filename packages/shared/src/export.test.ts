@@ -231,6 +231,7 @@ describe('buildPointTransactionsCsv', () => {
       'streak_bonus_30_days',
       'streak_freeze_purchase',
       'manual_adjustment',
+      'task_completion',
     ] as const;
     const rows = parse(
       buildPointTransactionsCsv(types.map((type, i) => movement({ id: String(i), type }))),
@@ -240,6 +241,7 @@ describe('buildPointTransactionsCsv', () => {
       'Bono de 30 días',
       'Compra de protector',
       'Ajuste manual',
+      'Tareas cumplidas',
     ]);
   });
 });
@@ -268,6 +270,10 @@ describe('buildBackup', () => {
       pointTransactions: [],
       rewards: [],
       rewardRedemptions: [],
+      tasks: [
+        { id: 't2', data: { title: 'Pagar luz', completedAt: instant('2026-09-22T15:00:00Z') } },
+        { id: 't1', data: { title: 'Llamar', completedAt: null } },
+      ],
     });
 
     expect(backup).toEqual({
@@ -287,6 +293,10 @@ describe('buildBackup', () => {
       pointTransactions: [],
       rewards: [],
       rewardRedemptions: [],
+      tasks: [
+        { id: 't1', title: 'Llamar', completedAt: null },
+        { id: 't2', title: 'Pagar luz', completedAt: '2026-09-22T11:00:00.000-04:00' },
+      ],
     });
   });
 
@@ -302,6 +312,7 @@ describe('buildBackup', () => {
       pointTransactions: [],
       rewards: [],
       rewardRedemptions: [],
+      tasks: [],
     });
     expect(backup.profile).toBeNull();
     expect(JSON.parse(JSON.stringify(backup))).toEqual(backup);

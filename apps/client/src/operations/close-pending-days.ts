@@ -13,12 +13,16 @@ import {
   type DateKey,
   type GamificationState,
   type HabitRecord,
+  type TaskRecord,
 } from '@ascua/shared';
 import {
+  getDoc,
   getDocFromServer,
   getDocs,
+  query,
   runTransaction,
   serverTimestamp,
+  where,
   type Firestore,
   type Transaction,
 } from 'firebase/firestore';
@@ -30,6 +34,7 @@ import {
   monthlySummaryRef,
   newDocumentFields,
   pointTransactionRef,
+  tasksCollection,
 } from '../data/documents';
 
 export interface ClosedDay {
@@ -53,16 +58,36 @@ export async function closePendingDays(
   uid: string,
   today: DateKey = todayDateKey(),
 ): Promise<ClosePendingDaysResult> {
-  // Las transacciones del SDK cliente no admiten consultas: los hábitos se leen antes. Los
-  // cambios de hoy (crear o archivar) no alteran días pasados, así que la foto sirve para todos.
-  const habits = (await getDocs(habitsCollection(db, uid))).docs.map((snapshot) => snapshot.data());
-
   const result: ClosePendingDaysResult = { closedDays: [], state: null };
+  // Si no hay nada que cerrar, no se lee nada más. La foto puede venir del caché: como
+  // `lastClosedDateKey` solo avanza, un dato viejo solo hace creer que hay más días pendientes, y
+  // la transacción de cada día lo corrige.
+  const knownState = (await getDoc(gamificationRef(db, uid))).data();
+  if (!knownState) return result;
+  const firstPending = addDays(knownState.lastClosedDateKey, 1);
+  if (firstPending >= today) return result;
+
+  // Las transacciones del SDK cliente no admiten consultas: hábitos y tareas se leen antes. Los
+  // cambios de hoy no alteran días pasados (un hábito nuevo empieza hoy y una tarea solo se marca
+  // hoy), así que la foto sirve para todos los días pendientes.
+  const [habitsSnapshot, tasksSnapshot] = await Promise.all([
+    getDocs(habitsCollection(db, uid)),
+    getDocs(
+      query(
+        tasksCollection(db, uid),
+        where('completedDateKey', '>=', firstPending),
+        where('completedDateKey', '<', today),
+      ),
+    ),
+  ]);
+  const habits = habitsSnapshot.docs.map((snapshot) => snapshot.data());
+  const completedTasks = tasksSnapshot.docs.map((snapshot) => snapshot.data());
+
   for (;;) {
     let attemptedDateKey: DateKey | null = null;
     try {
       const closed = await runTransaction(db, (transaction) =>
-        closeNextDay(transaction, db, uid, habits, today, (dateKey) => {
+        closeNextDay(transaction, db, uid, { habits, completedTasks }, today, (dateKey) => {
           attemptedDateKey = dateKey;
         }),
       );
@@ -99,7 +124,10 @@ async function closeNextDay(
   transaction: Transaction,
   db: Firestore,
   uid: string,
-  habits: readonly HabitRecord[],
+  {
+    habits,
+    completedTasks,
+  }: { habits: readonly HabitRecord[]; completedTasks: readonly TaskRecord[] },
   today: DateKey,
   onAttempt: (dateKey: DateKey) => void,
 ): Promise<{ day: ClosedDay; state: GamificationState } | null> {
@@ -118,7 +146,14 @@ async function closeNextDay(
   const log = (await transaction.get(logRef)).data();
   const month = (await transaction.get(monthRef)).data();
 
-  const evaluation = evaluateDay({ dateKey, habits, entries: log?.entries ?? {}, state });
+  // evaluateDay toma solo las tareas cumplidas en `dateKey`.
+  const evaluation = evaluateDay({
+    dateKey,
+    habits,
+    entries: log?.entries ?? {},
+    completedTasks,
+    state,
+  });
   const summary = { ...evaluation.summary, closedAt: serverTimestamp() };
 
   // Se escribe sin converter: los metadatos (timestamps del servidor) no son parte del dominio.

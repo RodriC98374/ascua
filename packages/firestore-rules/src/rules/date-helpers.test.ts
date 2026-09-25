@@ -1,6 +1,7 @@
 // Las reglas calculan fechas sin Intl. El emulador no permite fijar `request.time`, así que las
 // funciones de fecha se prueban directamente mediante sondas (ver `rulesForTests`).
 import {
+  DAILY_TASK_POINTS_CAP,
   HABIT_POINTS,
   MAX_STREAK_FREEZES,
   PERFECT_DAY_BONUS,
@@ -97,6 +98,7 @@ describe('rulesConstants', () => {
           streakBonuses,
           streakFreezeCost: STREAK_FREEZE_COST,
           maxStreakFreezes: MAX_STREAK_FREEZES,
+          dailyTaskPointsCap: DAILY_TASK_POINTS_CAP,
         },
       }),
     );

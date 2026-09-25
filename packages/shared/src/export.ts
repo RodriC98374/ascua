@@ -117,6 +117,7 @@ const TRANSACTION_LABELS: Record<PointTransactionType, string> = {
   streak_freeze_purchase: 'Compra de protector',
   reward_redemption: 'Canje de recompensa',
   manual_adjustment: 'Ajuste manual',
+  task_completion: 'Tareas cumplidas',
 };
 
 /** Todos los movimientos, del más antiguo al más reciente. */
@@ -156,6 +157,7 @@ export interface BackupInput {
   pointTransactions: readonly ExportDocument[];
   rewards: readonly ExportDocument[];
   rewardRedemptions: readonly ExportDocument[];
+  tasks: readonly ExportDocument[];
 }
 
 type BackupRecord = Record<string, unknown>;
@@ -174,6 +176,8 @@ export interface Backup {
   pointTransactions: BackupRecord[];
   rewards: BackupRecord[];
   rewardRedemptions: BackupRecord[];
+  /** Desde la fase 14. Un respaldo anterior no la trae: al restaurar, se toma como vacía. */
+  tasks: BackupRecord[];
 }
 
 /** Un `Timestamp` de Firestore (o cualquier valor con `toDate`), sin importar Firebase. */
@@ -218,6 +222,7 @@ export function buildBackup(input: BackupInput): Backup {
     pointTransactions: serializeCollection(input.pointTransactions),
     rewards: serializeCollection(input.rewards),
     rewardRedemptions: serializeCollection(input.rewardRedemptions),
+    tasks: serializeCollection(input.tasks),
   };
 }
 

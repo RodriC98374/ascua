@@ -34,7 +34,8 @@ service cloud.firestore {
           'streak_bonus_30_days': {'everyDays': 30, 'points': 100}
         },
         'streakFreezeCost': 150,
-        'maxStreakFreezes': 2
+        'maxStreakFreezes': 2,
+        'dailyTaskPointsCap': 30
       };
     }
 
@@ -260,6 +261,48 @@ service cloud.firestore {
           && reward.cost is int && reward.cost > 0 && reward.cost <= 1000000
           && reward.status in ['active', 'archived']
           && reward.sortOrder is int;
+      }
+
+      // --- Tareas: libres con forma validada; se marcan solo hoy y lo cumplido en un día pasado
+      // queda fijo (sus puntos ya son parte del cierre de ese día) ---
+
+      match /tasks/{taskId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId)
+          && isValidTask(incoming())
+          && isCreatedNow()
+          && incoming().dueDateKey >= todayKey()
+          && incoming().completedDateKey == null
+          && incoming().completedAt == null;
+        allow update: if isOwner(userId)
+          && !isLockedTask(existing())
+          && onlyChanges(['title', 'size', 'dueDateKey', 'completedDateKey', 'completedAt', 'updatedAt'])
+          && isValidTask(incoming())
+          && isTouchedNow()
+          // Una vencida conserva su fecha al editarla, pero nunca se mueve a un día pasado.
+          && (incoming().dueDateKey == existing().dueDateKey || incoming().dueDateKey >= todayKey())
+          && isValidTaskCompletion(existing(), incoming());
+        allow delete: if isOwner(userId) && !isLockedTask(existing());
+      }
+
+      function isValidTask(task) {
+        return hasExactly(task, ['title', 'size', 'dueDateKey', 'completedDateKey', 'completedAt', 'createdAt', 'updatedAt', 'schemaVersion'])
+          && isText(task.title, 1, 80)
+          && task.size in ['small', 'medium', 'large']
+          && isDateKey(task.dueDateKey)
+          && (task.completedDateKey == null || isDateKey(task.completedDateKey))
+          && (task.completedAt == null || task.completedAt is timestamp);
+      }
+
+      function isLockedTask(task) {
+        return task.completedDateKey != null && task.completedDateKey < todayKey();
+      }
+
+      // Sin margen de gracia, como las marcas de hábitos: se marca y se desmarca solo hoy.
+      function isValidTaskCompletion(before, after) {
+        return (after.completedDateKey == before.completedDateKey && after.completedAt == before.completedAt)
+          || (before.completedDateKey == null && after.completedDateKey == todayKey() && after.completedAt == request.time)
+          || (before.completedDateKey == todayKey() && after.completedDateKey == null && after.completedAt == null);
       }
 
       // --- Registro diario: entries solo hoy; status y summary solo al cerrar ---
@@ -516,6 +559,12 @@ service cloud.firestore {
               && isDayBonus(transactionId, transaction, 'perfect_')
               && summary.isPerfectDay == true
               && transaction.amount == points.perfectDayBonus)
+            // Todas las tareas del día en un movimiento, con tope. Las tareas no se leen (sumaría una
+            // lectura por tarea); que el monto cuadre con ellas lo garantiza evaluateDay.
+            || (transaction.type == 'task_completion'
+              && isDayBonus(transactionId, transaction, 'tasks_')
+              && transaction.amount > 0
+              && transaction.amount <= points.dailyTaskPointsCap)
             || (transaction.type in points.streakBonuses
               && isDayBonus(transactionId, transaction, 'streak' + string(points.streakBonuses[transaction.type].everyDays) + '_')
               // Solo en un día cumplido (el único que suma días sin protector) y en cada múltiplo.

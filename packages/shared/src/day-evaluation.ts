@@ -4,6 +4,7 @@
 import { HABIT_POINTS, PERFECT_DAY_BONUS, STREAK_BONUSES } from './constants';
 import { addDays } from './dates';
 import { getScheduledHabits } from './habit-schedule';
+import { dayTaskPoints } from './tasks';
 import { transactionIds } from './transaction-ids';
 import type {
   ClosedDayStatus,
@@ -12,6 +13,7 @@ import type {
   GamificationState,
   Habit,
   PointTransaction,
+  Task,
 } from './types';
 
 export interface EvaluateDayInput {
@@ -19,6 +21,11 @@ export interface EvaluateDayInput {
   /** Todos los hábitos del usuario (activos y archivados); se filtran los programados ese día. */
   habits: readonly Habit[];
   entries: DailyEntries;
+  /**
+   * Tareas cumplidas ese día (fase 14): suman puntos con tope, pero no tocan la racha ni el día
+   * perfecto. Las cumplidas otro día se ignoran.
+   */
+  completedTasks?: readonly Task[];
   /** Estado antes de cerrar este día. */
   state: GamificationState;
 }
@@ -41,7 +48,7 @@ export interface DayEvaluation {
   isGoalMet: boolean;
   freezeUsed: boolean;
   summary: DaySummary;
-  /** Movimientos en orden: hábitos, día perfecto y bonos de racha, con saldo acumulado. */
+  /** Movimientos en orden: hábitos, tareas, día perfecto y bonos de racha, con saldo acumulado. */
   transactions: PointTransaction[];
   nextState: GamificationState;
 }
@@ -60,7 +67,13 @@ export function previewDay(input: EvaluateDayInput): DayEvaluation {
   });
 }
 
-export function evaluateDay({ dateKey, habits, entries, state }: EvaluateDayInput): DayEvaluation {
+export function evaluateDay({
+  dateKey,
+  habits,
+  entries,
+  completedTasks = [],
+  state,
+}: EvaluateDayInput): DayEvaluation {
   const expectedDateKey = addDays(state.lastClosedDateKey, 1);
   if (dateKey !== expectedDateKey) {
     throw new Error(`Solo se puede cerrar el día ${expectedDateKey}, no ${dateKey}.`);
@@ -85,6 +98,20 @@ export function evaluateDay({ dateKey, habits, entries, state }: EvaluateDayInpu
     sourceId: habit.id,
     description: `Hábito cumplido: ${habit.name}`,
   }));
+
+  // Todas las tareas del día en un solo movimiento: así el tope es simple y las reglas lo validan
+  // sin leer cada tarea.
+  const tasks = dayTaskPoints(completedTasks, dateKey);
+  if (tasks.points > 0) {
+    pending.push({
+      id: transactionIds.dayTasks(dateKey),
+      type: 'task_completion',
+      amount: tasks.points,
+      sourceType: 'daily_log',
+      sourceId: dateKey,
+      description: `Tareas cumplidas: ${tasks.completedCount}`,
+    });
+  }
 
   let status: ClosedDayStatus;
   let freezeUsed = false;

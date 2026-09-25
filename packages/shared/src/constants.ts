@@ -1,4 +1,4 @@
-import type { HabitTier, PointTransactionType, RewardTier } from './types';
+import type { HabitTier, PointTransactionType, RewardTier, TaskSize } from './types';
 
 /** Zona horaria en la que opera todo el sistema, sin importar el dispositivo. */
 export const APP_TIME_ZONE = 'America/La_Paz';
@@ -32,6 +32,19 @@ export type StreakMilestone = (typeof STREAK_MILESTONES)[number];
 
 export const STREAK_FREEZE_COST = 150;
 export const MAX_STREAK_FREEZES = 2;
+
+/**
+ * Puntos por tarea cumplida según su tamaño (decisión D19). Pasan al saldo al cerrar el día, todas
+ * juntas y con `DAILY_TASK_POINTS_CAP` como máximo.
+ */
+export const TASK_POINTS: Readonly<Record<TaskSize, number>> = { small: 5, medium: 10, large: 20 };
+
+/** Tope diario de puntos por tareas: lo que valen los 3 principales. Nunca pesan más que los hábitos. */
+export const DAILY_TASK_POINTS_CAP = 30;
+
+/** Largo del título de una tarea. Las reglas aceptan desde 1; la UI pide 2. */
+export const TASK_TITLE_MIN_LENGTH = 2;
+export const TASK_TITLE_MAX_LENGTH = 80;
 
 /**
  * Días hacia adelante que se programan los recordatorios locales. La app los reprograma cada vez

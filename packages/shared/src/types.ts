@@ -11,6 +11,7 @@ export type MonthKey = string;
 
 export type HabitTier = 'primary' | 'secondary';
 export type RewardTier = 'small' | 'medium' | 'large';
+export type TaskSize = 'small' | 'medium' | 'large';
 export type EntityStatus = 'active' | 'archived';
 
 /**
@@ -30,7 +31,9 @@ export type PointTransactionType =
   | 'streak_bonus_30_days'
   | 'streak_freeze_purchase'
   | 'reward_redemption'
-  | 'manual_adjustment';
+  | 'manual_adjustment'
+  /** Todas las tareas cumplidas en un día, en un solo movimiento con tope (fase 14). */
+  | 'task_completion';
 
 export type PointSourceType =
   'habit' | 'daily_log' | 'streak_freeze' | 'reward_redemption' | 'manual';
@@ -61,6 +64,23 @@ export interface HabitRecord extends Habit {
   color: HabitColor;
   category: HabitCategory;
   sortOrder: number;
+}
+
+/** Lo que la lógica necesita de una tarea (documento `tasks/{taskId}`). */
+export interface Task {
+  id: string;
+  title: string;
+  size: TaskSize;
+  /** Para cuándo es. Si pasa sin cumplirse, sigue en Hoy como vencida. */
+  dueDateKey: DateKey;
+  /** Día en que se cumplió (solo puede ser hoy al marcarla); null si está pendiente. */
+  completedDateKey: DateKey | null;
+}
+
+/** Tarea completa, tal como la muestra la app. */
+export interface TaskRecord extends Task {
+  /** Día en que se creó, sacado de `createdAt`: la semana la usa para saber qué había pendiente. */
+  createdDateKey: DateKey;
 }
 
 /** Marcas del día por hábito, tal como las escribe el usuario. */

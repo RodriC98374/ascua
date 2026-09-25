@@ -20,6 +20,8 @@ import {
   type MonthlyCounters,
   type PointTransaction,
   type Reward,
+  type Task,
+  type TaskSize,
 } from '@ascua/shared';
 import {
   doc,
@@ -48,6 +50,7 @@ export const paths = {
   gamification: (uid = OWNER) => `users/${uid}/meta/gamification`,
   transaction: (id: string, uid = OWNER) => `users/${uid}/pointTransactions/${id}`,
   redemption: (id: string, uid = OWNER) => `users/${uid}/rewardRedemptions/${id}`,
+  task: (id: string, uid = OWNER) => `users/${uid}/tasks/${id}`,
 };
 
 /** Campos comunes de todo documento nuevo. */
@@ -106,6 +109,29 @@ export function rewardDoc(reward: Reward = ANIME, overrides: DocumentData = {}):
     sortOrder: 0,
     ...created(),
     ...overrides,
+  };
+}
+
+/** Tarea pendiente para hoy, tal como la crea la app. */
+export function taskDoc(overrides: DocumentData = {}): DocumentData {
+  return {
+    title: 'Pagar la luz',
+    size: 'medium',
+    dueDateKey: TODAY,
+    completedDateKey: null,
+    completedAt: null,
+    ...created(),
+    ...overrides,
+  };
+}
+
+export function testTask(id: string, size: TaskSize, completedDateKey: string | null): Task {
+  return {
+    id,
+    title: `Tarea ${id}`,
+    size,
+    dueDateKey: completedDateKey ?? TODAY,
+    completedDateKey,
   };
 }
 
@@ -203,6 +229,8 @@ export interface CloseInput {
   state: GamificationState;
   habits: readonly Habit[];
   entries?: DailyEntries;
+  /** Tareas cumplidas en el día que se cierra. */
+  completedTasks?: readonly Task[];
   /** El documento del día ya existe (hubo marcas); si no, el cierre lo crea. */
   logExists?: boolean;
   /** Resumen mensual existente; si no, el cierre lo crea. */
@@ -211,9 +239,9 @@ export interface CloseInput {
 
 /** Las escrituras de `closePendingDays` para el día siguiente a `lastClosedDateKey`. */
 export function planClose(input: CloseInput): { evaluation: DayEvaluation; writes: Write[] } {
-  const { state, habits, entries = {}, logExists = true, monthly } = input;
+  const { state, habits, entries = {}, completedTasks = [], logExists = true, monthly } = input;
   const dateKey = addDays(state.lastClosedDateKey, 1);
-  const evaluation = evaluateDay({ dateKey, habits, entries, state });
+  const evaluation = evaluateDay({ dateKey, habits, entries, completedTasks, state });
   const summary = { ...evaluation.summary, closedAt: serverTimestamp() };
   const logPath = paths.dailyLog(dateKey);
 
