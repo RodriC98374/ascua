@@ -283,6 +283,7 @@ interface Task {
 - **Vencida:** pendiente con `dueDateKey` pasado. Sigue en Hoy como "Vencida", sin castigo y con los mismos puntos.
 - **Puntos:** al cerrar el día `D`, todas las tareas con `completedDateKey == D` suman en un solo movimiento `tasks_{D}`, con tope `DAILY_TASK_POINTS_CAP`. No tocan la racha ni el día perfecto; un día sin hábitos queda `inactive` y acredita igual sus tareas.
 - **Fija después de su día:** una tarea cumplida en un día pasado no se edita, no se desmarca y no se borra. Las demás se pueden borrar.
+- **En la semana** (Mes → Semana), cada tarea cuenta en un solo día: el que se cumplió o, si sigue pendiente, el que vence (`taskDays`). Un donut por día muestra la parte cumplida.
 
 ## 4. Relaciones
 
@@ -474,6 +475,7 @@ Calcular en el cliente **no** hace lenta la app: el cuello de botella no es el c
 | Vista | Qué se lee | Documentos |
 |---|---|---|
 | Hoy / semana | `dailyLogs` del rango | 1–7 |
+| Tareas en Hoy y en la semana | las pendientes (de cualquier fecha) + las cumplidas hoy o en la semana; sin índice compuesto | pocas decenas |
 | Mes (grilla, % por día, % por hábito) | `dailyLogs` del mes | ≤ 31 |
 | Año (tendencia, % por hábito) | `monthlySummaries` del año | ≤ 12 |
 | Totales históricos (saldo, racha más larga) | `meta/gamification` | 1 |

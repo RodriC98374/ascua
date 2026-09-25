@@ -58,11 +58,13 @@ más si no hay días pendientes.
 - [x] Converter y hooks; "+N hoy" y el desglose de puntos con las tareas.
 - [x] Sección "Tareas" en Hoy (marcar, deslizar, vencidas, tope visible), formulario con días
       rápidos (Hoy, Mañana y la semana) y lista de próximas.
-- [ ] Mes → Semana: un donut por día con las tareas cumplidas y pendientes.
+- [x] Mes → Semana: un donut por día con las tareas cumplidas y pendientes; tocar un día muestra
+      sus tareas debajo. Cada tarea cuenta en un solo día: el que se cumplió o, si sigue
+      pendiente, el que vence (`taskDays`). Lee las pendientes y las cumplidas en la semana.
 - [x] Exportación: el respaldo JSON incluye las tareas y el CSV nombra el movimiento nuevo.
 - [x] Datos de la demo con tareas (historia y hoy; azar propio para no cambiar la de hábitos).
 
-App revisada con Edge headless contra la demo (claro y oscuro): marcar, próximas, crear con el formulario, menú (mover a mañana), tope pasado ("Llegaste al tope…", el día suma 30 por tareas). Cliente 142 tests.
+App revisada con Edge headless contra la demo (claro y oscuro): marcar, próximas, crear con el formulario, menú (mover a mañana), tope pasado ("Llegaste al tope…", el día suma 30 por tareas). La semana, igual: donuts, elegir un día y la semana anterior (empieza en su primer día con tareas). Shared 257 (100 %), cliente 147 tests.
 
 **Cierre**
 - [ ] Revisión en web, typecheck, lint y tests; revisión del usuario; publicar reglas antes que
