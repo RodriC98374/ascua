@@ -39,6 +39,9 @@ interruptor y recompensas. Typecheck, lint y tests en verde (cliente 106).
 
 ## Plan para lo que es más complejo (no hecho)
 
+Los puntos 3 y 4 se hicieron en la fase 12; los 1, 2 y 5, en la fase 13 (con sonidos
+sintetizados y la llama en SVG + Reanimated en lugar de Lottie).
+
 1. **Sonidos** (`expo-audio`): un "tic" al marcar y una fanfarria corta al asegurar la racha, con
    interruptor en Ajustes (apagado en web). Necesita módulo nativo, sonidos CC0 y un build.
 2. **Brasa animada de verdad** (Lottie o Rive): una llama vectorial que parpadea en la celebración
