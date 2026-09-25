@@ -58,8 +58,7 @@ guarda la preferencia. Tests: shared 227, reglas 157, cliente 129.
 
 ## Pendiente
 
-- [ ] Revisión del usuario (web) y visto bueno para unir a `main`. Escuchar los sonidos: en web
-      hay que encenderlos en Ajustes.
+- [x] Visto bueno del usuario: unida a `main` el 25-09-2026, sin publicar en producción.
 - [ ] Verlo en el celular con el próximo build: sonidos con el volumen multimedia, gesto con el
       scroll y con el gesto de atrás de Android, fluidez de la llama.
 
