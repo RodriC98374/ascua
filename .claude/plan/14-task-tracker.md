@@ -67,8 +67,10 @@ más si no hay días pendientes.
 App revisada con Edge headless contra la demo (claro y oscuro): marcar, próximas, crear con el formulario, menú (mover a mañana), tope pasado ("Llegaste al tope…", el día suma 30 por tareas). La semana, igual: donuts, elegir un día y la semana anterior (empieza en su primer día con tareas). Shared 257 (100 %), cliente 147 tests.
 
 **Cierre**
-- [ ] Revisión en web, typecheck, lint y tests; revisión del usuario; publicar reglas antes que
-      la web.
+- [x] Revisión en web, typecheck, lint y tests (shared 257, reglas y operaciones 182, cliente 147).
+- [x] Visto bueno del usuario: unida a `main` el 25-09-2026, sin publicar en producción.
+- [ ] Al publicar: **reglas antes que la web** (`npm run deploy:rules`, luego `npm run deploy:web`).
+      Con la web nueva y las reglas viejas, crear o marcar una tarea falla.
 
 ## Definición de terminado
 
