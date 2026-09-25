@@ -16,10 +16,10 @@ users/{userId}                             UserProfile         libre (campos per
 ├── meta/gamification                      GamificationState   solo al cerrar, compra o canje
 ├── pointTransactions/{transactionId}      PointTransaction    solo crear; nunca editar ni borrar
 ├── rewards/{rewardId}                     Reward              libre (forma validada)
-└── rewardRedemptions/{redemptionId}       RewardRedemption    solo crear, junto con su cobro
+├── rewardRedemptions/{redemptionId}       RewardRedemption    solo crear, junto con su cobro
+└── tasks/{taskId}                         Task (fase 14)      libre; se marca solo hoy; lo cumplido en un día pasado queda fijo
 
 Futuro (sin tocar lo anterior):
-├── tasks/{taskId}                         task tracker
 ├── goals/{goalId}, journalEntries/{...}   crecimiento personal
 └── dailyLogs/{dateKey}.checkIn            ánimo / energía / foco / motivación
 ```
@@ -55,8 +55,10 @@ type PointTransactionType =
   | 'streak_bonus_30_days'
   | 'streak_freeze_purchase'
   | 'reward_redemption'
-  | 'manual_adjustment';
-  // futuro: 'task_completion', ...
+  | 'manual_adjustment'
+  | 'task_completion';                 // fase 14: todas las tareas de un día, con tope
+
+type TaskSize = 'small' | 'medium' | 'large';
 ```
 
 Constantes de negocio en un único módulo (`packages/shared`). Las reglas de seguridad repiten los valores de puntos para validarlos; un test comprueba que ambos coincidan.
@@ -72,6 +74,9 @@ const STREAK_BONUSES = [
 ] as const;
 const STREAK_FREEZE_COST = 150;
 const MAX_STREAK_FREEZES = 2;
+// Fase 14 (D19): puntos por tarea según su tamaño, con tope diario entre todas.
+const TASK_POINTS: Record<TaskSize, number> = { small: 5, medium: 10, large: 20 };
+const DAILY_TASK_POINTS_CAP = 30;
 // Fase 12: hitos con insignia. Se derivan de longestStreak (no se guardan): una insignia no se pierde.
 const STREAK_MILESTONES = [7, 30, 100, 365] as const;
 // Solo sugerencia para la UI; no se valida (ver sección 11).
@@ -229,6 +234,7 @@ Todos los `transactionId` son deterministas. Crear dos veces el mismo ID es impo
 | Hábito cumplido | `completion_{dateKey}_{habitId}` |
 | Día perfecto | `perfect_{dateKey}` |
 | Bono de racha | `streak7_{dateKey}` / `streak30_{dateKey}` |
+| Tareas del día (todas juntas, con tope) | `tasks_{dateKey}` |
 | Compra de protector | `freeze_{requestId}` |
 | Canje | `redemption_{requestId}` |
 
@@ -261,6 +267,22 @@ interface RewardRedemption {
   note: string | null;
 }
 ```
+
+### `users/{userId}/tasks/{taskId}` — Task (fase 14)
+
+```ts
+interface Task {
+  title: string;                       // 1..80
+  size: TaskSize;                      // puntos vía TASK_POINTS; no se guardan en la tarea
+  dueDateKey: DateKey;                 // para cuándo es; al crearla, hoy o después
+  completedDateKey: DateKey | null;    // día en que se cumplió; solo puede ser hoy al marcarla
+  completedAt: Timestamp | null;       // instante del servidor al marcarla
+}
+```
+
+- **Vencida:** pendiente con `dueDateKey` pasado. Sigue en Hoy como "Vencida", sin castigo y con los mismos puntos.
+- **Puntos:** al cerrar el día `D`, todas las tareas con `completedDateKey == D` suman en un solo movimiento `tasks_{D}`, con tope `DAILY_TASK_POINTS_CAP`. No tocan la racha ni el día perfecto; un día sin hábitos queda `inactive` y acredita igual sus tareas.
+- **Fija después de su día:** una tarea cumplida en un día pasado no se edita, no se desmarca y no se borra. Las demás se pueden borrar.
 
 ## 4. Relaciones
 
@@ -427,13 +449,13 @@ No hay servidor: estas operaciones las ejecuta la app como **transacciones de Fi
 
 **`closePendingDays`**: **una transacción por día**, en orden. Como `lastClosedDateKey` avanza en la misma transacción, ningún día se procesa dos veces, aunque la app esté abierta en el celular y en la PC al mismo tiempo: la segunda transacción ve el estado actualizado y no hace nada. Sin conexión no cierra; lo intenta la próxima vez. Por cada día `D`:
 
-1. Lee los hábitos **antes** de la transacción (las transacciones del SDK cliente no admiten consultas). Dentro, lee `meta/gamification`, `dailyLogs/{D}` y `monthlySummaries/{mes de D}`, y confirma que `lastClosedDateKey + 1 == D`.
+1. Lee los hábitos y las tareas cumplidas en los días pendientes **antes** de la transacción (las transacciones del SDK cliente no admiten consultas; una tarea de un día pasado ya no puede cambiar). Si no hay días pendientes, no lee nada más. Dentro, lee `meta/gamification`, `dailyLogs/{D}` y `monthlySummaries/{mes de D}`, y confirma que `lastClosedDateKey + 1 == D`.
 2. Llama a `evaluateDay`:
    - **Meta de racha** = todos los principales programados. Si no hay principales, la meta son todos los programados. Si no hay ningún hábito programado → `inactive`.
    - Meta cumplida → `completed`, `currentStreak++`, `daysWithoutFreeze++`. Un bono de racha por cada regla de `STREAK_BONUSES` donde `daysWithoutFreeze` sea múltiplo de `everyDays` (el día 210 da ambos). Si además `isPerfectDay`, suma `PERFECT_DAY_BONUS`.
    - Meta no cumplida, `currentStreak > 0` y hay protector → `frozen`, `streakFreezesAvailable--`, la racha se mantiene sin sumar, `daysWithoutFreeze = 0`.
    - Cualquier otro caso → `missed`, `currentStreak = 0`, `daysWithoutFreeze = 0`. **No se gasta un protector si no hay racha que proteger.**
-3. Escribe `dailyLogs/{D}` (`status`, `summary`), un `habit_completion` por hábito programado y cumplido, los bonos, `meta/gamification` y `monthlySummaries`.
+3. Escribe `dailyLogs/{D}` (`status`, `summary`), un `habit_completion` por hábito programado y cumplido, un `task_completion` si hubo tareas, los bonos, `meta/gamification` y `monthlySummaries`.
 
 ## 8. Notificaciones (solo Android)
 
@@ -473,11 +495,12 @@ Sin servidor, las reglas son la única barrera: validan que cada operación de l
 - **Cierre de un día** (`status`/`summary` de `dailyLogs/{D}`, movimientos de cierre, `meta/gamification`, `monthlySummaries`):
   - `D` es estrictamente anterior a hoy (según `request.time`).
   - `lastClosedDateKey` avanza **exactamente un día**, hasta `D`.
-  - Los movimientos tienen el ID determinista del día y un monto válido para su tipo (10 o 5 por hábito, 5, 20, 100).
+  - Los movimientos tienen el ID determinista del día y un monto válido para su tipo (10 o 5 por hábito, 5, 20, 100; tareas entre 1 y el tope de 30).
   - `pointsBalance >= 0` y `streakFreezesAvailable` entre 0 y 2, y no sube durante un cierre.
 - **Compra de protector:** existe tras la transacción el movimiento `freeze_{requestId}` con −150; el saldo baja exactamente 150 y los protectores suben exactamente 1, sin pasar de 2.
 - **Canje:** existe tras la transacción el movimiento `redemption_{requestId}` con −`cost` de la recompensa (leída con `get()`); el saldo baja exactamente ese costo y el canje referencia a ese movimiento.
 - **`pointTransactions` y `rewardRedemptions`:** solo crear, nunca editar ni borrar.
+- **`tasks`:** forma validada; se crean pendientes y para hoy o después; `completedDateKey` solo pasa de `null` a hoy (con `completedAt` del servidor) o de hoy a `null`; la fecha nunca se mueve a un día pasado; lo cumplido en un día pasado no se edita ni se borra.
 
 **Deudas aceptadas** (conscientes, por ser una app de un solo usuario):
 - **Las reglas validan la forma, no la matemática del cierre.** No pueden comprobar que la racha o los puntos calculados sean los correctos; eso lo garantizan los tests de `evaluateDay` (fase 02). El único que podría escribir datos incoherentes sería el propio dueño, a propósito.
@@ -487,6 +510,7 @@ Sin servidor, las reglas son la única barrera: validan que cada operación de l
 - **Offline en Android:** las marcas pendientes se pierden si se cierra la app antes de recuperar la conexión (sección 9).
 - **Lo que las reglas no pueden recorrer:** la forma de cada marca de `entries` (solo se limita a 100 claves), `habitStats` del resumen mensual y que la suma de los movimientos del día sea igual a `summary.pointsEarned`. Lo garantiza la app, probada con los tests de `evaluateDay`.
 - **Tier de cada movimiento de hábito:** las reglas aceptan 10 o 5 sin leer el hábito (leerlo sumaría una lectura por hábito y superaría el límite).
+- **Monto del movimiento de tareas:** las reglas aceptan de 1 al tope sin leer las tareas, por la misma razón. Que cuadre con las tareas cumplidas ese día lo garantizan los tests de `evaluateDay`.
 - **Límite de las reglas:** hasta 10 lecturas `get()`/`getAfter()` distintas por documento y 20 por transacción. Verificado en la fase 03: cada regla lee a lo sumo 4 documentos distintos y el cierre más grande (13 movimientos) pasa, porque las lecturas repetidas del mismo documento no cuentan dos veces.
 
 ## 11. Decisiones confirmadas
@@ -503,6 +527,6 @@ Sin servidor, las reglas son la única barrera: validan que cada operación de l
 
 - Una funcionalidad nueva = una subcolección nueva + nuevos valores en los enums (`PointTransactionType`, `sourceType`). Nada existente cambia de forma.
 - `schemaVersion` en cada documento permite migraciones graduales.
-- El task tracker (`tasks/{taskId}` con `dueDateKey`, `completedAt`, `points`) reutiliza `DateKey`, el ledger y `closePendingDays` para acreditar puntos.
+- El task tracker (fase 14, sección 3) reutiliza `DateKey`, el ledger y `closePendingDays` para acreditar puntos.
 - El check-in de ánimo va dentro de `DailyLog` (misma granularidad diaria) y sus promedios, en `MonthlySummary`.
 - Si algún día se necesitara un servidor (por ejemplo, para varios usuarios reales), las operaciones de la sección 7 se mueven a Cloud Functions sin cambiar el modelo, porque la lógica ya vive en `packages/shared`.

@@ -72,6 +72,7 @@ del uso; lo prueba en la web (sin gastar builds de EAS).
 se leen en Mes → Semana ("+N pts ganados"), o se suman del CSV de movimientos de puntos.
 - [ ] Con al menos 3 semanas de uso real (desde el hito de la fase 06), calcular los puntos promedio ganados por semana.
 - [ ] Revisar con el usuario el costo del protector (150), los rangos de recompensas y los bonos. Objetivo de equilibrio: una recompensa pequeña cada 2–4 días, una mediana por semana y una grande por mes de constancia.
+- [ ] Revisar los puntos de los hábitos frente a las tareas (D19, 25-09-2026): cuánto aportan las tareas de verdad, si el tope de 30 por día sobra o falta, y si conviene que un hábito valga menos después de sus primeros ~66 días (lo que ya es rutina se refuerza menos, como en Habitica y en las economías de fichas).
 - [ ] Si cambian valores: actualizar `constants.ts`, `firestore.rules`, `data-model.md` y `rules/domain-invariants.md`, y registrar la decisión en el README con fecha. El historial no se recalcula (los movimientos guardan su monto).
 
 **Cierre**
