@@ -37,7 +37,8 @@ cambiada a las 08:00 desde Ajustes), insignias en Año y celebración del hito d
 
 ## Pendiente
 
-- [ ] Revisión del usuario en la web (canal de vista previa) y visto bueno para unir a `main`.
+- [x] Revisión del usuario en la web y visto bueno: unida a `main` el 25-09-2026, sin publicar
+  todavía en producción (decisión del usuario).
 - [ ] Verla en el celular con el próximo build.
 
 ## Definición de terminado
