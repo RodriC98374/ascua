@@ -81,26 +81,59 @@ export function usePointTransactions(uid: string) {
   );
 }
 
-/**
- * Las tareas que muestra Hoy: todas las pendientes (de cualquier fecha) y las cumplidas hoy. Dos
- * consultas chicas en vez de toda la historia. Al marcar, una tarea pasa de una a otra: se unen
- * por ID para que nunca aparezca dos veces.
- */
-export function useTodayTasks(uid: string, today: DateKey): QueryState<TaskRecord> {
-  const open = useQuery(
+/** Todas las tareas pendientes, de cualquier fecha: pocas, porque las cumplidas salen de aquí. */
+function useOpenTasks(uid: string) {
+  return useQuery(
     query(tasksCollection(db, uid), where('completedDateKey', '==', null)),
     `tasks/${uid}/open`,
   );
+}
+
+/** Al marcar, una tarea pasa de una consulta a otra: se unen por ID para que no salga dos veces. */
+function mergeTasks(
+  open: QueryState<TaskRecord>,
+  done: QueryState<TaskRecord>,
+): QueryState<TaskRecord> {
+  const byId = new Map([...open.data, ...done.data].map((task) => [task.id, task]));
+  return {
+    data: [...byId.values()],
+    isLoading: open.isLoading || done.isLoading,
+    hasPendingWrites: open.hasPendingWrites || done.hasPendingWrites,
+  };
+}
+
+/**
+ * Las tareas que muestra Hoy: todas las pendientes (de cualquier fecha) y las cumplidas hoy. Dos
+ * consultas chicas en vez de toda la historia.
+ */
+export function useTodayTasks(uid: string, today: DateKey): QueryState<TaskRecord> {
+  const open = useOpenTasks(uid);
   const doneToday = useQuery(
     query(tasksCollection(db, uid), where('completedDateKey', '==', today)),
     `tasks/${uid}/done/${today}`,
   );
-  const byId = new Map([...open.data, ...doneToday.data].map((task) => [task.id, task]));
-  return {
-    data: [...byId.values()],
-    isLoading: open.isLoading || doneToday.isLoading,
-    hasPendingWrites: open.hasPendingWrites || doneToday.hasPendingWrites,
-  };
+  return mergeTasks(open, doneToday);
+}
+
+/**
+ * Las tareas de una semana: las pendientes y las cumplidas en esos días. Las pendientes se filtran
+ * por fecha al repartirlas (`taskDays`): así no hace falta un índice compuesto.
+ */
+export function useTasksInRange(
+  uid: string,
+  startDateKey: DateKey,
+  endDateKey: DateKey,
+): QueryState<TaskRecord> {
+  const open = useOpenTasks(uid);
+  const done = useQuery(
+    query(
+      tasksCollection(db, uid),
+      where('completedDateKey', '>=', startDateKey),
+      where('completedDateKey', '<=', endDateKey),
+    ),
+    `tasks/${uid}/done/${startDateKey}/${endDateKey}`,
+  );
+  return mergeTasks(open, done);
 }
 
 export function useRedemptions(uid: string) {

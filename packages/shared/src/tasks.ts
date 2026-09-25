@@ -54,6 +54,38 @@ export function todayTaskList<T extends Task>(
   return list;
 }
 
+export interface TaskDay<T extends Task> {
+  dateKey: DateKey;
+  /** Cumplidas ese día, sea cual sea su fecha. */
+  done: T[];
+  /** Sin cumplir y para ese día; si el día ya pasó, siguen vencidas. */
+  pending: T[];
+  /** 0..1 de las tareas del día ya cumplidas; null si no tuvo ninguna. */
+  completionRate: number | null;
+}
+
+/**
+ * Las tareas de cada día pedido, para la semana, ordenadas por título. Cada tarea cae en un solo
+ * día: el que se cumplió (ahí sumó sus puntos) o, si sigue pendiente, el que vence. Las de otros
+ * días se ignoran.
+ */
+export function taskDays<T extends Task>(
+  tasks: readonly T[],
+  dateKeys: readonly DateKey[],
+): TaskDay<T>[] {
+  const byDay = new Map<DateKey, TaskDay<T>>(
+    dateKeys.map((dateKey) => [dateKey, { dateKey, done: [], pending: [], completionRate: null }]),
+  );
+  for (const task of [...tasks].sort((a, b) => a.title.localeCompare(b.title, 'es'))) {
+    if (task.completedDateKey !== null) byDay.get(task.completedDateKey)?.done.push(task);
+    else byDay.get(task.dueDateKey)?.pending.push(task);
+  }
+  return [...byDay.values()].map((day) => {
+    const total = day.done.length + day.pending.length;
+    return { ...day, completionRate: total === 0 ? null : day.done.length / total };
+  });
+}
+
 /** Días que lleva vencida una tarea pendiente; 0 si no está vencida o ya se cumplió. */
 export function overdueDays(task: Task, today: DateKey): number {
   if (task.completedDateKey !== null || task.dueDateKey >= today) return 0;

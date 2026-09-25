@@ -9,6 +9,7 @@ import {
   type DateKey,
   type DayTaskPoints,
   type Task,
+  type TaskDay,
 } from '@ascua/shared';
 
 /** Cuántos días muestra el selector de fecha: hoy y los seis que siguen. */
@@ -36,6 +37,29 @@ export function dueDateOptions(today: DateKey): { dateKey: DateKey; label: strin
     const dateKey = addDays(today, index);
     return { dateKey, label: dayLabel(dateKey, today) };
   });
+}
+
+/** Cómo le fue a un día con sus tareas. Las pendientes de días pasados siguen en Hoy. */
+export function taskDayText({ dateKey, done, pending }: TaskDay<Task>, today: DateKey): string {
+  const total = done.length + pending.length;
+  if (total === 0) return 'Sin tareas este día.';
+  if (pending.length === 0) {
+    return total === 1 ? 'Cumpliste tu tarea.' : `Cumpliste las ${total} tareas.`;
+  }
+  const isPast = dateKey < today;
+  if (done.length === 0) {
+    if (isPast) {
+      return total === 1
+        ? 'Tu tarea sigue pendiente en Hoy.'
+        : `Las ${total} tareas siguen pendientes en Hoy.`;
+    }
+    return total === 1 ? '1 tarea pendiente.' : `${total} tareas pendientes.`;
+  }
+  const counted = `${done.length} de ${total} cumplidas.`;
+  if (!isPast) return counted;
+  return pending.length === 1
+    ? `${counted} La que falta sigue en Hoy.`
+    : `${counted} Las que faltan siguen en Hoy.`;
 }
 
 /** Los puntos de tareas del día frente al tope. */

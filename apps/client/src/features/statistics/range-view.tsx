@@ -5,12 +5,14 @@ import {
   type DateKey,
   type HabitRecord,
   type Period,
+  type TaskRecord,
 } from '@ascua/shared';
 import { useState } from 'react';
 import { ActivityIndicator, Text, View } from 'react-native';
 
 import { Card } from '@/components/ui/card';
-import { useDailyLogsInRange, useMonthlySummary } from '@/data/hooks';
+import { useDailyLogsInRange, useMonthlySummary, useTasksInRange } from '@/data/hooks';
+import { TaskWeek } from '@/features/tasks/task-week';
 import { useThemeColors } from '@/theme/colors';
 
 import { DayDetail } from './day-detail';
@@ -30,15 +32,20 @@ interface RangeViewProps {
   habits: readonly HabitRecord[];
 }
 
-/** Una semana: 7 registros diarios. La semana no tiene resumen propio, así que no sabe los gastos. */
+/**
+ * Una semana: 7 registros diarios y sus tareas. La semana no tiene resumen propio, así que no sabe
+ * los gastos.
+ */
 export function WeekView(props: RangeViewProps) {
   const logs = useDailyLogsInRange(props.uid, props.period.startDateKey, props.period.endDateKey);
+  const tasks = useTasksInRange(props.uid, props.period.startDateKey, props.period.endDateKey);
   return (
     <RangeContent
       {...props}
       kind="week"
       logs={logs.data}
-      isLoading={logs.isLoading}
+      tasks={tasks.data}
+      isLoading={logs.isLoading || tasks.isLoading}
       pointsSpent={null}
     />
   );
@@ -65,11 +72,14 @@ function RangeContent({
   today,
   habits,
   logs,
+  tasks,
   isLoading,
   pointsSpent,
 }: RangeViewProps & {
   kind: 'week' | 'month';
   logs: readonly DailyLog[];
+  /** Solo la semana las muestra. */
+  tasks?: readonly TaskRecord[];
   isLoading: boolean;
   pointsSpent: number | null;
 }) {
@@ -169,6 +179,7 @@ function RangeContent({
         selectedHabitId={selectedHabitId}
         onSelectHabit={toggleHabit}
       />
+      {tasks && <TaskWeek tasks={tasks} period={period} today={today} />}
     </View>
   );
 }

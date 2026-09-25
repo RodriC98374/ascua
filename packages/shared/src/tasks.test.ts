@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { DAILY_TASK_POINTS_CAP, TASK_POINTS } from './constants';
-import { dayTaskPoints, isTaskLocked, overdueDays, todayTaskList } from './tasks';
+import { dayTaskPoints, isTaskLocked, overdueDays, taskDays, todayTaskList } from './tasks';
 import type { Task } from './types';
 
 const TODAY = '2026-09-25';
@@ -114,6 +114,72 @@ describe('todayTaskList', () => {
       TODAY,
     );
     expect(ids(sameDay.dueToday)).toEqual(['1', '2']);
+  });
+});
+
+describe('taskDays', () => {
+  const WEEK = ['2026-09-21', '2026-09-22', '2026-09-23', '2026-09-24', '2026-09-25'];
+  const ids = (group: readonly Task[]) => group.map((item) => item.id);
+
+  it('puts a completed task on the day it was completed, whatever its due date', () => {
+    const [monday, tuesday] = taskDays(
+      [task('late', { dueDateKey: '2026-09-21', completedDateKey: '2026-09-22' })],
+      WEEK,
+    );
+    expect(ids(monday!.done)).toEqual([]);
+    expect(ids(monday!.pending)).toEqual([]);
+    expect(ids(tuesday!.done)).toEqual(['late']);
+  });
+
+  it('puts an open task on its due day, also when that day already passed', () => {
+    const days = taskDays(
+      [task('overdue', { dueDateKey: '2026-09-22' }), task('next', { dueDateKey: '2026-09-25' })],
+      WEEK,
+    );
+    expect(ids(days[1]!.pending)).toEqual(['overdue']);
+    expect(ids(days[4]!.pending)).toEqual(['next']);
+  });
+
+  it('measures each day with the share of its tasks already completed', () => {
+    const days = taskDays(
+      [
+        task('a', { dueDateKey: '2026-09-23', completedDateKey: '2026-09-23' }),
+        task('b', { dueDateKey: '2026-09-23' }),
+        task('c', { dueDateKey: '2026-09-23' }),
+        task('d', { dueDateKey: '2026-09-24', completedDateKey: '2026-09-24' }),
+      ],
+      WEEK,
+    );
+    expect(days[2]!.completionRate).toBeCloseTo(1 / 3);
+    expect(days[3]!.completionRate).toBe(1);
+  });
+
+  it('has no rate on a day without tasks', () => {
+    expect(taskDays([], WEEK).map((day) => day.completionRate)).toEqual(WEEK.map(() => null));
+  });
+
+  it('keeps the requested days in order and ignores tasks outside them', () => {
+    const days = taskDays(
+      [
+        task('before', { dueDateKey: '2026-09-20' }),
+        task('after', { dueDateKey: '2026-09-28' }),
+        task('done-before', { dueDateKey: '2026-09-21', completedDateKey: '2026-09-20' }),
+      ],
+      WEEK,
+    );
+    expect(days.map((day) => day.dateKey)).toEqual(WEEK);
+    expect(days.every((day) => day.done.length === 0 && day.pending.length === 0)).toBe(true);
+  });
+
+  it('sorts the tasks of a day by title', () => {
+    const [monday] = taskDays(
+      [
+        task('2', { title: 'Zapatos', dueDateKey: '2026-09-21', completedDateKey: '2026-09-21' }),
+        task('1', { title: 'Agenda', dueDateKey: '2026-09-21', completedDateKey: '2026-09-21' }),
+      ],
+      WEEK,
+    );
+    expect(ids(monday!.done)).toEqual(['1', '2']);
   });
 });
 
