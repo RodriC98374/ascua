@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { evaluateDay } from './day-evaluation';
 import { initialGamificationState } from './gamification-state';
 import { addClosedDay, EMPTY_MONTHLY_COUNTERS } from './monthly-summary';
-import { buildRangeStats, buildYearStats } from './statistics';
+import { buildRangeStats, buildYearStats, monthHabitRate } from './statistics';
 import type {
   DailyEntries,
   DailyLog,
@@ -268,6 +268,111 @@ describe('buildRangeStats', () => {
   });
 });
 
+describe('buildRangeStats with fixed days and times per week', () => {
+  // Semana del lunes 21 al domingo 27 de septiembre.
+  const WEEK_START = '2026-09-21';
+  const WEEK_END = '2026-09-27';
+  const read = habit('read', 'primary', '2026-09-01');
+  const gym: Habit = {
+    ...habit('gym', 'primary', '2026-09-01'),
+    schedule: { type: 'days_of_week', daysOfWeek: [1, 3, 5] },
+  };
+  const swim: Habit = {
+    ...habit('swim', 'secondary', '2026-09-01'),
+    schedule: { type: 'times_per_week', timesPerWeek: 2 },
+  };
+  const yoga: Habit = {
+    ...habit('yoga', 'secondary', '2026-09-01'),
+    schedule: { type: 'times_per_week', timesPerWeek: 1 },
+  };
+  const habits = [read, gym, swim, yoga];
+  const closed = closeDays(
+    habits,
+    [
+      { dateKey: '2026-09-21', entries: done('read', 'gym', 'swim') },
+      { dateKey: '2026-09-22', entries: done('read') },
+      { dateKey: '2026-09-23', entries: done('read') },
+      { dateKey: '2026-09-24', entries: done('read') },
+      { dateKey: '2026-09-25', entries: done('read', 'gym') },
+      { dateKey: '2026-09-26', entries: done('read') },
+      { dateKey: '2026-09-27', entries: done('read') },
+    ],
+    { ...initialGamificationState('2026-09-21'), streakFreezesAvailable: 1 },
+  );
+  const week = buildRangeStats({
+    startDateKey: WEEK_START,
+    endDateKey: WEEK_END,
+    today: '2026-09-28',
+    habits,
+    logs: closed.logs,
+  });
+  const day = (dateKey: DateKey) => week.days.find((item) => item.dateKey === dateKey);
+  const row = (habitId: string) => week.habits.find((item) => item.habit.id === habitId);
+
+  it('leaves out the days a fixed-day habit does not touch', () => {
+    expect(day('2026-09-22')?.habits).toEqual({ read: 'done' });
+    expect(day('2026-09-23')?.habits).toEqual({ read: 'done', gym: 'not_done' });
+  });
+
+  it('shows a weekly habit only on the days it was done', () => {
+    expect(day('2026-09-21')?.habits).toEqual({ read: 'done', gym: 'done', swim: 'done' });
+    expect(day('2026-09-24')?.habits).toEqual({ read: 'done' });
+  });
+
+  it('measures a fixed-day habit against its own days', () => {
+    expect(row('gym')).toMatchObject({ scheduledDays: 3, completedDays: 2 });
+    expect(row('gym')?.completionRate).toBeCloseTo(2 / 3);
+  });
+
+  it('measures a weekly habit against its times per week', () => {
+    expect(row('swim')).toMatchObject({ scheduledDays: 2, completedDays: 1, completionRate: 0.5 });
+  });
+
+  it('lists a weekly habit even in a week without marks', () => {
+    expect(row('yoga')).toMatchObject({ scheduledDays: 1, completedDays: 0, completionRate: 0 });
+  });
+
+  it('computes an open day with the weekly habits done that day', () => {
+    const openSaturday = buildRangeStats({
+      startDateKey: WEEK_START,
+      endDateKey: WEEK_END,
+      today: '2026-09-26',
+      habits,
+      logs: [
+        ...closed.logs.slice(0, 5),
+        { dateKey: '2026-09-26', entries: done('swim'), status: 'open', summary: null },
+      ],
+    });
+    const saturday = openSaturday.days.find((item) => item.dateKey === '2026-09-26');
+    expect(saturday?.habits).toEqual({ read: 'not_done', swim: 'done' });
+    expect(saturday?.completionRate).toBe(0.5);
+  });
+
+  it('caps a weekly habit at 100 % when it was done more than asked', () => {
+    const busy = closeDays(
+      [swim],
+      ['2026-09-21', '2026-09-22', '2026-09-23'].map((dateKey) => ({
+        dateKey,
+        entries: done('swim'),
+      })),
+      initialGamificationState('2026-09-21'),
+    );
+    const stats = buildRangeStats({
+      startDateKey: WEEK_START,
+      endDateKey: WEEK_END,
+      today: '2026-09-24',
+      habits: [swim],
+      logs: busy.logs,
+    });
+    // 3 días cerrados: se esperaba una marca (2 × 3 / 7 ≈ 1) y hubo 3.
+    expect(stats.habits[0]).toMatchObject({
+      scheduledDays: 1,
+      completedDays: 3,
+      completionRate: 1,
+    });
+  });
+});
+
 function summary(monthKey: string, counters: Partial<MonthlyCounters>): MonthlySummary {
   return { ...EMPTY_MONTHLY_COUNTERS, ...counters, monthKey };
 }
@@ -306,6 +411,7 @@ describe('buildYearStats', () => {
     year: '2026',
     summaries: [septemberSummary, lastYear, august],
     habits: HABITS,
+    today: '2026-09-10',
   });
 
   it('returns the twelve months in order, empty when there is no summary', () => {
@@ -359,5 +465,69 @@ describe('buildYearStats', () => {
       { habit: WORKOUT, scheduledDays: 31, completedDays: 10, completionRate: 10 / 31 },
       { habit: WATER, scheduledDays: 5, completedDays: 2, completionRate: 2 / 5 },
     ]);
+  });
+
+  describe('with weekly habits', () => {
+    const swim: Habit = {
+      ...habit('swim', 'secondary', '2026-09-01'),
+      schedule: { type: 'times_per_week', timesPerWeek: 2 },
+    };
+    const yoga: Habit = {
+      ...habit('yoga', 'secondary', '2026-09-15'),
+      schedule: { type: 'times_per_week', timesPerWeek: 1 },
+    };
+    // En el resumen, un semanal solo figura los días que se marcó.
+    const september = summary('2026-09', {
+      closedDays: 30,
+      habitStats: { swim: { scheduledDays: 4, completedDays: 4 } },
+    });
+
+    it('measures a weekly habit against its times per week, up to the days already closed', () => {
+      const stats = buildYearStats({
+        year: '2026',
+        summaries: [september],
+        habits: [swim],
+        today: '2026-10-01',
+      });
+      // 30 días: 2 × 30 / 7 ≈ 9 marcas esperadas.
+      expect(stats.habits).toEqual([
+        { habit: swim, scheduledDays: 9, completedDays: 4, completionRate: 4 / 9 },
+      ]);
+      expect(monthHabitRate(stats.months[8]!, swim, '2026-10-01')).toBe(4 / 9);
+
+      const midMonth = buildYearStats({
+        year: '2026',
+        summaries: [september],
+        habits: [swim],
+        today: '2026-09-15',
+      });
+      // Del 1 al 14: 2 × 14 / 7 = 4.
+      expect(midMonth.habits[0]).toMatchObject({ scheduledDays: 4, completionRate: 1 });
+    });
+
+    it('lists a weekly habit without marks from the day it started', () => {
+      const stats = buildYearStats({
+        year: '2026',
+        summaries: [september],
+        habits: [swim, yoga],
+        today: '2026-10-01',
+      });
+      // Del 15 al 30: 16 días, 1 × 16 / 7 ≈ 2.
+      expect(stats.habits[1]).toEqual({
+        habit: yoga,
+        scheduledDays: 2,
+        completedDays: 0,
+        completionRate: 0,
+      });
+    });
+
+    it('has no rate for a weekly habit in a month without closed days', () => {
+      expect(monthHabitRate(year.months[0]!, swim, '2026-10-01')).toBeNull();
+    });
+
+    it('gives a daily habit its own rate for a month, and none without days', () => {
+      expect(monthHabitRate(year.months[7]!, READING, '2026-10-01')).toBe(25 / 31);
+      expect(monthHabitRate(year.months[0]!, READING, '2026-10-01')).toBeNull();
+    });
   });
 });

@@ -38,9 +38,20 @@ export type PointTransactionType =
 export type PointSourceType =
   'habit' | 'daily_log' | 'streak_freeze' | 'reward_redemption' | 'manual';
 
-/** Frecuencia de un hábito. Por ahora solo diaria; extensible sin romper datos existentes. */
-export interface HabitSchedule {
-  type: 'daily';
+/** Frecuencia de un hábito (D20). Se fija al crearlo. */
+export type HabitSchedule =
+  | { type: 'daily' }
+  /** Días fijos: 1 = lunes … 7 = domingo. Los demás días no cuenta. */
+  | { type: 'days_of_week'; daysOfWeek: number[] }
+  /** N veces por semana (lunes a domingo), cualquier día. No entra en la meta de racha. */
+  | { type: 'times_per_week'; timesPerWeek: number };
+
+export type HabitScheduleType = HabitSchedule['type'];
+
+/** Meta del día de un hábito con cantidad: se cumple al llegar a `amount` (8 vasos). */
+export interface HabitTarget {
+  amount: number;
+  unit: string;
 }
 
 /** Lo que la lógica necesita de un hábito. */
@@ -49,6 +60,8 @@ export interface Habit {
   name: string;
   tier: HabitTier;
   schedule: HabitSchedule;
+  /** Sin cantidad si falta o es null (los hábitos de antes de la fase 16 no lo traen). */
+  target?: HabitTarget | null;
   status: EntityStatus;
   /** Primer día en que cuenta. */
   startDateKey: DateKey;
@@ -83,8 +96,17 @@ export interface TaskRecord extends Task {
   createdDateKey: DateKey;
 }
 
+/**
+ * Marca de un hábito en un día. Con cantidad, `count` es lo hecho (3 de 8) y manda sobre
+ * `completed`, que la app escribe igual para leerlo de un vistazo.
+ */
+export interface HabitEntry {
+  completed: boolean;
+  count?: number;
+}
+
 /** Marcas del día por hábito, tal como las escribe el usuario. */
-export type DailyEntries = Readonly<Record<string, { completed: boolean }>>;
+export type DailyEntries = Readonly<Record<string, HabitEntry>>;
 
 /** Registro de un día (documento `dailyLogs/{dateKey}`). */
 export interface DailyLog {

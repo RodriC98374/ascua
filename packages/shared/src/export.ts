@@ -2,7 +2,7 @@
 // Lógica pura: la app lee los documentos, llama a estas funciones y guarda el archivo.
 import { APP_TIME_ZONE } from './constants';
 import { dateKeyRange, toBoliviaIsoString } from './dates';
-import { getScheduledHabits } from './habit-schedule';
+import { countedHabits } from './habit-schedule';
 import type {
   DailyLog,
   DateKey,
@@ -81,12 +81,12 @@ export function buildHabitDaysCsv({ habits, dailyLogs, today }: HabitDaysInput):
   const rows = dateKeyRange(firstDay, today).map((dateKey) => {
     const log = logs.get(dateKey);
     const summary = log?.summary ?? null;
-    const scheduled = new Set(
-      summary?.scheduledHabitIds ?? getScheduledHabits(habits, dateKey).map((habit) => habit.id),
-    );
+    // Sin resumen (hoy o un día sin cerrar), como lo contará el cierre.
+    const open = countedHabits(habits, dateKey, log?.entries ?? {});
+    const openScheduled = [...open.dayHabits, ...open.weeklyDone];
+    const scheduled = new Set(summary?.scheduledHabitIds ?? openScheduled.map((habit) => habit.id));
     const completed = new Set(
-      summary?.completedHabitIds ??
-        [...scheduled].filter((habitId) => log?.entries[habitId]?.completed === true),
+      summary?.completedHabitIds ?? openScheduled.filter(open.isDone).map((habit) => habit.id),
     );
     const percent = scheduled.size > 0 ? Math.round((completed.size / scheduled.size) * 100) : null;
     return [

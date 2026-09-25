@@ -3,9 +3,10 @@
 // así lo que ve el usuario durante el día es exactamente lo que acreditará el cierre.
 import { HABIT_POINTS, PERFECT_DAY_BONUS, STREAK_BONUSES } from './constants';
 import { addDays } from './dates';
-import { getScheduledHabits } from './habit-schedule';
+import { countedHabits } from './habit-schedule';
 import { dayTaskPoints } from './tasks';
 import { transactionIds } from './transaction-ids';
+import { weekCompletions, type WeekLog } from './weekly-habits';
 import type {
   ClosedDayStatus,
   DailyEntries,
@@ -21,6 +22,11 @@ export interface EvaluateDayInput {
   /** Todos los hábitos del usuario (activos y archivados); se filtran los programados ese día. */
   habits: readonly Habit[];
   entries: DailyEntries;
+  /**
+   * Marcas de los días anteriores de la misma semana, para el tope de los hábitos de N veces por
+   * semana (fase 16). Se ignoran los registros de otras semanas y los de este día o después.
+   */
+  weekLogs?: readonly WeekLog[];
   /**
    * Tareas cumplidas ese día (fase 14): suman puntos con tope, pero no tocan la racha ni el día
    * perfecto. Las cumplidas otro día se ignoran.
@@ -71,6 +77,7 @@ export function evaluateDay({
   dateKey,
   habits,
   entries,
+  weekLogs = [],
   completedTasks = [],
   state,
 }: EvaluateDayInput): DayEvaluation {
@@ -79,18 +86,24 @@ export function evaluateDay({
     throw new Error(`Solo se puede cerrar el día ${expectedDateKey}, no ${dateKey}.`);
   }
 
-  const scheduled = getScheduledHabits(habits, dateKey);
-  const isCompleted = (habit: Habit) => entries[habit.id]?.completed === true;
-  const completed = scheduled.filter(isCompleted);
-  const primaries = scheduled.filter((habit) => habit.tier === 'primary');
+  const { dayHabits, weeklyDone, isDone } = countedHabits(habits, dateKey, entries);
+  const primaries = dayHabits.filter((habit) => habit.tier === 'primary');
   // Sin principales, la meta pasan a ser todos los hábitos programados.
-  const goalHabits = primaries.length > 0 ? primaries : scheduled;
+  const goalHabits = primaries.length > 0 ? primaries : dayHabits;
 
-  const hasHabits = scheduled.length > 0;
-  const isGoalMet = hasHabits && goalHabits.every(isCompleted);
-  const isPerfectDay = hasHabits && completed.length === scheduled.length;
+  // Los semanales no entran en la meta ni en el día perfecto: solo cuentan el día que se marcan.
+  const hasHabits = dayHabits.length > 0;
+  const isGoalMet = hasHabits && goalHabits.every(isDone);
+  const isPerfectDay = hasHabits && dayHabits.every(isDone);
+  const scheduled = [...dayHabits, ...weeklyDone];
+  const completed = scheduled.filter(isDone);
 
-  const pending: PendingTransaction[] = completed.map((habit) => ({
+  // Un semanal suma hasta N marcas por semana; las de más se cumplen igual, pero ya no suman.
+  const earnsPoints = (habit: Habit) =>
+    habit.schedule.type !== 'times_per_week' ||
+    weekCompletions(habit, dateKey, weekLogs) < habit.schedule.timesPerWeek;
+
+  const pending: PendingTransaction[] = completed.filter(earnsPoints).map((habit) => ({
     id: transactionIds.habitCompletion(dateKey, habit.id),
     type: 'habit_completion',
     amount: HABIT_POINTS[habit.tier],
@@ -193,7 +206,7 @@ export function evaluateDay({
       scheduledHabitIds: scheduled.map((habit) => habit.id),
       scheduledPrimaryHabitIds: primaries.map((habit) => habit.id),
       completedHabitIds: completed.map((habit) => habit.id),
-      completionRate: hasHabits ? completed.length / scheduled.length : 0,
+      completionRate: scheduled.length > 0 ? completed.length / scheduled.length : 0,
       isPerfectDay,
       pointsEarned,
       streakAfterClose: streak.currentStreak,

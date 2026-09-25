@@ -105,11 +105,15 @@ export function daysBetween(from: DateKey, to: DateKey): number {
   return Math.round((toUtcMs(to) - toUtcMs(from)) / MS_PER_DAY);
 }
 
+/** Día de la semana: 1 = lunes … 7 = domingo. */
+export function isoWeekday(dateKey: DateKey): number {
+  const weekday = new Date(toUtcMs(dateKey)).getUTCDay(); // 0 = domingo
+  return weekday === 0 ? 7 : weekday;
+}
+
 /** Lunes de la semana del día dado (las semanas van de lunes a domingo). */
 export function startOfWeek(dateKey: DateKey): DateKey {
-  const weekday = new Date(toUtcMs(dateKey)).getUTCDay(); // 0 = domingo
-  const daysSinceMonday = (weekday + 6) % 7;
-  return addDays(dateKey, -daysSinceMonday);
+  return addDays(dateKey, 1 - isoWeekday(dateKey));
 }
 
 export function isValidDateKey(value: string): value is DateKey {

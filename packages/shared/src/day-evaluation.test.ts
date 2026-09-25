@@ -440,6 +440,193 @@ describe('evaluateDay', () => {
     });
   });
 
+  describe('habits on fixed days', () => {
+    // Martes: el gimnasio (lunes, miércoles y viernes) no toca.
+    const TUESDAY = '2026-09-22';
+    const gym = habit('gym', 'primary', {
+      schedule: { type: 'days_of_week', daysOfWeek: [1, 3, 5] },
+    });
+
+    it('leaves a habit out of the days it does not touch', () => {
+      const result = evaluateDay({
+        dateKey: TUESDAY,
+        habits: [gym, ...HABITS],
+        entries: done('read', 'exercise'),
+        state: state({ lastClosedDateKey: '2026-09-21' }),
+      });
+      expect(result.status).toBe('completed');
+      expect(result.summary.scheduledHabitIds).toEqual(['read', 'exercise', 'water']);
+      expect(result.summary.scheduledPrimaryHabitIds).toEqual(['read', 'exercise']);
+    });
+
+    it('asks for it on its days', () => {
+      const result = evaluateDay({
+        dateKey: DAY,
+        habits: [gym, ...HABITS],
+        entries: done('read', 'exercise'),
+        state: state({ streakFreezesAvailable: 0 }),
+      });
+      expect(result.status).toBe('missed');
+    });
+
+    it('makes the scheduled habits the goal on a day without primaries', () => {
+      const water = habit('water', 'secondary');
+      const result = evaluateDay({
+        dateKey: TUESDAY,
+        habits: [gym, water],
+        entries: {},
+        state: state({ lastClosedDateKey: '2026-09-21', streakFreezesAvailable: 0 }),
+      });
+      expect(result.status).toBe('missed');
+    });
+
+    it('is inactive when nothing touches that day', () => {
+      const result = evaluateDay({
+        dateKey: TUESDAY,
+        habits: [gym],
+        entries: {},
+        state: state({ lastClosedDateKey: '2026-09-21' }),
+      });
+      expect(result.status).toBe('inactive');
+      expect(result.nextState.currentStreak).toBe(3);
+    });
+  });
+
+  describe('habits with a daily target', () => {
+    const water = habit('water', 'primary', { target: { amount: 8, unit: 'vasos' } });
+
+    it('counts the habit only once the target is reached', () => {
+      const short = evaluateDay({
+        dateKey: DAY,
+        habits: [water],
+        entries: { water: { completed: false, count: 7 } },
+        state: state({ streakFreezesAvailable: 0 }),
+      });
+      expect(short.status).toBe('missed');
+      expect(short.transactions).toEqual([]);
+
+      const reached = evaluateDay({
+        dateKey: DAY,
+        habits: [water],
+        entries: { water: { completed: true, count: 8 } },
+        state: state(),
+      });
+      expect(reached.status).toBe('completed');
+      expect(reached.summary.completedHabitIds).toEqual(['water']);
+      // 10 del hábito y 5 del día perfecto.
+      expect(reached.summary.pointsEarned).toBe(15);
+    });
+
+    it('goes by the count, not by the check', () => {
+      const result = evaluateDay({
+        dateKey: DAY,
+        habits: [water],
+        entries: { water: { completed: true, count: 3 } },
+        state: state({ streakFreezesAvailable: 0 }),
+      });
+      expect(result.summary.completedHabitIds).toEqual([]);
+    });
+  });
+
+  describe('habits a number of times per week', () => {
+    // Jueves de la semana del 21 al 27 de septiembre.
+    const THURSDAY = '2026-09-24';
+    const beforeThursday = state({ lastClosedDateKey: '2026-09-23' });
+    const swim = habit('swim', 'primary', {
+      name: 'Nadar',
+      schedule: { type: 'times_per_week', timesPerWeek: 2 },
+    });
+    const log = (dateKey: string, entries: DailyEntries) => ({ dateKey, entries });
+
+    it('never enters the streak goal, done or not', () => {
+      const result = evaluateDay({
+        dateKey: THURSDAY,
+        habits: [swim, ...HABITS],
+        entries: done('read', 'exercise', 'water'),
+        state: beforeThursday,
+      });
+      expect(result.status).toBe('completed');
+      expect(result.summary.isPerfectDay).toBe(true);
+      expect(result.summary.scheduledHabitIds).not.toContain('swim');
+      expect(result.summary.scheduledPrimaryHabitIds).not.toContain('swim');
+    });
+
+    it('counts on the day it is done, with the points of its tier', () => {
+      const result = evaluateDay({
+        dateKey: THURSDAY,
+        habits: [swim, ...HABITS],
+        entries: done('read', 'exercise', 'swim'),
+        state: beforeThursday,
+      });
+      expect(result.summary.scheduledHabitIds).toContain('swim');
+      expect(result.summary.completedHabitIds).toContain('swim');
+      expect(result.summary.scheduledPrimaryHabitIds).not.toContain('swim');
+      expect(result.transactions.map((t) => t.id)).toContain('completion_2026-09-24_swim');
+    });
+
+    it('does not make the day perfect on its own', () => {
+      const result = evaluateDay({
+        dateKey: THURSDAY,
+        habits: [swim, ...HABITS],
+        entries: done('read', 'exercise', 'swim'),
+        state: beforeThursday,
+      });
+      expect(result.summary.isPerfectDay).toBe(false);
+    });
+
+    it('stops adding points once it reached its times this week', () => {
+      const result = evaluateDay({
+        dateKey: THURSDAY,
+        habits: [swim],
+        entries: done('swim'),
+        weekLogs: [log('2026-09-21', done('swim')), log('2026-09-23', done('swim'))],
+        state: beforeThursday,
+      });
+      expect(result.summary.completedHabitIds).toEqual(['swim']);
+      expect(result.transactions).toEqual([]);
+    });
+
+    it('only counts earlier days of the same week', () => {
+      const result = evaluateDay({
+        dateKey: THURSDAY,
+        habits: [swim],
+        entries: done('swim'),
+        weekLogs: [
+          // Semana anterior, el mismo jueves (aún abierto) y un día después: no cuentan.
+          log('2026-09-19', done('swim')),
+          log('2026-09-20', done('swim')),
+          log(THURSDAY, done('swim')),
+          log('2026-09-25', done('swim')),
+          log('2026-09-22', done('swim')),
+        ],
+        state: beforeThursday,
+      });
+      expect(result.summary.pointsEarned).toBe(10);
+    });
+
+    it('does not touch the streak on a day with nothing else', () => {
+      const result = evaluateDay({
+        dateKey: THURSDAY,
+        habits: [swim],
+        entries: done('swim'),
+        state: beforeThursday,
+      });
+      expect(result.status).toBe('inactive');
+      expect(result.nextState.currentStreak).toBe(3);
+      expect(result.summary.pointsEarned).toBe(10);
+    });
+
+    it('does not count before it started', () => {
+      const result = evaluateDay({
+        dateKey: THURSDAY,
+        habits: [{ ...swim, startDateKey: '2026-09-25' }],
+        entries: done('swim'),
+        state: beforeThursday,
+      });
+      expect(result.summary.completedHabitIds).toEqual([]);
+    });
+  });
+
   describe('input hygiene', () => {
     it('ignores entries for habits that are unknown or not scheduled that day', () => {
       const result = evaluateDay({

@@ -148,6 +148,42 @@ describe('buildHabitDaysCsv', () => {
     expect(rows.at(-1)).toEqual(['2026-09-22', 'En curso', '50', '', '', '0', '1']);
   });
 
+  it('counts today like the close will: targets, fixed days and weekly habits', () => {
+    // 22-09-2026 es martes.
+    const rows = parse(
+      buildHabitDaysCsv({
+        habits: [
+          habit({ id: 'water', name: 'Agua', target: { amount: 8, unit: 'vasos' } }),
+          habit({
+            id: 'gym',
+            name: 'Gimnasio',
+            schedule: { type: 'days_of_week', daysOfWeek: [1] },
+          }),
+          habit({
+            id: 'swim',
+            name: 'Nadar',
+            schedule: { type: 'times_per_week', timesPerWeek: 2 },
+          }),
+          habit({
+            id: 'yoga',
+            name: 'Yoga',
+            schedule: { type: 'times_per_week', timesPerWeek: 1 },
+          }),
+        ],
+        dailyLogs: [
+          {
+            dateKey: '2026-09-22',
+            entries: { water: { completed: true, count: 5 }, swim: { completed: true } },
+            status: 'open',
+            summary: null,
+          },
+        ],
+        today: '2026-09-22',
+      }),
+    );
+    expect(rows.at(-1)).toEqual(['2026-09-22', 'En curso', '50', '', '', '0', '', '1', '']);
+  });
+
   it('marks archived habits in the header and leaves them empty after archiving', () => {
     const rows = parse(
       buildHabitDaysCsv({

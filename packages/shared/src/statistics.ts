@@ -3,8 +3,10 @@
 // de cada vista coinciden con las del resumen mensual.
 import { dateKeyRange } from './dates';
 import type { DayEvaluation } from './day-evaluation';
-import { getScheduledHabits } from './habit-schedule';
+import { countedHabits, isHabitActiveOn } from './habit-schedule';
 import { addClosedDay, EMPTY_MONTHLY_COUNTERS, mergeMonthlyCounters } from './monthly-summary';
+import { periodContaining } from './periods';
+import { expectedWeeklyMarks } from './weekly-habits';
 import type {
   ClosedDayStatus,
   DailyLog,
@@ -22,14 +24,7 @@ import type {
  * future:  después de hoy.
  */
 export type DayStatsStatus =
-  | 'completed'
-  | 'perfect'
-  | 'frozen'
-  | 'missed'
-  | 'inactive'
-  | 'open'
-  | 'no_data'
-  | 'future';
+  'completed' | 'perfect' | 'frozen' | 'missed' | 'inactive' | 'open' | 'no_data' | 'future';
 
 /** Un hábito que contaba ese día, cumplido o no. Los que no contaban no aparecen. */
 export type HabitDayStatus = 'done' | 'not_done';
@@ -134,19 +129,21 @@ function closedDayStats(log: ClosedLog, today: DateKey): DayStats {
   };
 }
 
-/** Hoy, o un día pasado todavía sin cerrar: se calcula con sus marcas y los hábitos de ese día. */
+/**
+ * Hoy, o un día pasado todavía sin cerrar: se calcula con sus marcas y los hábitos de ese día, como
+ * lo hará el cierre (los semanales solo cuentan si se marcaron).
+ */
 function openDayStats(
   dateKey: DateKey,
   today: DateKey,
   log: DailyLog | undefined,
   habits: readonly Habit[],
 ): DayStats {
-  const scheduled = getScheduledHabits(habits, dateKey);
-  if (!log && scheduled.length === 0 && dateKey !== today) {
+  const { dayHabits, weeklyDone, isDone } = countedHabits(habits, dateKey, log?.entries ?? {});
+  if (!log && dayHabits.length === 0 && dateKey !== today) {
     return emptyDay(dateKey, today, 'no_data');
   }
-  const entries = log?.entries ?? {};
-  const isDone = (habit: Habit) => entries[habit.id]?.completed === true;
+  const scheduled = [...dayHabits, ...weeklyDone];
   const completedCount = scheduled.filter(isDone).length;
   return {
     dateKey,
@@ -163,26 +160,51 @@ function openDayStats(
   };
 }
 
-/** Las filas de hábitos: los que cuentan, principales primero y luego en el orden recibido. */
+/**
+ * Cifras de un hábito en un periodo. Un semanal figura en `habitStats` solo los días que se marcó:
+ * se mide contra las marcas esperadas en sus días activos ya cerrados, con tope de 100 %.
+ */
+function periodStats<T extends Habit>(
+  habit: T,
+  stats: { scheduledDays: number; completedDays: number },
+  activeClosedDays: number,
+): HabitPeriodStats<T> {
+  if (habit.schedule.type !== 'times_per_week') {
+    return { habit, ...stats, completionRate: rate(stats.completedDays, stats.scheduledDays) };
+  }
+  const expected = expectedWeeklyMarks(habit.schedule.timesPerWeek, activeClosedDays);
+  const weeklyRate = rate(stats.completedDays, expected);
+  return {
+    habit,
+    scheduledDays: expected,
+    completedDays: stats.completedDays,
+    completionRate: weeklyRate === null ? null : Math.min(1, weeklyRate),
+  };
+}
+
+/**
+ * Las filas de hábitos: los que contaron algún día y los semanales con alguna marca esperada,
+ * principales primero y luego en el orden recibido.
+ */
 function habitRows<T extends Habit>(
   habits: readonly T[],
   counted: ReadonlySet<string>,
   habitStats: MonthlyCounters['habitStats'],
+  activeClosedDays: (habit: T) => number,
 ): HabitPeriodStats<T>[] {
-  const rows = habits.filter((habit) => counted.has(habit.id));
-  const ordered = [
-    ...rows.filter((habit) => habit.tier === 'primary'),
-    ...rows.filter((habit) => habit.tier !== 'primary'),
+  const rows = habits
+    .map((habit) =>
+      periodStats(
+        habit,
+        habitStats[habit.id] ?? { scheduledDays: 0, completedDays: 0 },
+        habit.schedule.type === 'times_per_week' ? activeClosedDays(habit) : 0,
+      ),
+    )
+    .filter((row) => counted.has(row.habit.id) || row.scheduledDays > 0);
+  return [
+    ...rows.filter((row) => row.habit.tier === 'primary'),
+    ...rows.filter((row) => row.habit.tier !== 'primary'),
   ];
-  return ordered.map((habit) => {
-    const stats = habitStats[habit.id] ?? { scheduledDays: 0, completedDays: 0 };
-    return {
-      habit,
-      scheduledDays: stats.scheduledDays,
-      completedDays: stats.completedDays,
-      completionRate: rate(stats.completedDays, stats.scheduledDays),
-    };
-  });
 }
 
 /** Una semana o un mes: cada día con su estado y las cifras de los días cerrados. */
@@ -196,6 +218,7 @@ export function buildRangeStats<T extends Habit>({
   const logsByDate = new Map(logs.map((log) => [log.dateKey, log]));
   const days: DayStats[] = [];
   const counted = new Set<string>();
+  const closedDateKeys: DateKey[] = [];
   let counters: MonthlyCounters = EMPTY_MONTHLY_COUNTERS;
 
   for (const dateKey of dateKeyRange(startDateKey, endDateKey)) {
@@ -207,6 +230,7 @@ export function buildRangeStats<T extends Habit>({
       day = closedDayStats(log, today);
       const closing: Pick<DayEvaluation, 'status' | 'summary'> = log;
       counters = addClosedDay(counters, closing);
+      closedDateKeys.push(dateKey);
     } else {
       day = openDayStats(dateKey, today, log, habits);
     }
@@ -218,7 +242,12 @@ export function buildRangeStats<T extends Habit>({
 
   return {
     days,
-    habits: habitRows(habits, counted, counters.habitStats),
+    habits: habitRows(
+      habits,
+      counted,
+      counters.habitStats,
+      (habit) => closedDateKeys.filter((dateKey) => isHabitActiveOn(habit, dateKey)).length,
+    ),
     counters,
     completionRate: completionRateOf(counters.habitStats),
   };
@@ -238,16 +267,40 @@ export interface YearStats<T extends Habit = Habit> {
   habits: HabitPeriodStats<T>[];
 }
 
+/**
+ * Días de un mes con resumen en que el hábito existía, antes de hoy: los que ya pudieron cerrarse.
+ * Sin resumen (o sin días cerrados), ninguno.
+ */
+function activeClosedDaysInMonth(habit: Habit, month: MonthlySummary, today: DateKey): number {
+  if (month.closedDays === 0) return 0;
+  const { startDateKey, endDateKey } = periodContaining('month', `${month.monthKey}-01`);
+  return dateKeyRange(startDateKey, endDateKey).filter(
+    (dateKey) => dateKey < today && isHabitActiveOn(habit, dateKey),
+  ).length;
+}
+
+/** El % de un hábito en un mes (la línea del año al filtrar); null si no contaba ningún día. */
+export function monthHabitRate(month: MonthlySummary, habit: Habit, today: DateKey): number | null {
+  return periodStats(
+    habit,
+    month.habitStats[habit.id] ?? { scheduledDays: 0, completedDays: 0 },
+    activeClosedDaysInMonth(habit, month, today),
+  ).completionRate;
+}
+
 /** Un año, desde los resúmenes mensuales (a lo sumo 12 documentos). */
 export function buildYearStats<T extends Habit>({
   year,
   summaries,
   habits,
+  today,
 }: {
   /** 'YYYY'. */
   year: string;
   summaries: readonly MonthlySummary[];
   habits: readonly T[];
+  /** Para medir los semanales solo contra los días que ya pudieron cerrarse. */
+  today: DateKey;
 }): YearStats<T> {
   const byMonth = new Map(summaries.map((summary) => [summary.monthKey, summary]));
   const months = Array.from({ length: 12 }, (_, index): MonthStats => {
@@ -260,6 +313,12 @@ export function buildYearStats<T extends Habit>({
     months,
     counters,
     completionRate: completionRateOf(counters.habitStats),
-    habits: habitRows(habits, new Set(Object.keys(counters.habitStats)), counters.habitStats),
+    habits: habitRows(
+      habits,
+      new Set(Object.keys(counters.habitStats)),
+      counters.habitStats,
+      (habit) =>
+        months.reduce((total, month) => total + activeClosedDaysInMonth(habit, month, today), 0),
+    ),
   };
 }

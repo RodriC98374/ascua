@@ -4,6 +4,7 @@ import {
   addDays,
   dateKeyRange,
   daysBetween,
+  isoWeekday,
   isValidDateKey,
   msUntilNextDay,
   pendingDateKeysToClose,
@@ -101,6 +102,14 @@ describe('startOfWeek', () => {
 
   it('treats Sunday as the last day of the week', () => {
     expect(startOfWeek('2026-09-27')).toBe('2026-09-21');
+  });
+});
+
+describe('isoWeekday', () => {
+  it('numbers the days from Monday (1) to Sunday (7)', () => {
+    expect(isoWeekday('2026-09-21')).toBe(1);
+    expect(isoWeekday('2026-09-24')).toBe(4);
+    expect(isoWeekday('2026-09-27')).toBe(7);
   });
 });
 
