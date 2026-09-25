@@ -47,7 +47,9 @@ emuladores locales**; el proyecto real no se toca. Todo con un comando (necesita
   `shared`) y abre la web de desarrollo en `http://localhost:8082` conectada a ellos. El puerto
   distinto del habitual evita que la caché del navegador se mezcle con la de producción.
 - Entrar con `demo@ascua.test` / `demo1234`. Datos en vivo en la UI de emuladores (`:4000`).
-- **Ctrl+C** cierra Expo y apaga los emuladores: los datos desaparecen (viven en memoria).
+- **Ctrl+C** cierra Expo y apaga los emuladores: los datos desaparecen (viven en memoria). Si
+  los emuladores ya estaban encendidos, los deja como estaban.
+- Con otra demo abierta (puerto 8082 ocupado) se niega a arrancar, sin tocar sus datos.
 - Opciones: `npm run demo -- --streak=6` llega a hoy con esa racha exacta y dos principales
   sin marcar; la historia anterior nunca la supera, así que al marcarlos se celebra el hito
   (6 → insignia de 7, 29 → de 30, 99 → de 100, 364 → de 365; 0 → franja "enciende tu racha").

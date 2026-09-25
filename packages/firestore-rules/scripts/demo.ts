@@ -7,6 +7,7 @@
 import { spawn, spawnSync, type ChildProcess } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
+import { createServer } from 'node:net';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -40,6 +41,19 @@ async function isListening(port: number): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+/**
+ * Si otro proceso ya ocupa el puerto. Se prueba ocupándolo, como hace Expo: un servidor de Metro
+ * puede tardar más de lo que `isListening` espera en responder.
+ */
+function isPortTaken(port: number): Promise<boolean> {
+  return new Promise((resolve) => {
+    const server = createServer()
+      .once('error', () => resolve(true))
+      .once('listening', () => server.close(() => resolve(false)))
+      .listen(port);
+  });
 }
 
 function hasExited(child: ChildProcess): boolean {
@@ -88,7 +102,9 @@ async function startEmulators(): Promise<ChildProcess | null> {
   const deadline = Date.now() + READY_TIMEOUT_MS;
   while (Date.now() < deadline) {
     if (hasExited(child)) {
-      throw new Error(`Los emuladores no arrancaron. ¿Hay Java 21+ en el PATH?\n${tail.join('\n')}`);
+      throw new Error(
+        `Los emuladores no arrancaron. ¿Hay Java 21+ en el PATH?\n${tail.join('\n')}`,
+      );
     }
     if ((await isListening(FIRESTORE_PORT)) && (await isListening(AUTH_PORT))) {
       child.once('exit', () => {
@@ -99,11 +115,20 @@ async function startEmulators(): Promise<ChildProcess | null> {
     await sleep(500);
   }
   stopTree(child);
-  throw new Error(`Los emuladores no respondieron en ${READY_TIMEOUT_MS / 1000} s.\n${tail.join('\n')}`);
+  throw new Error(
+    `Los emuladores no respondieron en ${READY_TIMEOUT_MS / 1000} s.\n${tail.join('\n')}`,
+  );
 }
 
 async function main() {
   const options = parseDemoOptions(process.argv.slice(2));
+  // Antes de tocar nada: con el puerto ocupado Expo no arranca, y sembrar pisaría los datos de
+  // una demo que ya está abierta.
+  if (await isPortTaken(WEB_PORT)) {
+    throw new Error(
+      `El puerto ${WEB_PORT} ya está en uso: ¿hay otra demo abierta? Ciérrala con Ctrl+C y vuelve a intentar.`,
+    );
+  }
   let emulators: ChildProcess | null = null;
   let web: ChildProcess | null = null;
 
