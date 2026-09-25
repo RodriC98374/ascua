@@ -1,6 +1,6 @@
 // Datos de ejemplo en los emuladores locales (Auth y Firestore), para ver la app con historia:
-// unos 80 días cerrados con la lógica real de `@ascua/shared` (rachas, protectores, bonos),
-// compras de protectores y canjes. Solo habla con los emuladores de esta PC, nunca con el
+// unos 80 días cerrados con la lógica real de `@ascua/shared` (rachas, protectores, bonos,
+// tareas), compras de protectores y canjes. Solo habla con los emuladores de esta PC, nunca con el
 // proyecto real, y borra lo que hubiera en ellos.
 //
 // Lo usan `npm run seed:demo` (solo siembra) y `npm run demo` (emuladores, siembra y web).
@@ -35,6 +35,8 @@ import {
   type PointTransaction,
   type RewardRecord,
   type RewardTier,
+  type Task,
+  type TaskSize,
 } from '@ascua/shared';
 import { initializeTestEnvironment } from '@firebase/rules-unit-testing';
 import { doc, Timestamp, writeBatch, type DocumentData, type Firestore } from 'firebase/firestore';
@@ -56,6 +58,19 @@ const STREAK_BREAK_DAYS = MAX_STREAK_FREEZES + 1;
 /** Con `--risk`, la franja de racha en riesgo se ve desde la medianoche. */
 const RISK_ALL_DAY_TIME = '00:00';
 const BATCH_SIZE = 400;
+const TASK_SIZES: readonly TaskSize[] = ['small', 'medium', 'large'];
+const TASK_TITLES = [
+  'Pagar la luz',
+  'Llamar al banco',
+  'Enviar el informe',
+  'Comprar un regalo',
+  'Renovar el carnet',
+  'Ordenar el escritorio',
+  'Responder correos',
+  'Llevar el auto al taller',
+  'Preparar la presentación',
+  'Estudiar para el examen',
+];
 
 const ROOT = new URL('../../../', import.meta.url);
 
@@ -204,8 +219,25 @@ function buildDemoData(uid: string, options: DemoOptions): DemoData {
     habit('ejercicio', 'Ejercicio', 'primary', 1, start, 'physical', '#EFA98A'),
     habit('meditar', 'Meditar 10 minutos', 'primary', 2, addDays(start, 20), 'mental', '#C4B2DE'),
     habit('agua', 'Tomar 2 L de agua', 'secondary', 3, start, 'health', '#9FCBAC'),
-    habit('dormir', 'Dormir antes de las 23:00', 'secondary', 4, addDays(start, 10), 'health', '#96C7C0'),
-    habit('ingles', 'Inglés 15 minutos', 'secondary', 5, start, 'academic', '#E3CB8E', addDays(start, 50)),
+    habit(
+      'dormir',
+      'Dormir antes de las 23:00',
+      'secondary',
+      4,
+      addDays(start, 10),
+      'health',
+      '#96C7C0',
+    ),
+    habit(
+      'ingles',
+      'Inglés 15 minutos',
+      'secondary',
+      5,
+      start,
+      'academic',
+      '#E3CB8E',
+      addDays(start, 50),
+    ),
   ];
   const chance: Record<string, number> = {
     leer: 0.97,
@@ -264,6 +296,32 @@ function buildDemoData(uid: string, options: DemoOptions): DemoData {
     return { isGoalForced: false, isRoughDay: isAtCap || random() < 0.08, canSpend: true };
   };
 
+  // Las tareas usan su propio azar: así la historia de los hábitos es la misma que antes de ellas.
+  const taskRandom = seededRandom(20260925);
+  let taskCount = 0;
+  const addTask = (
+    dueDateKey: DateKey,
+    completedDateKey: DateKey | null,
+    size: TaskSize = TASK_SIZES[Math.floor(taskRandom() * TASK_SIZES.length)] ?? 'medium',
+  ): Task => {
+    const task: Task = {
+      id: `demo-task-${taskCount}`,
+      title: TASK_TITLES[taskCount % TASK_TITLES.length] ?? 'Tarea',
+      size,
+      dueDateKey,
+      completedDateKey,
+    };
+    taskCount++;
+    const { id, ...fields } = task;
+    const createdAt = at(addDays(dueDateKey, -1), '10:00:00');
+    documents.set(`${user}/tasks/${id}`, {
+      ...fields,
+      completedAt: completedDateKey ? at(completedDateKey, '18:00:00') : null,
+      ...meta(createdAt),
+    });
+    return task;
+  };
+
   for (const dateKey of dateKeyRange(start, addDays(today, -1))) {
     const { isGoalForced, isRoughDay, canSpend } = planDay(dateKey);
     const entries: Record<string, { completed: boolean }> = {};
@@ -271,7 +329,22 @@ function buildDemoData(uid: string, options: DemoOptions): DemoData {
       const isDone = (isGoalForced && tier === 'primary') || random() < (chance[id] ?? 0.5);
       if (!isRoughDay && isDone) entries[id] = { completed: true };
     }
-    const evaluation = evaluateDay({ dateKey, habits, entries: entries as DailyEntries, state });
+    // Uno de cada dos días cumple una o dos tareas; a veces, una que venía vencida.
+    const completedTasks: Task[] = [];
+    if (taskRandom() < 0.5) {
+      const count = taskRandom() < 0.6 ? 1 : 2;
+      for (let index = 0; index < count; index++) {
+        const dueDateKey = taskRandom() < 0.2 ? addDays(dateKey, -2) : dateKey;
+        completedTasks.push(addTask(dueDateKey, dateKey));
+      }
+    }
+    const evaluation = evaluateDay({
+      dateKey,
+      habits,
+      entries: entries as DailyEntries,
+      completedTasks,
+      state,
+    });
     const closedAt = at(addDays(dateKey, 1), '07:30:00');
     const markedAt = at(dateKey, '20:00:00');
 
@@ -366,6 +439,13 @@ function buildDemoData(uid: string, options: DemoOptions): DemoData {
   });
   documents.set(`${user}/meta/gamification`, { ...state, ...meta(nowAt) });
 
+  // Tareas de hoy: una vencida, dos para hoy (una ya cumplida) y dos para los próximos días.
+  addTask(addDays(today, -2), null, 'medium');
+  addTask(today, null, 'small');
+  addTask(today, today, 'medium');
+  addTask(addDays(today, 1), null, 'large');
+  addTask(addDays(today, 4), null, 'small');
+
   return { documents, state };
 }
 
@@ -394,10 +474,14 @@ async function resetEmulators(project: string) {
 }
 
 async function createDemoUser(project: string, uid: string) {
-  await emulatorRequest(AUTH_PORT, `/identitytoolkit.googleapis.com/v1/projects/${project}/accounts`, {
-    method: 'POST',
-    body: JSON.stringify({ localId: uid, email: DEMO_EMAIL, password: DEMO_PASSWORD }),
-  });
+  await emulatorRequest(
+    AUTH_PORT,
+    `/identitytoolkit.googleapis.com/v1/projects/${project}/accounts`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ localId: uid, email: DEMO_EMAIL, password: DEMO_PASSWORD }),
+    },
+  );
 }
 
 async function writeDocuments(project: string, documents: Map<string, DocumentData>) {

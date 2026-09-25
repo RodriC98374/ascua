@@ -124,11 +124,12 @@ export function ArrowIcon({
   size = 20,
   color,
   direction,
-}: IconProps & { direction: 'up' | 'down' | 'left' }) {
+}: IconProps & { direction: 'up' | 'down' | 'left' | 'right' }) {
   const paths = {
     up: 'M12 19V5M6 11l6-6 6 6',
     down: 'M12 5v14M6 13l6 6 6-6',
     left: 'M19 12H5M11 6l-6 6 6 6',
+    right: 'M5 12h14M13 6l6 6-6 6',
   };
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24">
@@ -182,6 +183,17 @@ export function ArchiveIcon({ size = 20, color }: IconProps) {
         <Rect x={3.5} y={4.5} width={17} height={4.5} rx={1} />
         <Path d="M5 9v9.5a1.5 1.5 0 001.5 1.5h11a1.5 1.5 0 001.5-1.5V9M10 13h4" />
       </G>
+    </Svg>
+  );
+}
+
+export function TrashIcon({ size = 20, color }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Path
+        d="M4.5 7h15M9.5 7V5a1 1 0 011-1h3a1 1 0 011 1v2M6.5 7l.8 11.6A1.5 1.5 0 008.8 20h6.4a1.5 1.5 0 001.5-1.4L17.5 7M10 11v5M14 11v5"
+        {...stroke(color)}
+      />
     </Svg>
   );
 }

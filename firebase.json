@@ -9,6 +9,7 @@
     "cleanUrls": true,
     "rewrites": [
       { "source": "/habits/*", "destination": "/habits/[habitId].html" },
+      { "source": "/tasks/*", "destination": "/tasks/[taskId].html" },
       { "source": "/recompensas/*", "destination": "/recompensas/[rewardId].html" }
     ],
     "headers": [

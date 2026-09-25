@@ -1,4 +1,4 @@
-import type { DateKey, MonthKey } from '@ascua/shared';
+import type { DateKey, MonthKey, TaskRecord } from '@ascua/shared';
 import { limit, orderBy, query, where } from 'firebase/firestore';
 
 import {
@@ -11,11 +11,12 @@ import {
   pointTransactionsCollection,
   redemptionsCollection,
   rewardsCollection,
+  tasksCollection,
   userProfileRef,
 } from '@/data/documents';
 import { db } from '@/lib/firebase';
 
-import { useDocument, useQuery } from './use-snapshot';
+import { useDocument, useQuery, type QueryState } from './use-snapshot';
 
 export function useUserProfile(uid: string) {
   return useDocument(userProfileRef(db, uid), `users/${uid}`);
@@ -78,6 +79,28 @@ export function usePointTransactions(uid: string) {
     query(pointTransactionsCollection(db, uid), orderBy('createdAt', 'desc'), limit(HISTORY_LIMIT)),
     `pointTransactions/${uid}`,
   );
+}
+
+/**
+ * Las tareas que muestra Hoy: todas las pendientes (de cualquier fecha) y las cumplidas hoy. Dos
+ * consultas chicas en vez de toda la historia. Al marcar, una tarea pasa de una a otra: se unen
+ * por ID para que nunca aparezca dos veces.
+ */
+export function useTodayTasks(uid: string, today: DateKey): QueryState<TaskRecord> {
+  const open = useQuery(
+    query(tasksCollection(db, uid), where('completedDateKey', '==', null)),
+    `tasks/${uid}/open`,
+  );
+  const doneToday = useQuery(
+    query(tasksCollection(db, uid), where('completedDateKey', '==', today)),
+    `tasks/${uid}/done/${today}`,
+  );
+  const byId = new Map([...open.data, ...doneToday.data].map((task) => [task.id, task]));
+  return {
+    data: [...byId.values()],
+    isLoading: open.isLoading || doneToday.isLoading,
+    hasPendingWrites: open.hasPendingWrites || doneToday.hasPendingWrites,
+  };
 }
 
 export function useRedemptions(uid: string) {

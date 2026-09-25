@@ -73,6 +73,12 @@ export function formatDateRange(from: DateKey, to: DateKey): string {
   return `${Number(from.slice(8, 10))} – ${end}`;
 }
 
+/** 'Lun 21', 'Mié 23': los días de la semana que viene en el formulario de tareas. */
+export function formatShortWeekday(dateKey: DateKey): string {
+  const date = toUtcDate(dateKey);
+  return `${WEEKDAYS[date.getUTCDay()]?.slice(0, 3)} ${date.getUTCDate()}`;
+}
+
 /** 'L', 'M', 'X'… para las columnas de la semana. */
 export function formatWeekdayInitial(dateKey: DateKey): string {
   return `${WEEKDAY_INITIALS[toUtcDate(dateKey).getUTCDay()]}`;

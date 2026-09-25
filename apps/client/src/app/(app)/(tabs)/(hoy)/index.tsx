@@ -7,6 +7,7 @@ import {
   type DateKey,
   type GamificationState,
   type HabitRecord,
+  type TaskRecord,
 } from '@ascua/shared';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -33,7 +34,14 @@ import { StreakCelebrationModal } from '@/features/celebration/streak-celebratio
 import { useTodayMoments } from '@/features/celebration/use-today-moments';
 import { playSound } from '@/features/sounds/sounds';
 import { useUid } from '@/features/auth/session';
-import { useDailyLog, useGamificationState, useHabits, useUserProfile } from '@/data/hooks';
+import {
+  useDailyLog,
+  useGamificationState,
+  useHabits,
+  useTodayTasks,
+  useUserProfile,
+} from '@/data/hooks';
+import { TasksSection } from '@/features/tasks/tasks-section';
 import { canMove, moveHabit, type MoveOffset } from '@/features/habits/habit-order';
 import { trackWrite } from '@/features/sync/write-errors';
 import { buildTodaySummary, type TodaySummary } from '@/features/today/today-summary';
@@ -42,6 +50,7 @@ import { useToday } from '@/features/today/use-today';
 import { db } from '@/lib/firebase';
 import { setHabitCompletion } from '@/operations/daily-log';
 import { reorderHabits } from '@/operations/habits';
+import { setTaskCompletion } from '@/operations/tasks';
 import { useThemeColors } from '@/theme/colors';
 import { SPRING_POP } from '@/theme/motion';
 
@@ -51,11 +60,13 @@ export default function TodayScreen() {
   const today = useToday();
   const habits = useHabits(uid);
   const log = useDailyLog(uid, today);
+  const tasks = useTodayTasks(uid, today);
   const gamification = useGamificationState(uid);
   // El perfil no frena la pantalla: mientras llega se usa la hora por defecto.
   const profile = useUserProfile(uid);
 
-  if (habits.isLoading || log.isLoading || !gamification.data) {
+  // Las tareas también esperan: suman a los puntos de hoy, que no deben saltar al llegar.
+  if (habits.isLoading || log.isLoading || tasks.isLoading || !gamification.data) {
     return (
       <View className="bg-surface-100 flex-1 items-center justify-center">
         <ActivityIndicator color={colors.emberStrong} size="large" />
@@ -69,6 +80,7 @@ export default function TodayScreen() {
       today={today}
       habits={habits}
       log={log}
+      tasks={tasks}
       state={gamification.data}
       riskTime={
         profile.data?.reminderSettings.streakRiskReminderTime ??
@@ -83,19 +95,21 @@ interface TodayContentProps {
   today: DateKey;
   habits: ReturnType<typeof useHabits>;
   log: ReturnType<typeof useDailyLog>;
+  tasks: ReturnType<typeof useTodayTasks>;
   state: GamificationState;
   /** 'HH:mm' desde la que Hoy avisa que la racha está en riesgo. */
   riskTime: string;
 }
 
 /** Hoy con los datos ya cargados: aquí viven los momentos de logro, que comparan render a render. */
-function TodayContent({ uid, today, habits, log, state, riskTime }: TodayContentProps) {
+function TodayContent({ uid, today, habits, log, tasks, state, riskTime }: TodayContentProps) {
   const [isReordering, setIsReordering] = useState(false);
   const now = useMinuteClock();
   const summary = buildTodaySummary({
     today,
     habits: habits.data,
     entries: log.data?.entries ?? {},
+    tasks: tasks.data,
     state,
   });
   const moments = useTodayMoments({
@@ -124,6 +138,10 @@ function TodayContent({ uid, today, habits, log, state, riskTime }: TodayContent
         logExists: log.exists,
       }),
     );
+  }
+
+  function toggleTask(task: TaskRecord) {
+    trackWrite(setTaskCompletion(db, uid, task.id, task.completedDateKey !== today, today));
   }
 
   function move(habitId: string, offset: MoveOffset) {
@@ -188,7 +206,9 @@ function TodayContent({ uid, today, habits, log, state, riskTime }: TodayContent
                 {formatLongDate(today)}
               </Text>
             </View>
-            {(log.hasPendingWrites || habits.hasPendingWrites) && <PendingSyncChip />}
+            {(log.hasPendingWrites || habits.hasPendingWrites || tasks.hasPendingWrites) && (
+              <PendingSyncChip />
+            )}
           </View>
 
           {summary.hasHabits ? (
@@ -225,12 +245,17 @@ function TodayContent({ uid, today, habits, log, state, riskTime }: TodayContent
                   </Card>
                 </HabitSection>
               )}
-
-              <PointsBreakdown summary={summary} />
             </>
           ) : (
             <EmptyState />
           )}
+          <TasksSection
+            tasks={tasks.data}
+            today={today}
+            taskPoints={summary.taskPoints}
+            onToggle={toggleTask}
+          />
+          {summary.hasHabits && <PointsBreakdown summary={summary} />}
           {/* Espacio para que el botón flotante no tape la última fila. */}
           <View className="h-16" />
         </View>
@@ -387,6 +412,7 @@ function PointsBreakdown({ summary: { pointsBreakdown } }: { summary: TodaySumma
     pointsBreakdown.primary > 0 && `${pointsBreakdown.primary} por principales`,
     pointsBreakdown.secondary > 0 && `${pointsBreakdown.secondary} por secundarios`,
     pointsBreakdown.perfectDay > 0 && `${pointsBreakdown.perfectDay} por día perfecto`,
+    pointsBreakdown.tasks > 0 && `${pointsBreakdown.tasks} por tareas`,
     pointsBreakdown.streak > 0 && `${pointsBreakdown.streak} de bono de racha`,
   ].filter((part): part is string => Boolean(part));
   const text =

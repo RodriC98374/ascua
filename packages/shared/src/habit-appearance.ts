@@ -28,6 +28,9 @@ export const HABIT_COLORS = [
 
 export type HabitColor = (typeof HABIT_COLORS)[number];
 
+/** Las tareas no eligen color: todas llevan este, cálido y distinto del de la brasa. */
+export const TASK_COLOR: HabitColor = '#E3CB8E';
+
 /** Versión oscura de cada pastel, para trazos finos y texto. Contraste ≥ 4:1 sobre blanco. */
 const STRONG_BY_COLOR: Record<HabitColor, string> = {
   '#EFA98A': '#C2603A',

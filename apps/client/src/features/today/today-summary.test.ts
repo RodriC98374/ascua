@@ -1,4 +1,4 @@
-import type { DailyEntries, GamificationState, HabitRecord } from '@ascua/shared';
+import type { DailyEntries, GamificationState, HabitRecord, TaskRecord } from '@ascua/shared';
 import { describe, expect, it } from '@jest/globals';
 
 import { buildTodaySummary } from './today-summary';
@@ -79,6 +79,7 @@ describe('buildTodaySummary', () => {
       secondary: 0,
       perfectDay: 0,
       streak: 20,
+      tasks: 0,
     });
   });
 
@@ -114,6 +115,7 @@ describe('buildTodaySummary', () => {
       secondary: 5,
       perfectDay: 5,
       streak: 0,
+      tasks: 0,
     });
   });
 
@@ -123,6 +125,30 @@ describe('buildTodaySummary', () => {
     expect(summary.isDone('run')).toBe(false);
     expect(summary.secondaryProgress).toEqual({ done: 1, total: 1 });
     expect(summary.progressPercent).toBe(33);
+  });
+
+  it('adds the tasks completed today to the points of the day, with the cap', () => {
+    const task = (id: string, size: TaskRecord['size'], completedDateKey: string | null) =>
+      ({
+        id,
+        title: id,
+        size,
+        dueDateKey: TODAY,
+        completedDateKey,
+        createdDateKey: TODAY,
+      }) satisfies TaskRecord;
+    const summary = buildTodaySummary({
+      today: TODAY,
+      habits,
+      entries: done('water'),
+      tasks: [task('a', 'large', TODAY), task('b', 'large', TODAY), task('open', 'small', null)],
+      state,
+    });
+    expect(summary.pointsBreakdown.tasks).toBe(30);
+    expect(summary.pointsToday).toBe(35);
+    expect(summary.taskPoints).toEqual({ points: 30, uncappedPoints: 40, completedCount: 2 });
+    // Las tareas no cuentan para la racha.
+    expect(summary.isGoalMet).toBe(false);
   });
 
   it('has nothing to show without habits', () => {

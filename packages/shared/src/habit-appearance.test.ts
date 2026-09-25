@@ -9,6 +9,7 @@ import {
   isHabitCategory,
   isHabitColor,
   strongHabitColor,
+  TASK_COLOR,
 } from './habit-appearance';
 
 describe('HABIT_CATEGORIES', () => {
@@ -45,6 +46,12 @@ describe('HABIT_COLORS', () => {
 
   it('has no duplicates', () => {
     expect(new Set(HABIT_COLORS).size).toBe(HABIT_COLORS.length);
+  });
+});
+
+describe('TASK_COLOR', () => {
+  it('is one of the habit colors, so it has its strong tone for the check', () => {
+    expect(isHabitColor(TASK_COLOR)).toBe(true);
   });
 });
 

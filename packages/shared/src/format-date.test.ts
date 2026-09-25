@@ -6,6 +6,7 @@ import {
   formatMonthAbbrev,
   formatMonthYear,
   formatShortDate,
+  formatShortWeekday,
   formatWeekdayInitial,
 } from './format-date';
 
@@ -64,5 +65,13 @@ describe('formatWeekdayInitial', () => {
     expect(formatWeekdayInitial('2026-09-21')).toBe('L');
     expect(formatWeekdayInitial('2026-09-23')).toBe('X');
     expect(formatWeekdayInitial('2026-09-27')).toBe('D');
+  });
+});
+
+describe('formatShortWeekday', () => {
+  it('writes the short weekday and the day number', () => {
+    expect(formatShortWeekday('2026-09-21')).toBe('Lun 21');
+    expect(formatShortWeekday('2026-09-23')).toBe('Mié 23');
+    expect(formatShortWeekday('2026-10-04')).toBe('Dom 4');
   });
 });
