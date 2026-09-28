@@ -26,6 +26,74 @@ antes.
 | 17 | **Recordatorios por hábito y estadísticas** | Hora propia por hábito (se suma al plan de `planReminders`); mapa de calor del año estilo GitHub; mejor día de la semana, hábito más constante, tendencia contra el mes anterior | Poco: hora opcional en el hábito | Recordatorios: el build los lleva |
 | 18 | **Metas, reflexión y ahorro** | Metas a largo plazo que agrupan hábitos y tareas con su progreso; reflexión guiada del domingo con el resumen de la semana; ahorro apartado hacia una recompensa grande | Sí: subcolecciones nuevas | No |
 | 19 | **Respaldo y PC** | Restaurar desde el JSON exportado (`formatVersion` ya existe; con vista previa y confirmación); instalar la web como app en la PC (manifiesto + service worker) | Escritura masiva validada por reglas | No |
+| 20 | **Asistente con Claude** (decisión D21; [detalle abajo](#fase-20--asistente-con-claude)) | Importar tareas desde un archivo JSON que genera Claude; exportación pensada para que Claude analice el historial; una skill que repite el flujo. Automatizar con un MCP remoto queda como paso ideal y opcional | Poco: crea tareas con la operación existente | Sí, si el selector de archivos es nativo (`expo-document-picker`) |
+
+## Fase 20 — Asistente con Claude
+
+Idea del usuario (28-09-2026, decisión D21): usar a Claude como asistente para cargar tareas y
+analizar el propio historial. **Es la última fase:** empieza solo cuando la app esté terminada,
+probada y con todas las funcionalidades planeadas al 100%. Así el formato de datos ya no cambia
+debajo del asistente.
+
+### Qué resuelve
+
+1. **Cargar tareas sin tipearlas.** El usuario le pasa a Claude (en claude.ai, desde el celular o
+   la PC) una práctica de la universidad u otro encargo. Entre los dos acuerdan las tareas (título,
+   tamaño, fecha de entrega) y Claude genera un archivo JSON. En la app, "Importar tareas" lee el
+   archivo, muestra una vista previa y, al confirmar, crea las tareas.
+2. **Analizar el historial.** La app exporta los datos en un formato cómodo para Claude. Claude
+   busca patrones (tareas que vencen seguido, hábitos que se olvida marcar, días de la semana
+   flojos, rachas que se cortan siempre igual) y propone estrategias concretas para mejorar.
+3. **Repetirlo sin volver a explicarlo.** Una skill de Claude (ver abajo) guarda el flujo, el
+   formato del JSON y los criterios de análisis, para que cada vez sea un pedido corto.
+
+### Paso 1: importar y exportar por archivo (sin servidor)
+
+- **Formato de importación:** JSON versionado (`formatVersion`, como la exportación) con una
+  lista de tareas `{ title, size, dueDateKey }`. `size` usa los valores de `TaskSize` y
+  `dueDateKey` es `'YYYY-MM-DD'` en hora de Bolivia. Tipos y validación en `packages/shared` con
+  TDD (títulos vacíos o largos, tamaño desconocido, fechas mal formadas o pasadas, duplicados,
+  límite de tareas por archivo).
+- **Importar en la app:** elegir el archivo (web: `<input type="file">`; Android:
+  `expo-document-picker`, módulo nativo que llega con un build), vista previa editable con los
+  errores marcados, y confirmar. Cada tarea se crea con la **misma operación** que el formulario,
+  así las reglas de Firestore la validan igual. Sin atajos: nada de escrituras masivas que se
+  salten la operación.
+- **Solo crea tareas.** La importación nunca marca tareas ni hábitos como cumplidos: lo que se
+  cumple lo marca el usuario, si no la racha y los puntos pierden sentido.
+- **Exportación para análisis:** la de la fase 10 (JSON/CSV) ya existe. Revisar si le sirve a
+  Claude tal cual o si conviene un resumen propio (por ejemplo, una fila por día con hábitos
+  programados y marcados, tareas creadas, cumplidas y vencidas, y la racha), para que el archivo
+  sea chico y fácil de leer. Sin datos personales de más.
+
+### Paso 2: skill de Claude
+
+Una skill (en `.claude/skills/` del repo o como skill de claude.ai, a decidir al empezar) con:
+
+- El formato del JSON de importación y un ejemplo válido.
+- El flujo de tareas: leer el encargo, proponer el desglose con tamaño y fecha, esperar el
+  acuerdo del usuario y recién ahí generar el archivo.
+- El flujo de análisis: qué mirar en la exportación, cómo presentar los hallazgos y cómo convertir
+  cada uno en una acción concreta (cambiar la hora de un recordatorio, partir una tarea grande,
+  bajar la meta de un hábito). Tono honesto y útil, sin sermones.
+
+### Paso 3 (ideal, opcional): automatizarlo con un MCP remoto
+
+Lo ideal sería que Claude cree las tareas directamente, sin pasar el archivo a mano: un servidor
+MCP remoto agregado como conector personalizado en claude.ai (funciona en la web y en el
+celular), con herramientas `list_tasks` y `create_tasks`.
+
+- **Rompe el costo cero sin servidor (D12):** hace falta un servidor. El candidato es Cloudflare
+  Workers en el plan gratis. Solo se hace si el usuario reabre D12 a propósito.
+- **Autenticarse como el usuario**, con Firebase Auth REST y un refresh token guardado como
+  secreto, y escribir por la API REST de Firestore para que `firestore.rules` siga validando
+  todo. **Nunca** el Admin SDK ni una cuenta de servicio: se saltan las reglas.
+- **Conector protegido con OAuth**, no con una URL "secreta".
+- **Herramientas mínimas:** crear y listar tareas, y leer datos para el análisis. Nada que
+  complete tareas ni marque hábitos.
+- El formato del paso 1 sirve como contrato de `create_tasks`, y la validación de `shared` se
+  reutiliza en el servidor.
+- Revisar antes los límites de conectores personalizados del plan de claude.ai del usuario.
 
 ## Para después (rompen el costo cero o piden servidor)
 

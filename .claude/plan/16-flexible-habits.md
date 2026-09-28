@@ -53,20 +53,20 @@ type DailyEntries = Record<string, { completed: boolean; count?: number }>;
 ## Tareas
 
 **Núcleo (`shared`, TDD)**
-- [ ] Tipos, día de la semana ISO, `isHabitScheduledOn` con días fijos y semanales.
-- [ ] Cumplido con cantidad; `evaluateDay` con días fijos, cantidad y semanales (tope por semana).
-- [ ] Progreso de la semana por hábito y semana potenciada.
-- [ ] Estadísticas: días que no tocan, % de los semanales contra su N.
+- [x] Tipos, día de la semana ISO, `isHabitScheduledOn` con días fijos y semanales.
+- [x] Cumplido con cantidad; `evaluateDay` con días fijos, cantidad y semanales (tope por semana).
+- [x] Progreso de la semana por hábito y semana potenciada.
+- [x] Estadísticas: días que no tocan, % de los semanales contra su N.
 
 **Reglas y operaciones (emulador)**
-- [ ] `schedule` y `target` en `firestore.rules`, con tests; inmutables.
-- [ ] Crear hábito con frecuencia y meta; marcar con cantidad; `closePendingDays` con la semana.
+- [x] `schedule` y `target` en `firestore.rules`, con tests; inmutables.
+- [x] Crear hábito con frecuencia y meta; marcar con cantidad; `closePendingDays` con la semana.
 
 **App**
-- [ ] Formulario: frecuencia (todos los días, días fijos, veces por semana) y meta con unidad.
-- [ ] Hoy: contador para los de cantidad, "2 de 3 esta semana", sección de los que no tocan hoy.
-- [ ] Llama morada con la semana potenciada.
-- [ ] Mes y Año con los nuevos tipos; demo con un hábito de cada tipo.
+- [x] Formulario: frecuencia (todos los días, días fijos, veces por semana) y meta con unidad.
+- [x] Hoy: contador para los de cantidad, "2 de 3 esta semana", sección de los que no tocan hoy.
+- [x] Llama morada con la semana potenciada.
+- [x] Mes y Año con los nuevos tipos; demo con un hábito de cada tipo.
 
 **Cierre**
 - [ ] Revisión en web, typecheck, lint y tests; revisión del usuario. **Toca reglas:** publicar

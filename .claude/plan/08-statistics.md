@@ -54,6 +54,11 @@ emuladores locales**; el proyecto real no se toca. Todo con un comando (necesita
   sin marcar; la historia anterior nunca la supera, así que al marcarlos se celebra el hito
   (6 → insignia de 7, 29 → de 30, 99 → de 100, 364 → de 365; 0 → franja "enciende tu racha").
   `--risk` pone la hora de racha en riesgo a las 00:00 para ver la franja a cualquier hora.
+  `--powered` llega con la semana potenciada (fase 16): Natación ya cumplió sus veces de la
+  semana y la llama de Hoy se ve morada; el lunes pide 1 vez y el martes 2, porque antes no hay
+  días para llegar a 3.
+- La demo trae un hábito de cada frecuencia (fase 16): Yoga de días fijos (martes, jueves y
+  sábado), Natación 3 veces por semana y Vasos de agua con meta de 8 (hoy va 5 de 8).
 - `npm run seed:demo` (mismas opciones) solo vuelve a sembrar, con los emuladores encendidos.
 - La celebración de racha sale una vez por día en cada navegador: para repetirla, ventana
   privada. En modo desarrollo sale un aviso rojo "Unknown event handler property" al abrir
