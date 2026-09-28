@@ -56,12 +56,14 @@ export function describeDay(day: DayStats): string {
   }
 }
 
-/** '18 de 21 días', o que todavía no tiene días cerrados. */
+/** '18 de 21 días' (o 'marcas' para uno semanal), o que todavía no tiene días cerrados. */
 export function habitCaption(row: HabitPeriodStats): string {
   if (row.scheduledDays === 0) {
     return 'Cuenta desde que cierre su primer día';
   }
-  return `${row.completedDays} de ${plural(row.scheduledDays, 'día', 'días')}`;
+  const [singular, pluralForm] =
+    row.habit.schedule.type === 'times_per_week' ? ['marca', 'marcas'] : ['día', 'días'];
+  return `${row.completedDays} de ${plural(row.scheduledDays, singular, pluralForm)}`;
 }
 
 /** Hábitos-día cumplidos del periodo: '142 de 180 hábitos cumplidos en 30 días'. */

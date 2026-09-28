@@ -1,7 +1,27 @@
-import { EMPTY_MONTHLY_COUNTERS, type DayStats, type MonthStats } from '@ascua/shared';
+import {
+  EMPTY_MONTHLY_COUNTERS,
+  type DayStats,
+  type Habit,
+  type HabitSchedule,
+  type MonthStats,
+} from '@ascua/shared';
 import { describe, expect, it } from '@jest/globals';
 
 import { axisMax, monthRate, streakPoints, weekBars, yearPoints } from './chart-data';
+
+const TODAY = '2026-10-05';
+
+function habit(id: string, schedule: HabitSchedule = { type: 'daily' }): Habit {
+  return {
+    id,
+    name: id,
+    tier: 'primary',
+    schedule,
+    status: 'active',
+    startDateKey: '2026-01-01',
+    archivedDateKey: null,
+  };
+}
 
 function day(dateKey: string, overrides: Partial<DayStats> = {}): DayStats {
   return {
@@ -91,12 +111,23 @@ describe('yearPoints', () => {
       ...month('2026-09', 0.8),
       habitStats: { water: { scheduledDays: 10, completedDays: 4 } },
     };
-    expect(yearPoints([august, september], 'reading')).toEqual([
+    expect(yearPoints([august, september], { habit: habit('reading'), today: TODAY })).toEqual([
       { monthKey: '2026-08', value: 100, label: 'Ago' },
     ]);
-    expect(monthRate(september, 'water')).toBe(0.4);
-    expect(monthRate(september, 'reading')).toBeNull();
+    expect(monthRate(september, { habit: habit('water'), today: TODAY })).toBe(0.4);
+    expect(monthRate(september, { habit: habit('reading'), today: TODAY })).toBeNull();
     expect(monthRate(september, null)).toBe(0.8);
+  });
+
+  it('measures a weekly habit against its times per week', () => {
+    const september = {
+      ...month('2026-09', 0.8),
+      closedDays: 30,
+      habitStats: { swim: { scheduledDays: 6, completedDays: 6 } },
+    };
+    const swim = habit('swim', { type: 'times_per_week', timesPerWeek: 3 });
+    // 30 días: 3 × 30 / 7 ≈ 13 marcas esperadas.
+    expect(monthRate(september, { habit: swim, today: TODAY })).toBe(6 / 13);
   });
 });
 

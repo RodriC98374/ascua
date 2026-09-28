@@ -6,6 +6,7 @@ import type {
   DailyLog,
   DateKey,
   GamificationState,
+  HabitEntry,
   HabitRecord,
   MonthKey,
   MonthlySummary,
@@ -64,7 +65,8 @@ export const userProfileConverter = domainConverter<UserProfile>();
 export const gamificationConverter = domainConverter<GamificationState>();
 
 // El ID del documento es el ID del hábito. Los hábitos creados antes de que existieran las
-// categorías no traen `category` ni un `color` de la paleta: se les completa al leerlos.
+// categorías no traen `category` ni un `color` de la paleta, y los de antes de la fase 16 no traen
+// `target`: se les completa al leerlos.
 const baseHabitConverter = withIdConverter<HabitRecord>();
 export const habitConverter: FirestoreDataConverter<HabitRecord, DocumentData> = {
   toFirestore: (data) => data as DocumentData,
@@ -73,21 +75,26 @@ export const habitConverter: FirestoreDataConverter<HabitRecord, DocumentData> =
     const category = categoryOf(habit.category);
     return {
       ...habit,
+      target: habit.target ?? null,
       category: category.id,
       color: isHabitColor(habit.color) ? habit.color : category.color,
     };
   },
 };
 
-// Cada marca guarda también su updatedAt; el dominio solo necesita `completed`.
+// Cada marca guarda también su updatedAt; el dominio solo necesita `completed` y, con cantidad,
+// `count`.
 const baseDailyLogConverter = domainConverter<DailyLog>();
 export const dailyLogConverter: FirestoreDataConverter<DailyLog, DocumentData> = {
   toFirestore: (data) => data as DocumentData,
   fromFirestore: (snapshot, options) => {
     const log = baseDailyLogConverter.fromFirestore(snapshot, options);
-    const entries: Record<string, { completed: boolean }> = {};
+    const entries: Record<string, HabitEntry> = {};
     for (const [habitId, entry] of Object.entries(log.entries)) {
-      entries[habitId] = { completed: entry.completed === true };
+      entries[habitId] =
+        typeof entry.count === 'number'
+          ? { completed: entry.completed === true, count: entry.count }
+          : { completed: entry.completed === true };
     }
     return { ...log, entries: entries as DailyEntries };
   },

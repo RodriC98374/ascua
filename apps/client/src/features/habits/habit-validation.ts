@@ -6,9 +6,13 @@ import {
   HABIT_NAME_MAX_LENGTH,
   HABIT_NAME_MIN_LENGTH,
   MAX_PRIMARY_HABITS,
+  TARGET_AMOUNT_MAX,
+  TARGET_AMOUNT_MIN,
+  TARGET_UNIT_MAX_LENGTH,
   type HabitCategory,
   type HabitColor,
   type HabitRecord,
+  type HabitSchedule,
   type HabitTier,
 } from '@ascua/shared';
 
@@ -19,19 +23,32 @@ export interface HabitDraft {
   tier: HabitTier;
   category: HabitCategory;
   color: HabitColor;
+  /** Fija al crear (D20); al editar, la del hábito, sin picker que la cambie. */
+  schedule: HabitSchedule;
+  hasTarget: boolean;
+  /** Texto tal como se escribe; se valida y convierte a número al guardar. */
+  targetAmount: string;
+  targetUnit: string;
 }
 
-export type HabitErrors = Partial<Record<keyof HabitDraft, string>>;
+export type HabitErrors = Partial<
+  Record<keyof HabitDraft | 'schedule' | 'targetAmount' | 'targetUnit', string>
+>;
 
 interface ValidationContext {
   habits: readonly HabitRecord[];
   /** Al editar: el hábito que se edita, para no compararlo consigo mismo. */
   habitId?: string;
+  /** Solo al crear se valida frecuencia y meta: al editar no se pueden tocar (D20). */
+  isNew: boolean;
 }
 
 const normalize = (name: string) => name.trim().toLocaleLowerCase('es');
 
-export function validateHabit(draft: HabitDraft, { habits, habitId }: ValidationContext) {
+export function validateHabit(
+  draft: HabitDraft,
+  { habits, habitId, isNew }: ValidationContext,
+): HabitErrors {
   const errors: HabitErrors = {};
   const name = draft.name.trim();
 
@@ -55,6 +72,27 @@ export function validateHabit(draft: HabitDraft, { habits, habitId }: Validation
 
   if (draft.tier === 'primary' && !canBePrimary(habits, habitId))
     errors.tier = `Ya tienes ${MAX_PRIMARY_HABITS} hábitos principales. Elige secundario.`;
+
+  if (isNew) {
+    if (draft.schedule.type === 'days_of_week' && draft.schedule.daysOfWeek.length === 0)
+      errors.schedule = 'Elige al menos un día.';
+
+    if (draft.hasTarget) {
+      const amount = Number(draft.targetAmount);
+      if (
+        draft.targetAmount.trim() === '' ||
+        !Number.isInteger(amount) ||
+        amount < TARGET_AMOUNT_MIN ||
+        amount > TARGET_AMOUNT_MAX
+      )
+        errors.targetAmount = `La meta va de ${TARGET_AMOUNT_MIN} a ${TARGET_AMOUNT_MAX}.`;
+
+      if (draft.targetUnit.trim() === '')
+        errors.targetUnit = 'Escribe la unidad (vasos, páginas…).';
+      else if (draft.targetUnit.trim().length > TARGET_UNIT_MAX_LENGTH)
+        errors.targetUnit = `La unidad puede tener hasta ${TARGET_UNIT_MAX_LENGTH} caracteres.`;
+    }
+  }
 
   return errors;
 }

@@ -2,9 +2,11 @@
 import {
   formatMonthAbbrev,
   formatWeekdayInitial,
+  monthHabitStats,
   type DateKey,
   type DayStats,
   type DayStatsStatus,
+  type Habit,
   type MonthKey,
   type MonthStats,
 } from '@ascua/shared';
@@ -62,20 +64,22 @@ export interface MonthPoint {
   label: string;
 }
 
+/** El hábito elegido en el año; `today` hace falta para medir los semanales. */
+export type HabitFilter = { habit: Habit; today: DateKey } | null;
+
 /** 0..1 del mes: de todos los hábitos o, si se eligió uno, solo de ese; null sin días que contar. */
-export function monthRate(month: MonthStats, habitId: string | null): number | null {
-  if (habitId === null) return month.completionRate;
-  const stats = month.habitStats[habitId];
-  return stats && stats.scheduledDays > 0 ? stats.completedDays / stats.scheduledDays : null;
+export function monthRate(month: MonthStats, filter: HabitFilter): number | null {
+  if (filter === null) return month.completionRate;
+  return monthHabitStats(month, filter.habit, filter.today).completionRate;
 }
 
 /** El % de cada mes con datos; los meses sin datos no se dibujan como 0%. */
 export function yearPoints(
   months: readonly MonthStats[],
-  habitId: string | null = null,
+  filter: HabitFilter = null,
 ): MonthPoint[] {
   return months.flatMap((month) => {
-    const rate = monthRate(month, habitId);
+    const rate = monthRate(month, filter);
     return rate === null
       ? []
       : [

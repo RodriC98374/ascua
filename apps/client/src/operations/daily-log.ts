@@ -9,6 +9,11 @@ export interface HabitCompletion {
   today: DateKey;
   habitId: string;
   completed: boolean;
+  /**
+   * Lo hecho hoy de un hábito con cantidad (3 de 8). `completed` va igual, calculado con la meta:
+   * al cerrar el día manda `count`.
+   */
+  count?: number;
   /** Si el documento de hoy ya existe (lo dice la suscripción); la primera marca lo crea. */
   logExists: boolean;
 }
@@ -16,10 +21,14 @@ export interface HabitCompletion {
 export function setHabitCompletion(
   db: Firestore,
   uid: string,
-  { today, habitId, completed, logExists }: HabitCompletion,
+  { today, habitId, completed, count, logExists }: HabitCompletion,
 ): Promise<void> {
   const ref = dailyLogRef(db, uid, today).withConverter(null);
-  const entry = { completed, updatedAt: serverTimestamp() };
+  const entry = {
+    completed,
+    ...(count === undefined ? {} : { count }),
+    updatedAt: serverTimestamp(),
+  };
 
   if (!logExists) {
     return setDoc(ref, {

@@ -56,6 +56,27 @@ describe('setHabitCompletion', () => {
     });
   });
 
+  it('saves how much was done of a habit with a target', async () => {
+    const db = ownerDb();
+    await setHabitCompletion(db, OWNER, {
+      today: TODAY,
+      habitId: 'water',
+      completed: false,
+      count: 3,
+      logExists: false,
+    });
+    await setHabitCompletion(db, OWNER, {
+      today: TODAY,
+      habitId: 'water',
+      completed: true,
+      count: 8,
+      logExists: true,
+    });
+
+    const log = await getDoc(dailyLogRef(db, OWNER, TODAY));
+    expect(log.data()?.entries).toEqual({ water: { completed: true, count: 8 } });
+  });
+
   it('works with habit IDs that contain dots', async () => {
     const db = ownerDb();
     await seedDocs({ [paths.dailyLog(TODAY)]: openLogDoc(TODAY) });

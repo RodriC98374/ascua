@@ -8,13 +8,13 @@ import { useUid } from '@/features/auth/session';
 import { useHabits } from '@/data/hooks';
 import { trackWrite } from '@/features/sync/write-errors';
 import { db } from '@/lib/firebase';
-import { createHabit, type HabitInput } from '@/operations/habits';
+import { createHabit, type NewHabitInput } from '@/operations/habits';
 
 export default function NewHabitScreen() {
   const uid = useUid();
   const habits = useHabits(uid);
 
-  function handleSubmit(input: HabitInput) {
+  function handleSubmit(input: NewHabitInput) {
     // Al final de la lista. No se espera la escritura: sin conexión queda en cola.
     const sortOrder = Math.max(-1, ...habits.data.map((habit) => habit.sortOrder)) + 1;
     const { write } = createHabit(db, uid, input, sortOrder);

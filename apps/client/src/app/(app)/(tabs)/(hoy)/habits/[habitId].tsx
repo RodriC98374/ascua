@@ -8,7 +8,7 @@ import { useUid } from '@/features/auth/session';
 import { useHabits } from '@/data/hooks';
 import { trackWrite } from '@/features/sync/write-errors';
 import { db } from '@/lib/firebase';
-import { updateHabit, type HabitInput } from '@/operations/habits';
+import { updateHabit, type NewHabitInput } from '@/operations/habits';
 
 /** Editar un hábito. Archivar vive en su menú de tres puntos (Hoy y Ajustes). */
 export default function EditHabitScreen() {
@@ -17,7 +17,7 @@ export default function EditHabitScreen() {
   const habits = useHabits(uid);
   const habit = habits.data.find((candidate) => candidate.id === habitId);
 
-  function handleSubmit(input: HabitInput) {
+  function handleSubmit(input: NewHabitInput) {
     trackWrite(updateHabit(db, uid, habitId, input));
     router.back();
   }

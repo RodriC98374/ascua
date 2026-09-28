@@ -1,6 +1,7 @@
 import {
   buildYearStats,
   formatMonthYear,
+  monthHabitStats,
   strongHabitColor,
   type DateKey,
   type HabitRecord,
@@ -24,7 +25,7 @@ import { TouchLineChart } from './chart-parts';
 import { CategoryRadar } from './category-radar';
 import { HabitBars } from './habit-bars';
 import { PeriodSummary } from './period-summary';
-import { formatPercent, monthCaption, percentValue, plural } from './statistics-text';
+import { formatPercent, habitCaption, monthCaption, percentValue, plural } from './statistics-text';
 
 /** Un año desde los resúmenes mensuales (≤ 12 documentos). Tocar un mes lleva a su vista. */
 export function YearView({
@@ -53,10 +54,10 @@ export function YearView({
     return <ActivityIndicator color={colors.emberStrong} />;
   }
 
-  const stats = buildYearStats({ year, summaries: summaries.data, habits });
+  const stats = buildYearStats({ year, summaries: summaries.data, habits, today });
   // Elegir un hábito filtra la gráfica y los meses a ese hábito.
   const selectedHabit = stats.habits.find((row) => row.habit.id === selectedHabitId)?.habit;
-  const habitFilter = selectedHabit?.id ?? null;
+  const habitFilter = selectedHabit ? { habit: selectedHabit, today } : null;
   const points = yearPoints(stats.months, habitFilter);
   const monthsWithData = stats.months.filter((month) => monthRate(month, habitFilter) !== null);
   const state = gamification.data;
@@ -65,10 +66,9 @@ export function YearView({
     state && buildTodaySummary({ today, habits, entries: todayLog.data?.entries ?? {}, state });
 
   function monthRowCaption(month: MonthStats): string {
-    const habitStats = habitFilter ? month.habitStats[habitFilter] : undefined;
-    return habitStats
-      ? `${habitStats.completedDays} de ${plural(habitStats.scheduledDays, 'día', 'días')}`
-      : monthCaption(month);
+    if (!selectedHabit) return monthCaption(month);
+    const stats = monthHabitStats(month, selectedHabit, today);
+    return stats.scheduledDays === 0 ? monthCaption(month) : habitCaption(stats);
   }
 
   return (

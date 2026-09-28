@@ -3,11 +3,14 @@ import {
   formatLongDate,
   MAX_PRIMARY_HABITS,
   PERFECT_DAY_BONUS,
+  startOfWeek,
   streakRiskAt,
   type DateKey,
   type GamificationState,
   type HabitRecord,
   type TaskRecord,
+  type WeekLog,
+  type WeeklyHabitProgress,
 } from '@ascua/shared';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -22,6 +25,8 @@ import Animated, {
 
 import { HabitActions } from '@/features/habits/habit-actions';
 import { HabitCheck } from '@/features/today/habit-check';
+import { NotTodayRow } from '@/features/today/not-today-row';
+import { QuantityCheck } from '@/features/today/quantity-check';
 import { TodayHero } from '@/features/today/today-hero';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -36,6 +41,7 @@ import { playSound } from '@/features/sounds/sounds';
 import { useUid } from '@/features/auth/session';
 import {
   useDailyLog,
+  useDailyLogsInRange,
   useGamificationState,
   useHabits,
   useTodayTasks,
@@ -62,6 +68,9 @@ export default function TodayScreen() {
   const log = useDailyLog(uid, today);
   const tasks = useTodayTasks(uid, today);
   const gamification = useGamificationState(uid);
+  // Solo hace falta la semana completa si hay hábitos semanales; si no, el mismo día alcanza.
+  const hasWeeklyHabits = habits.data.some((habit) => habit.schedule.type === 'times_per_week');
+  const weekLogs = useDailyLogsInRange(uid, hasWeeklyHabits ? startOfWeek(today) : today, today);
   // El perfil no frena la pantalla: mientras llega se usa la hora por defecto.
   const profile = useUserProfile(uid);
 
@@ -81,6 +90,7 @@ export default function TodayScreen() {
       habits={habits}
       log={log}
       tasks={tasks}
+      weekLogs={weekLogs.data}
       state={gamification.data}
       riskTime={
         profile.data?.reminderSettings.streakRiskReminderTime ??
@@ -96,19 +106,37 @@ interface TodayContentProps {
   habits: ReturnType<typeof useHabits>;
   log: ReturnType<typeof useDailyLog>;
   tasks: ReturnType<typeof useTodayTasks>;
+  weekLogs: readonly WeekLog[];
   state: GamificationState;
   /** 'HH:mm' desde la que Hoy avisa que la racha está en riesgo. */
   riskTime: string;
 }
 
+interface RowOptions {
+  trailing?: ReactNode;
+  /** Línea chica bajo el nombre: el avance de un semanal. */
+  caption?: string;
+  isToggleDisabled?: boolean;
+}
+
 /** Hoy con los datos ya cargados: aquí viven los momentos de logro, que comparan render a render. */
-function TodayContent({ uid, today, habits, log, tasks, state, riskTime }: TodayContentProps) {
+function TodayContent({
+  uid,
+  today,
+  habits,
+  log,
+  tasks,
+  weekLogs,
+  state,
+  riskTime,
+}: TodayContentProps) {
   const [isReordering, setIsReordering] = useState(false);
   const now = useMinuteClock();
   const summary = buildTodaySummary({
     today,
     habits: habits.data,
     entries: log.data?.entries ?? {},
+    weekLogs,
     tasks: tasks.data,
     state,
   });
@@ -140,12 +168,69 @@ function TodayContent({ uid, today, habits, log, tasks, state, riskTime }: Today
     );
   }
 
+  /** Un hábito con cantidad: suma o resta una unidad, entre 0 y su meta. */
+  function setCount(habitId: string, amount: number, nextCount: number) {
+    const count = Math.max(0, Math.min(nextCount, amount));
+    trackWrite(
+      setHabitCompletion(db, uid, {
+        today,
+        habitId,
+        completed: count >= amount,
+        count,
+        logExists: log.exists,
+      }),
+    );
+  }
+
   function toggleTask(task: TaskRecord) {
     trackWrite(setTaskCompletion(db, uid, task.id, task.completedDateKey !== today, today));
   }
 
   function move(habitId: string, offset: MoveOffset) {
     trackWrite(reorderHabits(db, uid, moveHabit(habits.data, habitId, offset), habits.data));
+  }
+
+  /** La casilla o el contador de un hábito, según tenga cantidad o no. */
+  function habitRow(
+    habit: HabitRecord,
+    { trailing, caption, isToggleDisabled = false }: RowOptions,
+  ) {
+    const isArchived = habit.status === 'archived';
+    if (habit.target) {
+      const amount = habit.target.amount;
+      const count = summary.countOf(habit.id);
+      return (
+        <QuantityCheck
+          key={habit.id}
+          name={habit.name}
+          tier={habit.tier}
+          color={habit.color}
+          amount={amount}
+          unit={habit.target.unit}
+          count={count}
+          isDone={summary.isDone(habit.id)}
+          isArchived={isArchived}
+          weeklyCaption={caption}
+          onIncrement={() => setCount(habit.id, amount, count + 1)}
+          onDecrement={() => setCount(habit.id, amount, count - 1)}
+          trailing={trailing}
+        />
+      );
+    }
+    return (
+      <HabitCheck
+        key={habit.id}
+        name={habit.name}
+        tier={habit.tier}
+        color={habit.color}
+        isDone={summary.isDone(habit.id)}
+        isArchived={isArchived}
+        isToggleDisabled={isToggleDisabled}
+        onToggle={() => toggle(habit.id)}
+        trailing={trailing}
+        caption={caption}
+      />
+    );
   }
 
   function row(habit: HabitRecord) {
@@ -171,19 +256,17 @@ function TodayContent({ uid, today, habits, log, tasks, state, riskTime }: Today
     } else if (!isArchived) {
       trailing = <HabitActions habit={habit} />;
     }
-    return (
-      <HabitCheck
-        key={habit.id}
-        name={habit.name}
-        tier={habit.tier}
-        color={habit.color}
-        isDone={summary.isDone(habit.id)}
-        isArchived={isArchived}
-        isToggleDisabled={isReordering}
-        onToggle={() => toggle(habit.id)}
-        trailing={trailing}
-      />
-    );
+    return habitRow(habit, { trailing, isToggleDisabled: isReordering });
+  }
+
+  /** N veces por semana: se puede marcar cualquier día, con el avance de la semana como leyenda. */
+  function weeklyRow(progress: WeeklyHabitProgress<HabitRecord>) {
+    const { habit } = progress;
+    const trailing = habit.status === 'archived' ? undefined : <HabitActions habit={habit} />;
+    return habitRow(habit, {
+      trailing,
+      caption: `${progress.count} de ${progress.target} esta semana`,
+    });
   }
 
   const reorderAction = canReorder && (
@@ -244,6 +327,55 @@ function TodayContent({ uid, today, habits, log, tasks, state, riskTime }: Today
                     ))}
                   </Card>
                 </HabitSection>
+              )}
+              {summary.weeklies.length > 0 && (
+                <HabitSection
+                  title="Semanales"
+                  progress={{
+                    done: summary.weeklies.filter((weekly) => weekly.isMet).length,
+                    total: summary.weeklies.length,
+                  }}
+                >
+                  <Card className="py-1">
+                    {summary.weeklies.map((weekly, index) => (
+                      <View
+                        key={weekly.habit.id}
+                        className={index > 0 ? 'border-border border-t' : ''}
+                      >
+                        {weeklyRow(weekly)}
+                      </View>
+                    ))}
+                  </Card>
+                  <Text
+                    className={`text-caption ${summary.isWeekPowered ? 'font-body-bold text-week-morado' : 'font-body-semibold text-ink-muted'}`}
+                  >
+                    {summary.isWeekPowered
+                      ? 'Semana potenciada: cumpliste todos tus semanales. Tu llama se ve morada hasta el domingo.'
+                      : 'Cumple todos tus semanales y tu llama se verá morada hasta el domingo.'}
+                  </Text>
+                </HabitSection>
+              )}
+              {summary.notToday.length > 0 && (
+                <View className="gap-3">
+                  <Text className="font-heading text-heading-md text-ink-muted">
+                    No te tocan hoy
+                  </Text>
+                  <Card className="py-1">
+                    {summary.notToday.map((habit, index) => (
+                      <View key={habit.id} className={index > 0 ? 'border-border border-t' : ''}>
+                        <NotTodayRow
+                          name={habit.name}
+                          daysOfWeek={
+                            habit.schedule.type === 'days_of_week' ? habit.schedule.daysOfWeek : []
+                          }
+                          trailing={
+                            habit.status === 'active' ? <HabitActions habit={habit} /> : undefined
+                          }
+                        />
+                      </View>
+                    ))}
+                  </Card>
+                </View>
               )}
             </>
           ) : (

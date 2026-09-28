@@ -42,6 +42,7 @@ export function TodayHero({
           done={primaryProgress.done}
           total={primaryProgress.total}
           isStreakAlive={streakDays > 0}
+          isWeekPowered={summary.isWeekPowered}
         />
         <View className="flex-1 gap-1">
           <View>

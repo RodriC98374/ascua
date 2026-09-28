@@ -60,6 +60,79 @@ describe('habits create', () => {
   });
 });
 
+describe('habit frequency and target (fase 16)', () => {
+  const fixedDays = (daysOfWeek: unknown) => ({ schedule: { type: 'days_of_week', daysOfWeek } });
+  const timesPerWeek = (times: unknown) => ({
+    schedule: { type: 'times_per_week', timesPerWeek: times },
+  });
+  const target = (amount: unknown, unit: unknown = 'vasos') => ({ target: { amount, unit } });
+
+  it('accepts fixed days of the week', async () => {
+    await assertSucceeds(setDoc(habit('a'), habitDoc(fixedDays([1, 3, 5]))));
+    await assertSucceeds(setDoc(habit('b'), habitDoc(fixedDays([7]))));
+    await assertSucceeds(setDoc(habit('c'), habitDoc(fixedDays([1, 2, 3, 4, 5, 6]))));
+  });
+
+  it('rejects invalid fixed days', async () => {
+    await assertFails(setDoc(habit(), habitDoc(fixedDays([]))));
+    // Los siete días son "todos los días".
+    await assertFails(setDoc(habit(), habitDoc(fixedDays([1, 2, 3, 4, 5, 6, 7]))));
+    await assertFails(setDoc(habit(), habitDoc(fixedDays([0, 3]))));
+    await assertFails(setDoc(habit(), habitDoc(fixedDays([3, 8]))));
+    await assertFails(setDoc(habit(), habitDoc(fixedDays([1, 1]))));
+    await assertFails(setDoc(habit(), habitDoc(fixedDays(['lunes']))));
+    await assertFails(setDoc(habit(), habitDoc(fixedDays(3))));
+    await assertFails(
+      setDoc(
+        habit(),
+        habitDoc({ schedule: { type: 'days_of_week', daysOfWeek: [1], timesPerWeek: 2 } }),
+      ),
+    );
+  });
+
+  it('accepts from one to six times per week', async () => {
+    await assertSucceeds(setDoc(habit('a'), habitDoc(timesPerWeek(1))));
+    await assertSucceeds(setDoc(habit('b'), habitDoc(timesPerWeek(6))));
+  });
+
+  it('rejects invalid times per week', async () => {
+    await assertFails(setDoc(habit(), habitDoc(timesPerWeek(0))));
+    await assertFails(setDoc(habit(), habitDoc(timesPerWeek(7))));
+    await assertFails(setDoc(habit(), habitDoc(timesPerWeek(2.5))));
+    await assertFails(setDoc(habit(), habitDoc({ schedule: { type: 'times_per_week' } })));
+  });
+
+  it('accepts a daily target with its unit, or none', async () => {
+    await assertSucceeds(setDoc(habit('a'), habitDoc(target(8))));
+    await assertSucceeds(setDoc(habit('b'), habitDoc(target(999, 'x'.repeat(20)))));
+    await assertSucceeds(setDoc(habit('c'), habitDoc({ target: null })));
+    await assertSucceeds(setDoc(habit('d'), habitDoc({ ...target(3), ...timesPerWeek(2) })));
+  });
+
+  it('rejects an invalid target', async () => {
+    await assertFails(setDoc(habit(), habitDoc(target(1))));
+    await assertFails(setDoc(habit(), habitDoc(target(1000))));
+    await assertFails(setDoc(habit(), habitDoc(target(2.5))));
+    await assertFails(setDoc(habit(), habitDoc(target(8, ''))));
+    await assertFails(setDoc(habit(), habitDoc(target(8, 'x'.repeat(21)))));
+    await assertFails(setDoc(habit(), habitDoc({ target: { amount: 8 } })));
+    await assertFails(setDoc(habit(), habitDoc({ target: { amount: 8, unit: 'vasos', max: 9 } })));
+  });
+
+  it('keeps frequency and target fixed after creating the habit', async () => {
+    await seedDocs({ [paths.habit('reading')]: habitDoc({ startDateKey: '2026-01-01' }) });
+    await assertFails(updateDoc(habit(), { ...timesPerWeek(3), updatedAt: serverTimestamp() }));
+    await assertFails(updateDoc(habit(), { ...target(8), updatedAt: serverTimestamp() }));
+
+    await seedDocs({
+      [paths.habit('water')]: habitDoc({ startDateKey: '2026-01-01', ...target(8) }),
+    });
+    await assertFails(updateDoc(habit('water'), { ...target(6), updatedAt: serverTimestamp() }));
+    await assertFails(updateDoc(habit('water'), { target: null, updatedAt: serverTimestamp() }));
+    await assertSucceeds(updateDoc(habit('water'), { name: 'Agua', updatedAt: serverTimestamp() }));
+  });
+});
+
 describe('habits update', () => {
   beforeEach(async () => {
     await seedDocs({ [paths.habit('reading')]: habitDoc({ startDateKey: '2026-01-01' }) });
@@ -84,9 +157,7 @@ describe('habits update', () => {
         updatedAt: serverTimestamp(),
       }),
     );
-    await assertFails(
-      updateDoc(habit(), { category: 'deportes', updatedAt: serverTimestamp() }),
-    );
+    await assertFails(updateDoc(habit(), { category: 'deportes', updatedAt: serverTimestamp() }));
   });
 
   it('archives with today as the last day it counts', async () => {

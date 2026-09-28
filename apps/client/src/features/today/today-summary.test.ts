@@ -156,4 +156,100 @@ describe('buildTodaySummary', () => {
     expect(summary.hasHabits).toBe(false);
     expect(summary.progressPercent).toBe(0);
   });
+
+  it('reads how much a target habit did today', () => {
+    const target = { amount: 8, unit: 'vasos' };
+    const withTarget = [...habits, habit('water8', 'secondary', { target })];
+    const summary = buildTodaySummary({
+      today: TODAY,
+      habits: withTarget,
+      entries: { water8: { completed: false, count: 3 } },
+      state,
+    });
+    expect(summary.countOf('water8')).toBe(3);
+    expect(summary.countOf('run')).toBe(0);
+  });
+
+  describe('fixed-days and weekly habits (D20)', () => {
+    // TODAY (2026-09-21) es lunes.
+    const fixedDays = habit('gym', 'primary', {
+      schedule: { type: 'days_of_week', daysOfWeek: [3, 5] },
+    });
+    const swim = habit('swim', 'secondary', {
+      schedule: { type: 'times_per_week', timesPerWeek: 2 },
+    });
+
+    it('lists a fixed-days habit apart when it does not touch today', () => {
+      const summary = buildTodaySummary({
+        today: TODAY,
+        habits: [...habits, fixedDays],
+        entries: {},
+        state,
+      });
+      expect(summary.notToday.map((h) => h.id)).toEqual(['gym']);
+      expect(summary.primaries.map((h) => h.id)).not.toContain('gym');
+    });
+
+    it('includes a weekly habit in Hoy any day, with its progress for the week', () => {
+      const summary = buildTodaySummary({
+        today: TODAY,
+        habits: [...habits, swim],
+        entries: done('swim'),
+        weekLogs: [{ dateKey: TODAY, entries: done('swim') }],
+        state,
+      });
+      expect(summary.weeklies).toEqual([
+        { habit: swim, count: 1, target: 2, isMet: false, earnsPointsToday: true },
+      ]);
+      // No entra en la meta de racha ni en los principales/secundarios de hoy.
+      expect(summary.primaries.map((h) => h.id)).not.toContain('swim');
+      expect(summary.secondaries.map((h) => h.id)).not.toContain('swim');
+    });
+
+    it('turns the week powered once every weekly habit reaches its N', () => {
+      const notYet = buildTodaySummary({
+        today: TODAY,
+        habits: [...habits, swim],
+        entries: done('swim'),
+        weekLogs: [{ dateKey: TODAY, entries: done('swim') }],
+        state,
+      });
+      expect(notYet.isWeekPowered).toBe(false);
+
+      // Martes: ya hay una marca del lunes, en la misma semana.
+      const tuesday = '2026-09-22';
+      const powered = buildTodaySummary({
+        today: tuesday,
+        habits: [...habits, swim],
+        entries: done('swim'),
+        weekLogs: [
+          { dateKey: TODAY, entries: done('swim') },
+          { dateKey: tuesday, entries: done('swim') },
+        ],
+        state,
+      });
+      expect(powered.isWeekPowered).toBe(true);
+    });
+
+    it('has habits to show with only a weekly one, even though it schedules no day', () => {
+      const summary = buildTodaySummary({ today: TODAY, habits: [swim], entries: {}, state });
+      expect(summary.hasHabits).toBe(true);
+    });
+
+    it('has habits to show with only a fixed-days one that does not touch today', () => {
+      const summary = buildTodaySummary({ today: TODAY, habits: [fixedDays], entries: {}, state });
+      expect(summary.hasHabits).toBe(true);
+    });
+
+    it('counts a weekly habit completion in its own tier of the points breakdown', () => {
+      const summary = buildTodaySummary({
+        today: TODAY,
+        habits: [...habits, swim],
+        entries: done('swim'),
+        weekLogs: [{ dateKey: TODAY, entries: done('swim') }],
+        state,
+      });
+      expect(summary.pointsBreakdown.secondary).toBe(5);
+    });
+  });
 });

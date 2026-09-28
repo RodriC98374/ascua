@@ -6,8 +6,12 @@ import {
   HABIT_DESCRIPTION_MAX_LENGTH,
   HABIT_NAME_MAX_LENGTH,
   MAX_PRIMARY_HABITS,
+  TARGET_UNIT_MAX_LENGTH,
+  TIMES_PER_WEEK_MAX,
+  TIMES_PER_WEEK_MIN,
   type HabitCategory,
   type HabitRecord,
+  type HabitScheduleType,
   type HabitTier,
 } from '@ascua/shared';
 import { useState } from 'react';
@@ -15,15 +19,16 @@ import { Pressable, Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/button';
 import { TextField } from '@/components/ui/text-field';
+import { Toggle } from '@/components/ui/toggle';
 import { hasErrors, validateHabit, type HabitDraft } from '@/features/habits/habit-validation';
-import type { HabitInput } from '@/operations/habits';
+import type { NewHabitInput } from '@/operations/habits';
 
 interface HabitFormProps {
   /** Todos los hábitos, para validar el máximo de principales y los nombres repetidos. */
   habits: readonly HabitRecord[];
-  /** Al editar: el hábito actual. */
+  /** Al editar: el hábito actual. Frecuencia y meta quedan fijas y no se muestran para cambiarlas. */
   habit?: HabitRecord;
-  onSubmit: (input: HabitInput) => void;
+  onSubmit: (input: NewHabitInput) => void;
 }
 
 const TIER_OPTIONS: { tier: HabitTier; label: string; help: string }[] = [
@@ -31,7 +36,42 @@ const TIER_OPTIONS: { tier: HabitTier; label: string; help: string }[] = [
   { tier: 'secondary', label: 'Secundario', help: 'Suma al día perfecto y da 5 puntos.' },
 ];
 
+const SCHEDULE_OPTIONS: { type: HabitScheduleType; label: string; help: string }[] = [
+  { type: 'daily', label: 'Todos los días', help: 'Cuenta y castiga cada día.' },
+  { type: 'days_of_week', label: 'Días fijos', help: 'Solo cuenta (y castiga) los días elegidos.' },
+  {
+    type: 'times_per_week',
+    label: 'Veces por semana',
+    help: 'No entra en la racha. Suma puntos hasta la meta de la semana (lunes a domingo).',
+  },
+];
+
+const WEEKDAY_OPTIONS = [
+  { isoWeekday: 1, label: 'L' },
+  { isoWeekday: 2, label: 'M' },
+  { isoWeekday: 3, label: 'X' },
+  { isoWeekday: 4, label: 'J' },
+  { isoWeekday: 5, label: 'V' },
+  { isoWeekday: 6, label: 'S' },
+  { isoWeekday: 7, label: 'D' },
+];
+
+const MAX_FIXED_DAYS = 6;
+
+function describeSchedule(schedule: HabitDraft['schedule']): string {
+  if (schedule.type === 'daily') return 'Todos los días';
+  if (schedule.type === 'days_of_week') {
+    const labels = WEEKDAY_OPTIONS.filter((day) =>
+      schedule.daysOfWeek.includes(day.isoWeekday),
+    ).map((day) => day.label);
+    return `Días fijos: ${labels.join(', ')}`;
+  }
+  const { timesPerWeek } = schedule;
+  return `${timesPerWeek} ${timesPerWeek === 1 ? 'vez' : 'veces'} por semana`;
+}
+
 export function HabitForm({ habits, habit, onSubmit }: HabitFormProps) {
+  const isNew = !habit;
   const isPrimaryAllowed = canBePrimary(habits, habit?.id);
   const [draft, setDraft] = useState<HabitDraft>({
     name: habit?.name ?? '',
@@ -39,12 +79,16 @@ export function HabitForm({ habits, habit, onSubmit }: HabitFormProps) {
     tier: habit?.tier ?? (isPrimaryAllowed ? 'primary' : 'secondary'),
     category: habit?.category ?? 'health',
     color: habit?.color ?? categoryOf('health').color,
+    schedule: habit?.schedule ?? { type: 'daily' },
+    hasTarget: Boolean(habit?.target),
+    targetAmount: habit?.target ? String(habit.target.amount) : '',
+    targetUnit: habit?.target?.unit ?? '',
   });
   // Los errores de un campo se muestran después de salir de él o de intentar guardar.
   const [touched, setTouched] = useState<Partial<Record<keyof HabitDraft, boolean>>>({});
   const [hasTriedSubmit, setHasTriedSubmit] = useState(false);
 
-  const errors = validateHabit(draft, { habits, habitId: habit?.id });
+  const errors = validateHabit(draft, { habits, habitId: habit?.id, isNew });
   const visibleError = (field: keyof HabitDraft) =>
     hasTriedSubmit || touched[field] ? errors[field] : undefined;
 
@@ -57,10 +101,45 @@ export function HabitForm({ habits, habit, onSubmit }: HabitFormProps) {
     setDraft((current) => ({ ...current, category, color: categoryOf(category).color }));
   }
 
+  function selectScheduleType(type: HabitScheduleType) {
+    setDraft((current) => ({
+      ...current,
+      schedule:
+        type === 'daily'
+          ? { type }
+          : type === 'days_of_week'
+            ? { type, daysOfWeek: [] }
+            : { type, timesPerWeek: TIMES_PER_WEEK_MIN },
+    }));
+  }
+
+  function toggleWeekday(isoWeekday: number) {
+    setDraft((current) => {
+      if (current.schedule.type !== 'days_of_week') return current;
+      const { daysOfWeek } = current.schedule;
+      const isSelected = daysOfWeek.includes(isoWeekday);
+      if (!isSelected && daysOfWeek.length >= MAX_FIXED_DAYS) return current;
+      const nextDays = isSelected
+        ? daysOfWeek.filter((day) => day !== isoWeekday)
+        : [...daysOfWeek, isoWeekday];
+      return { ...current, schedule: { type: 'days_of_week', daysOfWeek: nextDays } };
+    });
+  }
+
   function handleSubmit() {
     setHasTriedSubmit(true);
     if (hasErrors(errors)) return;
-    onSubmit(draft);
+    onSubmit({
+      name: draft.name.trim(),
+      description: draft.description.trim() || null,
+      tier: draft.tier,
+      category: draft.category,
+      color: draft.color,
+      schedule: draft.schedule,
+      target: draft.hasTarget
+        ? { amount: Number(draft.targetAmount), unit: draft.targetUnit.trim() }
+        : null,
+    });
   }
 
   const selectedHelp = TIER_OPTIONS.find((option) => option.tier === draft.tier)?.help;
@@ -131,6 +210,154 @@ export function HabitForm({ habits, habit, onSubmit }: HabitFormProps) {
             </Text>
           )
         )}
+      </View>
+
+      <View className="gap-2">
+        <Text className="font-body-bold text-caption text-ink-muted">Frecuencia</Text>
+        {isNew ? (
+          <>
+            <View accessibilityRole="radiogroup" className="gap-2">
+              {SCHEDULE_OPTIONS.map((option) => {
+                const isSelected = option.type === draft.schedule.type;
+                return (
+                  <Pressable
+                    key={option.type}
+                    accessibilityRole="radio"
+                    accessibilityState={{ checked: isSelected }}
+                    onPress={() => selectScheduleType(option.type)}
+                    className={`gap-0.5 rounded-md border-2 px-3 py-2 ${isSelected ? 'border-ember-strong bg-warning-soft' : 'border-border bg-surface-200 active:opacity-85'}`}
+                  >
+                    <Text
+                      className={`font-body-extrabold text-button ${isSelected ? 'text-ember-strong' : 'text-ink'}`}
+                    >
+                      {option.label}
+                    </Text>
+                    <Text className="font-body-semibold text-caption text-ink-muted">
+                      {option.help}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            {draft.schedule.type === 'days_of_week' && (
+              <View className="gap-1">
+                <View accessibilityRole="radiogroup" className="flex-row flex-wrap gap-2">
+                  {WEEKDAY_OPTIONS.map((day) => {
+                    const isSelected =
+                      draft.schedule.type === 'days_of_week' &&
+                      draft.schedule.daysOfWeek.includes(day.isoWeekday);
+                    return (
+                      <Pressable
+                        key={day.isoWeekday}
+                        accessibilityRole="checkbox"
+                        accessibilityState={{ checked: isSelected }}
+                        onPress={() => toggleWeekday(day.isoWeekday)}
+                        className={`h-11 w-11 items-center justify-center rounded-full border-2 ${isSelected ? 'border-ink bg-surface-300' : 'border-border bg-surface-200 active:opacity-85'}`}
+                      >
+                        <Text
+                          className={`font-body-extrabold text-button ${isSelected ? 'text-ink' : 'text-ink-muted'}`}
+                        >
+                          {day.label}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+                {(hasTriedSubmit || touched.schedule) && errors.schedule && (
+                  <Text
+                    accessibilityLiveRegion="polite"
+                    className="font-body-bold text-caption text-error"
+                  >
+                    {errors.schedule}
+                  </Text>
+                )}
+              </View>
+            )}
+
+            {draft.schedule.type === 'times_per_week' && (
+              <View accessibilityRole="radiogroup" className="flex-row flex-wrap gap-2">
+                {Array.from(
+                  { length: TIMES_PER_WEEK_MAX - TIMES_PER_WEEK_MIN + 1 },
+                  (_, index) => TIMES_PER_WEEK_MIN + index,
+                ).map((n) => {
+                  const isSelected =
+                    draft.schedule.type === 'times_per_week' && draft.schedule.timesPerWeek === n;
+                  return (
+                    <Pressable
+                      key={n}
+                      accessibilityRole="radio"
+                      accessibilityState={{ checked: isSelected }}
+                      onPress={() =>
+                        update('schedule', { type: 'times_per_week', timesPerWeek: n })
+                      }
+                      className={`h-11 w-11 items-center justify-center rounded-full border-2 ${isSelected ? 'border-ink bg-surface-300' : 'border-border bg-surface-200 active:opacity-85'}`}
+                    >
+                      <Text
+                        className={`font-body-extrabold text-button ${isSelected ? 'text-ink' : 'text-ink-muted'}`}
+                      >
+                        {n}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            )}
+          </>
+        ) : (
+          <Text className="font-body text-body text-ink-muted">
+            {describeSchedule(draft.schedule)}. No se puede cambiar: archiva el hábito y crea uno
+            nuevo si hace falta otra frecuencia.
+          </Text>
+        )}
+      </View>
+
+      <View className="gap-2">
+        <View className="flex-row items-center gap-3">
+          <Text className="font-body-bold text-caption text-ink-muted flex-1">
+            Con cantidad (vasos, páginas…)
+          </Text>
+          {isNew && (
+            <Toggle
+              accessibilityLabel="Con cantidad"
+              value={draft.hasTarget}
+              onChange={(hasTarget) => update('hasTarget', hasTarget)}
+            />
+          )}
+        </View>
+        {isNew
+          ? draft.hasTarget && (
+              <View className="flex-row gap-2">
+                <View className="w-24">
+                  <TextField
+                    label="Meta"
+                    value={draft.targetAmount}
+                    onChangeText={(value) => update('targetAmount', value)}
+                    onBlur={() => setTouched((current) => ({ ...current, targetAmount: true }))}
+                    keyboardType="number-pad"
+                    placeholder="8"
+                    error={visibleError('targetAmount')}
+                  />
+                </View>
+                <View className="flex-1">
+                  <TextField
+                    label="Unidad"
+                    value={draft.targetUnit}
+                    onChangeText={(value) => update('targetUnit', value)}
+                    onBlur={() => setTouched((current) => ({ ...current, targetUnit: true }))}
+                    maxLength={TARGET_UNIT_MAX_LENGTH}
+                    placeholder="vasos"
+                    autoCapitalize="none"
+                    error={visibleError('targetUnit')}
+                  />
+                </View>
+              </View>
+            )
+          : draft.hasTarget && (
+              <Text className="font-body text-body text-ink-muted">
+                Meta fija: {draft.targetAmount} {draft.targetUnit} al día.
+              </Text>
+            )}
       </View>
 
       <View className="gap-2">

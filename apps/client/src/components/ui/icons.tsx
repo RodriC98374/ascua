@@ -120,6 +120,14 @@ export function PlusIcon({ size = 20, color }: IconProps) {
   );
 }
 
+export function MinusIcon({ size = 20, color }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Path d="M5 12h14" {...stroke(color)} />
+    </Svg>
+  );
+}
+
 export function ArrowIcon({
   size = 20,
   color,

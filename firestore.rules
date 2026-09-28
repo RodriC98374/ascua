@@ -213,8 +213,11 @@ service cloud.firestore {
           && isValidHabitStatusChange(existing(), incoming());
       }
 
+      // `target` es opcional: los hábitos de antes de la fase 16 no lo traen.
       function isValidHabit(habit) {
-        return hasExactly(habit, ['name', 'description', 'icon', 'color', 'category', 'tier', 'schedule', 'status', 'sortOrder', 'startDateKey', 'archivedDateKey', 'createdAt', 'updatedAt', 'schemaVersion'])
+        let fields = ['name', 'description', 'icon', 'color', 'category', 'tier', 'schedule', 'status', 'sortOrder', 'startDateKey', 'archivedDateKey', 'createdAt', 'updatedAt', 'schemaVersion'];
+        return habit.keys().hasAll(fields)
+          && habit.keys().hasOnly(fields.concat(['target']))
           && isText(habit.name, 1, 60)
           && isOptionalText(habit.description, 200)
           && isText(habit.icon, 1, 40)
@@ -222,11 +225,39 @@ service cloud.firestore {
           && habit.color is string && habit.color.matches('#[0-9A-Fa-f]{6}')
           && habit.category in ['health', 'physical', 'mental', 'academic', 'other']
           && habit.tier in ['primary', 'secondary']
-          && habit.schedule == {'type': 'daily'}
+          && isValidSchedule(habit.schedule)
+          && (!('target' in habit) || habit.target == null || isValidTarget(habit.target))
           && habit.status in ['active', 'archived']
           && habit.sortOrder is int
           && isDateKey(habit.startDateKey)
           && (habit.archivedDateKey == null || isDateKey(habit.archivedDateKey));
+      }
+
+      // Todos los días, días fijos (1 = lunes … 7 = domingo; los siete son "todos los días") o N
+      // veces por semana. Se fija al crear el hábito: `update` no deja cambiarla.
+      function isValidSchedule(schedule) {
+        return schedule == {'type': 'daily'}
+          || (hasExactly(schedule, ['type', 'daysOfWeek'])
+            && schedule.type == 'days_of_week'
+            // Solo una lista tiene hasOnly y toSet: con otro tipo la regla falla y niega.
+            && schedule.daysOfWeek.size() >= 1
+            && schedule.daysOfWeek.size() <= 6
+            && schedule.daysOfWeek.hasOnly([1, 2, 3, 4, 5, 6, 7])
+            && schedule.daysOfWeek.toSet().size() == schedule.daysOfWeek.size())
+          || (hasExactly(schedule, ['type', 'timesPerWeek'])
+            && schedule.type == 'times_per_week'
+            && schedule.timesPerWeek is int
+            && schedule.timesPerWeek >= 1
+            && schedule.timesPerWeek <= 6);
+      }
+
+      // Meta del día de un hábito con cantidad (8 vasos). Fija desde que se crea el hábito.
+      function isValidTarget(target) {
+        return hasExactly(target, ['amount', 'unit'])
+          && target.amount is int
+          && target.amount >= 2
+          && target.amount <= 999
+          && isText(target.unit, 1, 20);
       }
 
       // Archivar deja hoy como último día en que cuenta. Un hábito archivado no se reactiva:

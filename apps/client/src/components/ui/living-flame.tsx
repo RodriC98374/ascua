@@ -44,11 +44,20 @@ interface LivingFlameProps {
    * inicial también, si no es 0 (al abrir la pantalla).
    */
   burst?: number;
+  /** Semana potenciada (D20): todos los semanales llegaron a su N. La llama se ve morada. */
+  isPowered?: boolean;
 }
 
-export function LivingFlame({ size, isContinuous = false, burst = 0 }: LivingFlameProps) {
+export function LivingFlame({
+  size,
+  isContinuous = false,
+  burst = 0,
+  isPowered = false,
+}: LivingFlameProps) {
   const colors = useThemeColors();
   const gradientId = `living-flame-${useId().replace(/[^a-zA-Z0-9]/g, '')}`;
+  const flameColor = isPowered ? colors.weekMorado : colors.ember;
+  const glowColor = isPowered ? colors.weekMorado : colors.emberGlow;
   const isReducedMotion = useReducedMotion();
   const clock = useSharedValue(0);
   // Cuánto se mueve: 0 = quieta, 1 = llama viva.
@@ -110,8 +119,8 @@ export function LivingFlame({ size, isContinuous = false, burst = 0 }: LivingFla
         <Svg width={size} height={size} viewBox={VIEW_BOX}>
           <Defs>
             <LinearGradient id={gradientId} x1="0.2" y1="0" x2="0.8" y2="1">
-              <Stop offset="0" stopColor={colors.ember} />
-              <Stop offset="1" stopColor={colors.emberGlow} />
+              <Stop offset="0" stopColor={flameColor} />
+              <Stop offset="1" stopColor={glowColor} />
             </LinearGradient>
           </Defs>
           <Path d={OUTER_PATH} fill={`url(#${gradientId})`} />
@@ -119,7 +128,7 @@ export function LivingFlame({ size, isContinuous = false, burst = 0 }: LivingFla
         {/* Dentro de la silueta: hereda su vaivén y suma el propio, sin salirse de ella. */}
         <Animated.View style={[layer, { transformOrigin: BASE_ORIGIN }, coreStyle]}>
           <Svg width={size} height={size} viewBox={VIEW_BOX}>
-            <Path d={CORE_PATH} fill={colors.emberGlow} />
+            <Path d={CORE_PATH} fill={glowColor} />
           </Svg>
         </Animated.View>
       </Animated.View>

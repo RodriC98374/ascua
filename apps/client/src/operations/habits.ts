@@ -6,6 +6,8 @@ import {
   type HabitCategory,
   type HabitColor,
   type HabitRecord,
+  type HabitSchedule,
+  type HabitTarget,
   type HabitTier,
 } from '@ascua/shared';
 import {
@@ -30,6 +32,12 @@ export interface HabitInput {
   color: HabitColor;
 }
 
+/** Frecuencia y meta: se eligen al crear el hábito y después no cambian (D20). */
+export interface NewHabitInput extends HabitInput {
+  schedule: HabitSchedule;
+  target: HabitTarget | null;
+}
+
 function clean({ name, description, tier, category, color }: HabitInput): HabitInput {
   const trimmedDescription = description?.trim() ?? '';
   return { name: name.trim(), description: trimmedDescription || null, tier, category, color };
@@ -39,7 +47,7 @@ function clean({ name, description, tier, category, color }: HabitInput): HabitI
 export function createHabit(
   db: Firestore,
   uid: string,
-  input: HabitInput,
+  input: NewHabitInput,
   sortOrder: number,
   today: DateKey = todayDateKey(),
 ): { habitId: string; write: Promise<void> } {
@@ -47,7 +55,8 @@ export function createHabit(
   const write = setDoc(ref, {
     ...clean(input),
     icon: DEFAULT_HABIT_ICON,
-    schedule: { type: 'daily' },
+    schedule: input.schedule,
+    target: input.target && { amount: input.target.amount, unit: input.target.unit.trim() },
     status: 'active',
     sortOrder,
     startDateKey: today,

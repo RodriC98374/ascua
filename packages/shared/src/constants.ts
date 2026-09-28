@@ -66,3 +66,10 @@ export const REWARD_TIER_COST_RANGES: Readonly<Record<RewardTier, { min: number;
   medium: { min: 150, max: 250 },
   large: { min: 500, max: 700 },
 };
+
+/** Frecuencia y cantidad de un hábito (D20). Los mismos límites que validan las reglas. */
+export const TIMES_PER_WEEK_MIN = 1;
+export const TIMES_PER_WEEK_MAX = 6;
+export const TARGET_AMOUNT_MIN = 2;
+export const TARGET_AMOUNT_MAX = 999;
+export const TARGET_UNIT_MAX_LENGTH = 20;

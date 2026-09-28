@@ -6,6 +6,7 @@ import {
   DAILY_TASK_POINTS_CAP,
   EMPTY_MONTHLY_COUNTERS,
   evaluateDay,
+  startOfWeek,
   toMonthKey,
   transactionIds as transactionIdsOf,
   type DailyEntries,
@@ -52,7 +53,13 @@ async function seed({ state, habits = [READING, WATER], logs = {} }: Setup) {
     ...Object.fromEntries(
       habits.map((habit) => [
         paths.habit(habit.id),
-        habitDoc({ name: habit.name, tier: habit.tier, startDateKey: habit.startDateKey }),
+        habitDoc({
+          name: habit.name,
+          tier: habit.tier,
+          startDateKey: habit.startDateKey,
+          schedule: habit.schedule,
+          ...(habit.target ? { target: habit.target } : {}),
+        }),
       ]),
     ),
     ...Object.fromEntries(
@@ -174,6 +181,81 @@ describe('closePendingDays', () => {
       description: 'Tareas cumplidas: 2',
     });
     expect(result.state?.pointsBalance).toBe(50 + 5 + DAILY_TASK_POINTS_CAP);
+  });
+
+  describe('weekly habits (fase 16)', () => {
+    // La semana pasada entera ya terminó, sea cual sea el día de hoy.
+    const monday = startOfWeek(addDays(TODAY, -7));
+    const [tuesday, wednesday] = [addDays(monday, 1), addDays(monday, 2)];
+    const SWIM: Habit = {
+      ...testHabit('swim', 'secondary'),
+      schedule: { type: 'times_per_week', timesPerWeek: 2 },
+    };
+
+    it('credits a weekly habit up to its times per week', async () => {
+      await seed({
+        state: pendingState({ lastClosedDateKey: addDays(monday, -1) }),
+        habits: [SWIM],
+        logs: { [monday]: done('swim'), [tuesday]: done('swim'), [wednesday]: done('swim') },
+      });
+
+      const db = ownerDb();
+      await closePendingDays(db, OWNER, TODAY);
+
+      expect(await transactionIds(db)).toEqual(
+        [
+          transactionIdsOf.habitCompletion(monday, 'swim'),
+          transactionIdsOf.habitCompletion(tuesday, 'swim'),
+        ].sort(),
+      );
+      // La tercera marca se cumple igual: figura en el día, sin puntos.
+      expect(await read(db, paths.dailyLog(wednesday))).toMatchObject({
+        status: 'inactive',
+        summary: { completedHabitIds: ['swim'], pointsEarned: 0 },
+      });
+    });
+
+    it('counts the marks of days of the week closed in an earlier run', async () => {
+      await seed({
+        state: pendingState({ lastClosedDateKey: tuesday }),
+        habits: [SWIM],
+        logs: { [monday]: done('swim'), [tuesday]: done('swim'), [wednesday]: done('swim') },
+      });
+
+      const db = ownerDb();
+      const result = await closePendingDays(db, OWNER, TODAY);
+
+      expect(result.closedDays[0]).toMatchObject({ dateKey: wednesday, pointsEarned: 0 });
+      expect(await transactionIds(db)).toEqual([]);
+    });
+  });
+
+  it('counts a habit with a target only once the amount is reached', async () => {
+    const WATER_GLASSES: Habit = {
+      ...testHabit('water', 'primary'),
+      target: { amount: 8, unit: 'vasos' },
+    };
+    const twoDaysAgo = addDays(TODAY, -2);
+    await seed({
+      state: stateClosedDaysAgo(3, { streakFreezesAvailable: 0 }),
+      habits: [WATER_GLASSES],
+      logs: {
+        // La casilla dice cumplido, pero manda la cantidad.
+        [twoDaysAgo]: { water: { completed: true, count: 5 } },
+        [YESTERDAY]: { water: { completed: true, count: 8 } },
+      },
+    });
+
+    const db = ownerDb();
+    const result = await closePendingDays(db, OWNER, TODAY);
+
+    expect(result.closedDays.map(({ status }) => status)).toEqual(['missed', 'completed']);
+    expect(await transactionIds(db)).toEqual(
+      [
+        transactionIdsOf.habitCompletion(YESTERDAY, 'water'),
+        transactionIdsOf.perfectDay(YESTERDAY),
+      ].sort(),
+    );
   });
 
   it('does nothing when there are no pending days', async () => {

@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { evaluateDay } from './day-evaluation';
 import { initialGamificationState } from './gamification-state';
 import { addClosedDay, EMPTY_MONTHLY_COUNTERS } from './monthly-summary';
-import { buildRangeStats, buildYearStats, monthHabitRate } from './statistics';
+import { buildRangeStats, buildYearStats, monthHabitStats } from './statistics';
 import type {
   DailyEntries,
   DailyLog,
@@ -493,7 +493,7 @@ describe('buildYearStats', () => {
       expect(stats.habits).toEqual([
         { habit: swim, scheduledDays: 9, completedDays: 4, completionRate: 4 / 9 },
       ]);
-      expect(monthHabitRate(stats.months[8]!, swim, '2026-10-01')).toBe(4 / 9);
+      expect(monthHabitStats(stats.months[8]!, swim, '2026-10-01').completionRate).toBe(4 / 9);
 
       const midMonth = buildYearStats({
         year: '2026',
@@ -522,12 +522,12 @@ describe('buildYearStats', () => {
     });
 
     it('has no rate for a weekly habit in a month without closed days', () => {
-      expect(monthHabitRate(year.months[0]!, swim, '2026-10-01')).toBeNull();
+      expect(monthHabitStats(year.months[0]!, swim, '2026-10-01').completionRate).toBeNull();
     });
 
     it('gives a daily habit its own rate for a month, and none without days', () => {
-      expect(monthHabitRate(year.months[7]!, READING, '2026-10-01')).toBe(25 / 31);
-      expect(monthHabitRate(year.months[0]!, READING, '2026-10-01')).toBeNull();
+      expect(monthHabitStats(year.months[7]!, READING, '2026-10-01').completionRate).toBe(25 / 31);
+      expect(monthHabitStats(year.months[0]!, READING, '2026-10-01').completionRate).toBeNull();
     });
   });
 });

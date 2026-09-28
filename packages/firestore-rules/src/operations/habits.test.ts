@@ -2,13 +2,13 @@ import { assertFails } from '@firebase/rules-unit-testing';
 import { getDoc, getDocs, orderBy, query } from 'firebase/firestore';
 import { describe, expect, it } from 'vitest';
 
-
 import { habitRef, habitsCollection } from '../../../../apps/client/src/data/documents';
 import {
   archiveHabit,
   createHabit,
   reorderHabits,
   updateHabit,
+  type NewHabitInput,
 } from '../../../../apps/client/src/operations/habits';
 import { OWNER, ownerDb, useRulesTestEnvironment } from '../support/env';
 import { created, paths, seedDocs, TODAY } from '../support/fixtures';
@@ -26,12 +26,14 @@ async function loadHabits() {
   return habits.docs.map((snapshot) => snapshot.data());
 }
 
-const reading = {
+const reading: NewHabitInput = {
   name: '  Leer 20 minutos ',
   description: '  ',
-  tier: 'primary' as const,
-  category: 'academic' as const,
-  color: '#A3C4D9' as const,
+  tier: 'primary',
+  category: 'academic',
+  color: '#A3C4D9',
+  schedule: { type: 'daily' },
+  target: null,
 };
 
 describe('habit operations', () => {
@@ -51,6 +53,61 @@ describe('habit operations', () => {
       sortOrder: 0,
       startDateKey: TODAY,
       archivedDateKey: null,
+    });
+  });
+
+  it('creates habits on fixed days, several times per week and with a daily target', async () => {
+    const db = ownerDb();
+    const gym = createHabit(
+      db,
+      OWNER,
+      { ...reading, name: 'Gimnasio', schedule: { type: 'days_of_week', daysOfWeek: [1, 3, 5] } },
+      0,
+      TODAY,
+    );
+    const swim = createHabit(
+      db,
+      OWNER,
+      { ...reading, name: 'Nadar', schedule: { type: 'times_per_week', timesPerWeek: 2 } },
+      1,
+      TODAY,
+    );
+    const water = createHabit(
+      db,
+      OWNER,
+      { ...reading, name: 'Agua', target: { amount: 8, unit: ' vasos ' } },
+      2,
+      TODAY,
+    );
+    await Promise.all([gym.write, swim.write, water.write]);
+
+    expect(await loadHabit(gym.habitId)).toMatchObject({
+      schedule: { type: 'days_of_week', daysOfWeek: [1, 3, 5] },
+      target: null,
+    });
+    expect(await loadHabit(swim.habitId)).toMatchObject({
+      schedule: { type: 'times_per_week', timesPerWeek: 2 },
+    });
+    expect(await loadHabit(water.habitId)).toMatchObject({
+      schedule: { type: 'daily' },
+      target: { amount: 8, unit: 'vasos' },
+    });
+  });
+
+  it('keeps the target when editing the rest of the habit', async () => {
+    const db = ownerDb();
+    const { habitId, write } = createHabit(
+      db,
+      OWNER,
+      { ...reading, target: { amount: 8, unit: 'vasos' } },
+      0,
+      TODAY,
+    );
+    await write;
+    await updateHabit(db, OWNER, habitId, { ...reading, name: 'Agua' });
+    expect(await loadHabit(habitId)).toMatchObject({
+      name: 'Agua',
+      target: { amount: 8, unit: 'vasos' },
     });
   });
 
@@ -133,6 +190,14 @@ describe('habit operations', () => {
         archivedDateKey: TODAY,
         category: 'other',
       });
+    });
+
+    it('reads them without a target and edits them without adding one', async () => {
+      await seedDocs({ [paths.habit('old')]: legacyHabit('old', 0) });
+      const db = ownerDb();
+      expect(await loadHabit('old')).toMatchObject({ target: null });
+      await updateHabit(db, OWNER, 'old', { ...reading, name: 'Leer' });
+      expect(await loadHabit('old')).toMatchObject({ name: 'Leer', target: null });
     });
 
     it('reorders them', async () => {

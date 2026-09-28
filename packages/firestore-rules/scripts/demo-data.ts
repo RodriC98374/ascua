@@ -18,15 +18,21 @@ import {
   evaluateDay,
   initialGamificationState,
   initialUserProfile,
+  isHabitScheduledOn,
+  isoWeekday,
   MAX_STREAK_FREEZES,
   planFreezePurchase,
   planRewardRedemption,
+  startOfWeek,
   todayDateKey,
   toMonthKey,
   type DailyEntries,
   type DateKey,
   type GamificationState,
+  type HabitEntry,
   type HabitRecord,
+  type HabitSchedule,
+  type HabitTarget,
   type HabitTier,
   type MonthKey,
   type HabitCategory,
@@ -37,6 +43,7 @@ import {
   type RewardTier,
   type Task,
   type TaskSize,
+  type WeekLog,
 } from '@ascua/shared';
 import { initializeTestEnvironment } from '@firebase/rules-unit-testing';
 import { doc, Timestamp, writeBatch, type DocumentData, type Firestore } from 'firebase/firestore';
@@ -57,6 +64,8 @@ const DAYS_BEFORE_STREAK = 30;
 const STREAK_BREAK_DAYS = MAX_STREAK_FREEZES + 1;
 /** Con `--risk`, la franja de racha en riesgo se ve desde la medianoche. */
 const RISK_ALL_DAY_TIME = '00:00';
+/** Veces por semana del hábito semanal de ejemplo. */
+const WEEKLY_DEMO_TIMES = 3;
 const BATCH_SIZE = 400;
 const TASK_SIZES: readonly TaskSize[] = ['small', 'medium', 'large'];
 const TASK_TITLES = [
@@ -81,6 +90,8 @@ export interface DemoOptions {
   streak: number | null;
   /** Hora de racha en riesgo a las 00:00, para ver la franja de Hoy a cualquier hora. */
   isRiskAllDay: boolean;
+  /** Los semanales ya cumplieron su N esta semana: la llama de Hoy se ve morada. */
+  isWeekPowered: boolean;
 }
 
 export const DEMO_USAGE = [
@@ -89,14 +100,18 @@ export const DEMO_USAGE = [
   '                   La historia anterior nunca la supera: al marcarlos se celebra el',
   '                   hito que toque (--streak=6 → insignia de 7, --streak=29 → de 30).',
   '  --risk           hora de "racha en riesgo" a las 00:00: la franja de Hoy se ve siempre.',
+  '  --powered        semana potenciada: Natación ya cumplió sus veces de esta semana y la',
+  '                   llama de Hoy se ve morada. Al principio de la semana pide menos veces',
+  '                   (lunes 1, martes 2), porque no hay días para llegar a 3.',
 ].join('\n');
 
 export function parseDemoOptions(args: readonly string[]): DemoOptions {
-  const options: DemoOptions = { streak: null, isRiskAllDay: false };
+  const options: DemoOptions = { streak: null, isRiskAllDay: false, isWeekPowered: false };
   for (const arg of args) {
     const streak = /^--streak=(\d+)$/.exec(arg)?.[1];
     if (streak !== undefined) options.streak = Number(streak);
     else if (arg === '--risk') options.isRiskAllDay = true;
+    else if (arg === '--powered') options.isWeekPowered = true;
     else throw new Error(`Opción desconocida: ${arg}\n${DEMO_USAGE}`);
   }
   return options;
@@ -140,6 +155,8 @@ function habit(
   category: HabitCategory,
   color: HabitColor,
   archivedDateKey: DateKey | null = null,
+  schedule: HabitSchedule = { type: 'daily' },
+  target: HabitTarget | null = null,
 ): HabitRecord {
   return {
     id,
@@ -149,7 +166,8 @@ function habit(
     color,
     category,
     tier,
-    schedule: { type: 'daily' },
+    schedule,
+    target,
     status: archivedDateKey ? 'archived' : 'active',
     sortOrder,
     startDateKey,
@@ -213,6 +231,9 @@ function buildDemoData(uid: string, options: DemoOptions): DemoData {
   const random = seededRandom(20260922);
   const user = `users/${uid}`;
   const documents = new Map<string, DocumentData>();
+  const weekStart = startOfWeek(today);
+  // Días de esta semana hasta hoy, hoy incluido: con --powered, las veces que se pueden marcar.
+  const weeklyDaysSoFar = options.isWeekPowered ? isoWeekday(today) : WEEKLY_DEMO_TIMES;
 
   const habits = [
     habit('leer', 'Leer 20 minutos', 'primary', 0, start, 'academic', '#A3C4D9'),
@@ -238,6 +259,42 @@ function buildDemoData(uid: string, options: DemoOptions): DemoData {
       '#E3CB8E',
       addDays(start, 50),
     ),
+    // D20: un hábito de cada frecuencia nueva y uno con cantidad, para verlos en la demo.
+    habit(
+      'yoga',
+      'Yoga',
+      'secondary',
+      6,
+      start,
+      'physical',
+      '#EFA98A',
+      null,
+      { type: 'days_of_week', daysOfWeek: [2, 4, 6] },
+    ),
+    habit(
+      'natacion',
+      'Natación',
+      'secondary',
+      7,
+      start,
+      'physical',
+      '#A3C4D9',
+      null,
+      // Con --powered tiene que poder cumplirse ya: el lunes solo hay un día en la semana.
+      { type: 'times_per_week', timesPerWeek: Math.min(WEEKLY_DEMO_TIMES, weeklyDaysSoFar) },
+    ),
+    habit(
+      'vasos',
+      'Vasos de agua',
+      'secondary',
+      8,
+      start,
+      'health',
+      '#9FCBAC',
+      null,
+      { type: 'daily' },
+      { amount: 8, unit: 'vasos' },
+    ),
   ];
   const chance: Record<string, number> = {
     leer: 0.97,
@@ -246,6 +303,9 @@ function buildDemoData(uid: string, options: DemoOptions): DemoData {
     agua: 0.85,
     dormir: 0.55,
     ingles: 0.6,
+    yoga: 0.8,
+    natacion: 0.75,
+    vasos: 0.7,
   };
   const rewards = [
     reward('series', 'Tarde de series', 'small', 60, 0),
@@ -324,11 +384,37 @@ function buildDemoData(uid: string, options: DemoOptions): DemoData {
 
   for (const dateKey of dateKeyRange(start, addDays(today, -1))) {
     const { isGoalForced, isRoughDay, canSpend } = planDay(dateKey);
-    const entries: Record<string, { completed: boolean }> = {};
-    for (const { id, tier } of habits) {
+    const entries: Record<string, HabitEntry> = {};
+    for (const habitRecord of habits) {
+      const { id, tier, schedule, target } = habitRecord;
+      // Días fijos: solo se puede marcar el día que le toca.
+      if (schedule.type === 'days_of_week' && !isHabitScheduledOn(habitRecord, dateKey)) continue;
       const isDone = (isGoalForced && tier === 'primary') || random() < (chance[id] ?? 0.5);
-      if (!isRoughDay && isDone) entries[id] = { completed: true };
+      // Con --powered, los semanales se marcan todos los días de esta semana.
+      if (options.isWeekPowered && schedule.type === 'times_per_week' && dateKey >= weekStart) {
+        entries[id] = { completed: true };
+        continue;
+      }
+      if (isRoughDay) continue;
+      if (target) {
+        // Con cantidad: a veces llega a la meta, a veces se queda a medias (sin puntos parciales).
+        if (isDone) entries[id] = { completed: true, count: target.amount };
+        else if (random() < 0.5) {
+          entries[id] = { completed: false, count: 1 + Math.floor(random() * (target.amount - 1)) };
+        }
+      } else if (isDone) {
+        entries[id] = { completed: true };
+      }
     }
+    // Las marcas de la semana hasta ayer, para el tope de los hábitos de N veces por semana.
+    const weekLogs: WeekLog[] = dateKeyRange(startOfWeek(dateKey), addDays(dateKey, -1)).flatMap(
+      (weekDateKey) => {
+        const log = documents.get(`${user}/dailyLogs/${weekDateKey}`) as
+          | { entries: DailyEntries }
+          | undefined;
+        return log ? [{ dateKey: weekDateKey, entries: log.entries }] : [];
+      },
+    );
     // Uno de cada dos días cumple una o dos tareas; a veces, una que venía vencida.
     const completedTasks: Task[] = [];
     if (taskRandom() < 0.5) {
@@ -341,7 +427,8 @@ function buildDemoData(uid: string, options: DemoOptions): DemoData {
     const evaluation = evaluateDay({
       dateKey,
       habits,
-      entries: entries as DailyEntries,
+      entries,
+      weekLogs,
       completedTasks,
       state,
     });
@@ -425,13 +512,16 @@ function buildDemoData(uid: string, options: DemoOptions): DemoData {
       ...meta(at(`${monthKey}-01`, '07:30:00')),
     });
   }
-  // Hoy, abierto y a medias: un principal y un secundario hechos, dos principales pendientes.
+  // Hoy, abierto y a medias: un principal y un secundario hechos, dos principales pendientes, y
+  // los vasos de agua a medio camino de su meta (para ver el contador de cantidad).
   const nowAt = at(today, '08:00:00');
   documents.set(`${user}/dailyLogs/${today}`, {
     dateKey: today,
     entries: {
       leer: { completed: true, updatedAt: nowAt },
       agua: { completed: true, updatedAt: nowAt },
+      vasos: { completed: false, count: 5, updatedAt: nowAt },
+      ...(options.isWeekPowered && { natacion: { completed: true, updatedAt: nowAt } }),
     },
     status: 'open',
     summary: null,
@@ -527,6 +617,9 @@ export async function seedDemo(options: DemoOptions): Promise<void> {
   );
   if (options.isRiskAllDay) {
     console.log('Racha en riesgo desde las 00:00: la franja de Hoy se ve a cualquier hora.');
+  }
+  if (options.isWeekPowered) {
+    console.log('Semana potenciada: Natación ya cumplió esta semana, la llama de Hoy se ve morada.');
   }
   console.log(`Entra con ${DEMO_EMAIL} / ${DEMO_PASSWORD} (la app debe usar los emuladores).`);
 }

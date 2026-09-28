@@ -25,6 +25,8 @@ interface HabitCheckProps {
   onToggle: () => void;
   /** Acción a la derecha, fuera del área que marca (menú o flechas para ordenar). */
   trailing?: ReactNode;
+  /** Línea chica bajo el nombre: el avance de un semanal ("2 de 3 esta semana"). */
+  caption?: string;
 }
 
 /**
@@ -42,6 +44,7 @@ export function HabitCheck({
   isToggleDisabled = false,
   onToggle,
   trailing,
+  caption,
 }: HabitCheckProps) {
   const colors = useThemeColors();
   const check = useCheckToggle(isDone, onToggle);
@@ -84,11 +87,20 @@ export function HabitCheck({
             <Checkbox isDone={isDone} size={isPrimary ? 28 : 24} color={color} />
             <FloatingPoints burst={check.pointsBurst} amount={HABIT_POINTS[tier]} />
           </View>
-          <Text
-            className={`flex-1 ${isPrimary ? 'font-heading text-heading-sm text-ink' : 'font-body text-body text-ink-muted'}`}
-          >
-            {name}
-          </Text>
+          <View className="flex-1">
+            <Text
+              className={
+                isPrimary
+                  ? 'font-heading text-heading-sm text-ink'
+                  : 'font-body text-body text-ink-muted'
+              }
+            >
+              {name}
+            </Text>
+            {caption && (
+              <Text className="font-body-semibold text-caption text-ink-muted">{caption}</Text>
+            )}
+          </View>
           {isArchived && (
             <View className="bg-surface-300 rounded-full px-2 py-[3px]">
               <Text className="font-body-bold text-caption text-ink-muted">Último día</Text>

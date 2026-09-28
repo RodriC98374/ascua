@@ -279,13 +279,17 @@ function activeClosedDaysInMonth(habit: Habit, month: MonthlySummary, today: Dat
   ).length;
 }
 
-/** El % de un hábito en un mes (la línea del año al filtrar); null si no contaba ningún día. */
-export function monthHabitRate(month: MonthlySummary, habit: Habit, today: DateKey): number | null {
+/** Las cifras de un hábito en un mes (la línea del año al filtrar por ese hábito). */
+export function monthHabitStats<T extends Habit>(
+  month: MonthlySummary,
+  habit: T,
+  today: DateKey,
+): HabitPeriodStats<T> {
   return periodStats(
     habit,
     month.habitStats[habit.id] ?? { scheduledDays: 0, completedDays: 0 },
     activeClosedDaysInMonth(habit, month, today),
-  ).completionRate;
+  );
 }
 
 /** Un año, desde los resúmenes mensuales (a lo sumo 12 documentos). */

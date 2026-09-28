@@ -54,11 +54,20 @@ interface StreakHearthProps {
   total: number;
   /** Con racha viva, la brasa del centro está encendida. */
   isStreakAlive: boolean;
+  /** Semana potenciada (D20): todos los semanales llegaron a su N. El anillo se ve morado. */
+  isWeekPowered?: boolean;
 }
 
-export function StreakHearth({ done, total, isStreakAlive }: StreakHearthProps) {
+export function StreakHearth({
+  done,
+  total,
+  isStreakAlive,
+  isWeekPowered = false,
+}: StreakHearthProps) {
   const colors = useThemeColors();
   const gradientId = `hearth-${useId().replace(/[^a-zA-Z0-9]/g, '')}`;
+  const ringColor = isWeekPowered ? colors.weekMorado : colors.ember;
+  const ringGlow = isWeekPowered ? colors.weekMorado : colors.emberGlow;
   // La llama se aviva al abrir Hoy (1) y cada vez que se enciende un segmento; desmarcar no la
   // mueve. Se compara con el render anterior durante el render (estado derivado, sin efecto).
   const [ignition, setIgnition] = useState({ done, count: 1 });
@@ -104,8 +113,8 @@ export function StreakHearth({ done, total, isStreakAlive }: StreakHearthProps) 
       <Svg width={SIZE} height={SIZE} style={{ position: 'absolute' }}>
         <Defs>
           <LinearGradient id={gradientId} x1="0" y1="0" x2="1" y2="1">
-            <Stop offset="0" stopColor={colors.ember} />
-            <Stop offset="1" stopColor={colors.emberGlow} />
+            <Stop offset="0" stopColor={ringColor} />
+            <Stop offset="1" stopColor={ringGlow} />
           </LinearGradient>
         </Defs>
         {total <= 1 ? (
@@ -116,10 +125,10 @@ export function StreakHearth({ done, total, isStreakAlive }: StreakHearthProps) 
           ))
         )}
       </Svg>
-      <Flare total={total} done={done} color={colors.ember} progress={flare} />
+      <Flare total={total} done={done} color={ringColor} progress={flare} />
       <Animated.View style={emberStyle}>
         {isStreakAlive ? (
-          <LivingFlame size={FLAME_SIZE} burst={ignition.count} />
+          <LivingFlame size={FLAME_SIZE} burst={ignition.count} isPowered={isWeekPowered} />
         ) : (
           <EmberIcon size={40} color={colors.inkFaint} />
         )}

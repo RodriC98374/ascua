@@ -7,6 +7,7 @@ import {
   addDays,
   EMPTY_MONTHLY_COUNTERS,
   evaluateDay,
+  startOfWeek,
   todayDateKey,
   toMonthKey,
   type ClosedDayStatus,
@@ -14,6 +15,7 @@ import {
   type GamificationState,
   type HabitRecord,
   type TaskRecord,
+  type WeekLog,
 } from '@ascua/shared';
 import {
   getDoc,
@@ -29,6 +31,7 @@ import {
 
 import {
   dailyLogRef,
+  dailyLogsCollection,
   gamificationRef,
   habitsCollection,
   monthlySummaryRef,
@@ -83,13 +86,35 @@ export async function closePendingDays(
   const habits = habitsSnapshot.docs.map((snapshot) => snapshot.data());
   const completedTasks = tasksSnapshot.docs.map((snapshot) => snapshot.data());
 
+  // Con hábitos semanales, sus marcas de la semana (desde el lunes del primer día pendiente) para
+  // el tope de N por semana. Las marcas de días pasados ya no cambian.
+  const hasWeeklyHabits = habits.some((habit) => habit.schedule.type === 'times_per_week');
+  const weekLogs = hasWeeklyHabits
+    ? (
+        await getDocs(
+          query(
+            dailyLogsCollection(db, uid),
+            where('dateKey', '>=', startOfWeek(firstPending)),
+            where('dateKey', '<', today),
+          ),
+        )
+      ).docs.map((snapshot) => snapshot.data())
+    : [];
+
   for (;;) {
     let attemptedDateKey: DateKey | null = null;
     try {
       const closed = await runTransaction(db, (transaction) =>
-        closeNextDay(transaction, db, uid, { habits, completedTasks }, today, (dateKey) => {
-          attemptedDateKey = dateKey;
-        }),
+        closeNextDay(
+          transaction,
+          db,
+          uid,
+          { habits, completedTasks, weekLogs },
+          today,
+          (dateKey) => {
+            attemptedDateKey = dateKey;
+          },
+        ),
       );
       if (!closed) return result;
       result.closedDays.push(closed.day);
@@ -127,7 +152,12 @@ async function closeNextDay(
   {
     habits,
     completedTasks,
-  }: { habits: readonly HabitRecord[]; completedTasks: readonly TaskRecord[] },
+    weekLogs,
+  }: {
+    habits: readonly HabitRecord[];
+    completedTasks: readonly TaskRecord[];
+    weekLogs: readonly WeekLog[];
+  },
   today: DateKey,
   onAttempt: (dateKey: DateKey) => void,
 ): Promise<{ day: ClosedDay; state: GamificationState } | null> {
@@ -146,11 +176,12 @@ async function closeNextDay(
   const log = (await transaction.get(logRef)).data();
   const month = (await transaction.get(monthRef)).data();
 
-  // evaluateDay toma solo las tareas cumplidas en `dateKey`.
+  // evaluateDay toma solo las tareas cumplidas en `dateKey` y las marcas previas de su semana.
   const evaluation = evaluateDay({
     dateKey,
     habits,
     entries: log?.entries ?? {},
+    weekLogs,
     completedTasks,
     state,
   });
