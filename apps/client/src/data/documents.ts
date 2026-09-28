@@ -1,6 +1,6 @@
 // Referencias tipadas a los documentos de Firestore y los campos comunes de todo documento.
 // Sin imports con alias (`@/`): las operaciones se prueban también desde packages/firestore-rules.
-import { categoryOf, isHabitColor, toDateKey, todayDateKey } from '@ascua/shared';
+import { categoryOf, isHabitColor, toCheckIn, toDateKey, todayDateKey } from '@ascua/shared';
 import type {
   DailyEntries,
   DailyLog,
@@ -96,7 +96,12 @@ export const dailyLogConverter: FirestoreDataConverter<DailyLog, DocumentData> =
           ? { completed: entry.completed === true, count: entry.count }
           : { completed: entry.completed === true };
     }
-    return { ...log, entries: entries as DailyEntries };
+    // El check-in solo va si el documento lo trae (los de antes de la fase 15, no).
+    return {
+      ...log,
+      entries: entries as DailyEntries,
+      ...(log.checkIn === undefined ? {} : { checkIn: toCheckIn(log.checkIn) }),
+    };
   },
 };
 
@@ -132,7 +137,15 @@ export function dailyLogRef(
   return doc(dailyLogsCollection(db, uid), dateKey);
 }
 
-export const monthlySummaryConverter = domainConverter<MonthlySummary>();
+// Los resúmenes de antes de la fase 15 no traen `checkInStats`: se leen como vacíos.
+const baseMonthlySummaryConverter = domainConverter<MonthlySummary>();
+export const monthlySummaryConverter: FirestoreDataConverter<MonthlySummary, DocumentData> = {
+  toFirestore: (data) => data as DocumentData,
+  fromFirestore: (snapshot, options) => {
+    const month = baseMonthlySummaryConverter.fromFirestore(snapshot, options);
+    return { ...month, checkInStats: month.checkInStats ?? {} };
+  },
+};
 
 export function monthlySummariesCollection(
   db: Firestore,

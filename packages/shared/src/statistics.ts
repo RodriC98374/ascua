@@ -1,6 +1,7 @@
 // Estadísticas de las vistas de semana, mes y año. Los días cerrados se leen de su `summary`
 // (la foto del día) y se suman con `addClosedDay`, igual que `monthlySummaries`: así las cifras
 // de cada vista coinciden con las del resumen mensual.
+import { averageCheckIns, checkInAverages, toCheckIn, type CheckInAverages } from './check-in';
 import { dateKeyRange } from './dates';
 import type { DayEvaluation } from './day-evaluation';
 import { countedHabits, isHabitActiveOn } from './habit-schedule';
@@ -8,6 +9,7 @@ import { addClosedDay, EMPTY_MONTHLY_COUNTERS, mergeMonthlyCounters } from './mo
 import { periodContaining } from './periods';
 import { expectedWeeklyMarks } from './weekly-habits';
 import type {
+  CheckIn,
   ClosedDayStatus,
   DailyLog,
   DateKey,
@@ -61,6 +63,16 @@ export interface RangeStats<T extends Habit = Habit> {
   counters: MonthlyCounters;
   /** 0..1 sobre todos los hábitos-día cerrados; null si no hay ninguno. */
   completionRate: number | null;
+  checkIn: RangeCheckIn;
+}
+
+/**
+ * El check-in del rango: los días que se contestó (hoy incluido, se ve al instante) y el promedio
+ * de cada escala sobre esos días.
+ */
+export interface RangeCheckIn {
+  days: { dateKey: DateKey; checkIn: CheckIn }[];
+  averages: CheckInAverages;
 }
 
 export interface BuildRangeStatsInput<T extends Habit> {
@@ -219,17 +231,20 @@ export function buildRangeStats<T extends Habit>({
   const days: DayStats[] = [];
   const counted = new Set<string>();
   const closedDateKeys: DateKey[] = [];
+  const checkInDays: RangeCheckIn['days'] = [];
   let counters: MonthlyCounters = EMPTY_MONTHLY_COUNTERS;
 
   for (const dateKey of dateKeyRange(startDateKey, endDateKey)) {
     const log = logsByDate.get(dateKey);
+    const checkIn = toCheckIn(log?.checkIn);
+    if (dateKey <= today && Object.keys(checkIn).length > 0) checkInDays.push({ dateKey, checkIn });
     let day: DayStats;
     if (dateKey > today) {
       day = emptyDay(dateKey, today, 'future');
     } else if (isClosedLog(log)) {
       day = closedDayStats(log, today);
       const closing: Pick<DayEvaluation, 'status' | 'summary'> = log;
-      counters = addClosedDay(counters, closing);
+      counters = addClosedDay(counters, { ...closing, checkIn });
       closedDateKeys.push(dateKey);
     } else {
       day = openDayStats(dateKey, today, log, habits);
@@ -250,6 +265,10 @@ export function buildRangeStats<T extends Habit>({
     ),
     counters,
     completionRate: completionRateOf(counters.habitStats),
+    checkIn: {
+      days: checkInDays,
+      averages: averageCheckIns(checkInDays.map((day) => day.checkIn)),
+    },
   };
 }
 
@@ -265,6 +284,8 @@ export interface YearStats<T extends Habit = Habit> {
   completionRate: number | null;
   /** Hábitos que contaron algún día del año. Principales primero. */
   habits: HabitPeriodStats<T>[];
+  /** De los días cerrados, como el resto del año. */
+  checkInAverages: CheckInAverages;
 }
 
 /**
@@ -324,5 +345,6 @@ export function buildYearStats<T extends Habit>({
       (habit) =>
         months.reduce((total, month) => total + activeClosedDaysInMonth(habit, month, today), 0),
     ),
+    checkInAverages: checkInAverages(counters.checkInStats),
   };
 }

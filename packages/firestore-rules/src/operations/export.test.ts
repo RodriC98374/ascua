@@ -74,9 +74,9 @@ describe('export files', () => {
     expect(file.name).toBe(`ascua-habitos-por-dia-${TODAY}.csv`);
     const lines = file.content.slice(1).trim().split('\r\n');
     expect(lines).toEqual([
-      'Fecha;Estado;% cumplido;Puntos;Racha;"Leer; 20 min"',
-      `${YESTERDAY};Sin cerrar;0;;;0`,
-      `${TODAY};En curso;100;;;1`,
+      'Fecha;Estado;% cumplido;Puntos;Racha;Ánimo;Energía;Motivación;"Leer; 20 min"',
+      `${YESTERDAY};Sin cerrar;0;;;;;;0`,
+      `${TODAY};En curso;100;;;;;;1`,
     ]);
   });
 

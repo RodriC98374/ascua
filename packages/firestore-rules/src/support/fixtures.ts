@@ -11,6 +11,7 @@ import {
   planRewardRedemption,
   todayDateKey,
   toMonthKey,
+  type CheckIn,
   type DailyEntries,
   type DayEvaluation,
   type GamificationState,
@@ -235,11 +236,21 @@ export interface CloseInput {
   logExists?: boolean;
   /** Resumen mensual existente; si no, el cierre lo crea. */
   monthly?: MonthlyCounters;
+  /** Check-in guardado en el documento del día (solo si existe). */
+  checkIn?: CheckIn;
 }
 
 /** Las escrituras de `closePendingDays` para el día siguiente a `lastClosedDateKey`. */
 export function planClose(input: CloseInput): { evaluation: DayEvaluation; writes: Write[] } {
-  const { state, habits, entries = {}, completedTasks = [], logExists = true, monthly } = input;
+  const {
+    state,
+    habits,
+    entries = {},
+    completedTasks = [],
+    logExists = true,
+    monthly,
+    checkIn,
+  } = input;
   const dateKey = addDays(state.lastClosedDateKey, 1);
   const evaluation = evaluateDay({ dateKey, habits, entries, completedTasks, state });
   const summary = { ...evaluation.summary, closedAt: serverTimestamp() };
@@ -270,7 +281,7 @@ export function planClose(input: CloseInput): { evaluation: DayEvaluation; write
     monthlyWrite(
       toMonthKey(dateKey),
       monthly,
-      addClosedDay(monthly ?? EMPTY_MONTHLY_COUNTERS, evaluation),
+      addClosedDay(monthly ?? EMPTY_MONTHLY_COUNTERS, { ...evaluation, checkIn }),
     ),
   ];
   return { evaluation, writes };
@@ -278,11 +289,12 @@ export function planClose(input: CloseInput): { evaluation: DayEvaluation; write
 
 /** Deja listo el estado previo a un cierre: gamificación, documento del día y resumen mensual. */
 export async function seedBeforeClose(input: CloseInput): Promise<void> {
-  const { state, entries = {}, logExists = true, monthly } = input;
+  const { state, entries = {}, logExists = true, monthly, checkIn } = input;
   const dateKey = addDays(state.lastClosedDateKey, 1);
+  const log = { ...openLogDoc(dateKey, entries), ...(checkIn && { checkIn }) };
   await seedDocs({
     [paths.gamification()]: gamificationDoc(state),
-    ...(logExists ? { [paths.dailyLog(dateKey)]: openLogDoc(dateKey, entries) } : {}),
+    ...(logExists ? { [paths.dailyLog(dateKey)]: log } : {}),
     ...(monthly
       ? { [paths.monthlySummary(toMonthKey(dateKey))]: monthlyDoc(toMonthKey(dateKey), monthly) }
       : {}),

@@ -1,9 +1,10 @@
+import type { CheckInDimension } from '@ascua/shared';
 import { assertFails } from '@firebase/rules-unit-testing';
 import { getDoc } from 'firebase/firestore';
 import { describe, expect, it } from 'vitest';
 
 import { dailyLogRef } from '../../../../apps/client/src/data/documents';
-import { setHabitCompletion } from '../../../../apps/client/src/operations/daily-log';
+import { setCheckIn, setHabitCompletion } from '../../../../apps/client/src/operations/daily-log';
 import { OWNER, ownerDb, useRulesTestEnvironment } from '../support/env';
 import { openLogDoc, paths, seedDocs, TODAY, YESTERDAY } from '../support/fixtures';
 
@@ -98,6 +99,54 @@ describe('setHabitCompletion', () => {
         today: YESTERDAY,
         habitId: 'reading',
         completed: true,
+        logExists: true,
+      }),
+    );
+  });
+});
+
+describe('setCheckIn', () => {
+  it("creates today's log with the first answer", async () => {
+    const db = ownerDb();
+    await setCheckIn(db, OWNER, { today: TODAY, dimension: 'mood', value: 4, logExists: false });
+
+    const log = await getDoc(dailyLogRef(db, OWNER, TODAY));
+    expect(log.data()).toEqual({
+      dateKey: TODAY,
+      entries: {},
+      status: 'open',
+      summary: null,
+      checkIn: { mood: 4 },
+    });
+  });
+
+  it('answers, changes and clears scales on an existing log, next to the marks', async () => {
+    const db = ownerDb();
+    await setHabitCompletion(db, OWNER, {
+      today: TODAY,
+      habitId: 'reading',
+      completed: true,
+      logExists: false,
+    });
+    const answer = (dimension: CheckInDimension, value: number | null) =>
+      setCheckIn(db, OWNER, { today: TODAY, dimension, value, logExists: true });
+    await answer('mood', 3);
+    await answer('energy', 2);
+    await answer('motivation', 5);
+    await answer('mood', null);
+
+    const log = await getDoc(dailyLogRef(db, OWNER, TODAY));
+    expect(log.data()?.checkIn).toEqual({ energy: 2, motivation: 5 });
+    expect(log.data()?.entries).toEqual({ reading: { completed: true } });
+  });
+
+  it('is rejected for yesterday, even if its log is still open', async () => {
+    await seedDocs({ [paths.dailyLog(YESTERDAY)]: openLogDoc(YESTERDAY) });
+    await assertFails(
+      setCheckIn(ownerDb(), OWNER, {
+        today: YESTERDAY,
+        dimension: 'mood',
+        value: 3,
         logExists: true,
       }),
     );

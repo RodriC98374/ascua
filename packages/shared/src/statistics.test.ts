@@ -455,6 +455,7 @@ describe('buildYearStats', () => {
         workout: { scheduledDays: 31, completedDays: 10 },
         water: { scheduledDays: 5, completedDays: 2 },
       },
+      checkInStats: {},
     });
     expect(year.completionRate).toBe(45 / 76);
   });
@@ -529,5 +530,59 @@ describe('buildYearStats', () => {
       expect(monthHabitStats(year.months[7]!, READING, '2026-10-01').completionRate).toBe(25 / 31);
       expect(monthHabitStats(year.months[0]!, READING, '2026-10-01').completionRate).toBeNull();
     });
+  });
+});
+
+describe('check-in in the statistics', () => {
+  const logs: DailyLog[] = [
+    ...CLOSED.logs.map((log) =>
+      log.dateKey === '2026-09-02' ? { ...log, checkIn: { mood: 2, energy: 3 } } : log,
+    ),
+    { dateKey: '2026-09-08', entries: {}, status: 'open', summary: null, checkIn: { mood: 4 } },
+    {
+      dateKey: TODAY,
+      entries: {},
+      status: 'open',
+      summary: null,
+      checkIn: { mood: 3, energy: 5, motivation: 4 },
+    },
+  ];
+
+  it('lists the days with a check-in, today included, in order', () => {
+    expect(statsFor('2026-09-01', '2026-09-30', logs).checkIn.days).toEqual([
+      { dateKey: '2026-09-02', checkIn: { mood: 2, energy: 3 } },
+      { dateKey: '2026-09-08', checkIn: { mood: 4 } },
+      { dateKey: TODAY, checkIn: { mood: 3, energy: 5, motivation: 4 } },
+    ]);
+  });
+
+  it('averages each scale over the days it was answered, closed or not', () => {
+    expect(statsFor('2026-09-01', '2026-09-30', logs).checkIn.averages).toEqual({
+      mood: 3,
+      energy: 4,
+      motivation: 4,
+    });
+  });
+
+  it('has no averages without check-ins', () => {
+    expect(statsFor('2026-09-01', '2026-09-30').checkIn).toEqual({
+      days: [],
+      averages: { mood: null, energy: null, motivation: null },
+    });
+  });
+
+  it('averages the year from the closed days of its monthly summaries', () => {
+    const year = buildYearStats({
+      year: '2026',
+      summaries: [
+        summary('2026-08', { checkInStats: { mood: { days: 3, total: 9 } } }),
+        summary('2026-09', {
+          checkInStats: { mood: { days: 1, total: 5 }, energy: { days: 2, total: 4 } },
+        }),
+      ],
+      habits: HABITS,
+      today: TODAY,
+    });
+    expect(year.checkInAverages).toEqual({ mood: 3.5, energy: 2, motivation: null });
   });
 });

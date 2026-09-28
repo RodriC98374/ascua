@@ -1,7 +1,8 @@
 // Resumen mensual: se actualiza en la misma transacción que cierra cada día (y en cada gasto),
 // para que las vistas de mes y año no tengan que leer cada día por separado.
+import { addCheckIn, mergeCheckInStats } from './check-in';
 import type { DayEvaluation } from './day-evaluation';
-import type { MonthlyCounters } from './types';
+import type { CheckIn, MonthlyCounters } from './types';
 
 export const EMPTY_MONTHLY_COUNTERS: MonthlyCounters = {
   closedDays: 0,
@@ -12,17 +13,19 @@ export const EMPTY_MONTHLY_COUNTERS: MonthlyCounters = {
   pointsEarned: 0,
   pointsSpent: 0,
   habitStats: {},
+  checkInStats: {},
 };
 
 /**
- * Los contadores del mes después de cerrar un día de ese mes. Recibe la evaluación del cierre o
- * un registro ya cerrado (las estadísticas suman así los días, igual que el resumen mensual).
+ * Los contadores del mes después de cerrar un día de ese mes. Recibe la evaluación del cierre (con
+ * el check-in del registro) o un registro ya cerrado (las estadísticas suman así los días, igual
+ * que el resumen mensual).
  */
 export function addClosedDay(
   before: MonthlyCounters,
-  evaluation: Pick<DayEvaluation, 'status' | 'summary'>,
+  evaluation: Pick<DayEvaluation, 'status' | 'summary'> & { checkIn?: CheckIn | undefined },
 ): MonthlyCounters {
-  const { status, summary } = evaluation;
+  const { status, summary, checkIn } = evaluation;
   const completed = new Set(summary.completedHabitIds);
   const habitStats = { ...before.habitStats };
   for (const habitId of summary.scheduledHabitIds) {
@@ -41,6 +44,7 @@ export function addClosedDay(
     missedDays: before.missedDays + (status === 'missed' ? 1 : 0),
     pointsEarned: before.pointsEarned + summary.pointsEarned,
     habitStats,
+    checkInStats: addCheckIn(before.checkInStats, checkIn),
   };
 }
 
@@ -68,5 +72,6 @@ export function mergeMonthlyCounters(a: MonthlyCounters, b: MonthlyCounters): Mo
     pointsEarned: a.pointsEarned + b.pointsEarned,
     pointsSpent: a.pointsSpent + b.pointsSpent,
     habitStats,
+    checkInStats: mergeCheckInStats(a.checkInStats, b.checkInStats),
   };
 }

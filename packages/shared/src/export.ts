@@ -1,9 +1,11 @@
 // Exportación de los datos del usuario: respaldo JSON completo y CSV para hojas de cálculo.
 // Lógica pura: la app lee los documentos, llama a estas funciones y guarda el archivo.
+import { CHECK_IN_DIMENSIONS, toCheckIn } from './check-in';
 import { APP_TIME_ZONE } from './constants';
 import { dateKeyRange, toBoliviaIsoString } from './dates';
 import { countedHabits } from './habit-schedule';
 import type {
+  CheckInDimension,
   DailyLog,
   DateKey,
   HabitRecord,
@@ -56,9 +58,16 @@ function dayLabel(log: DailyLog | undefined, dateKey: DateKey, today: DateKey): 
   }
 }
 
+const CHECK_IN_HEADERS: Record<CheckInDimension, string> = {
+  mood: 'Ánimo',
+  energy: 'Energía',
+  motivation: 'Motivación',
+};
+
 /**
- * Una fila por día, del primer hábito hasta hoy, y una columna por hábito: 1 cumplido, 0 no
- * cumplido, vacío si ese día no contaba. Los días cerrados usan su resumen; hoy, las marcas.
+ * Una fila por día, del primer hábito hasta hoy: el check-in (1 a 5, vacío sin contestar) y una
+ * columna por hábito: 1 cumplido, 0 no cumplido, vacío si ese día no contaba. Los días cerrados
+ * usan su resumen; hoy, las marcas.
  */
 export function buildHabitDaysCsv({ habits, dailyLogs, today }: HabitDaysInput): string {
   const columns = [...habits].sort(
@@ -70,6 +79,7 @@ export function buildHabitDaysCsv({ habits, dailyLogs, today }: HabitDaysInput):
     '% cumplido',
     'Puntos',
     'Racha',
+    ...CHECK_IN_DIMENSIONS.map((dimension) => CHECK_IN_HEADERS[dimension]),
     ...columns.map((habit) =>
       habit.status === 'archived' ? `${habit.name} (archivado)` : habit.name,
     ),
@@ -89,12 +99,14 @@ export function buildHabitDaysCsv({ habits, dailyLogs, today }: HabitDaysInput):
       summary?.completedHabitIds ?? openScheduled.filter(open.isDone).map((habit) => habit.id),
     );
     const percent = scheduled.size > 0 ? Math.round((completed.size / scheduled.size) * 100) : null;
+    const checkIn = toCheckIn(log?.checkIn);
     return [
       dateKey,
       dayLabel(log, dateKey, today),
       percent,
       summary?.pointsEarned ?? null,
       summary?.streakAfterClose ?? null,
+      ...CHECK_IN_DIMENSIONS.map((dimension) => checkIn[dimension] ?? null),
       ...columns.map((habit) => {
         if (!scheduled.has(habit.id)) return null;
         return completed.has(habit.id) ? 1 : 0;

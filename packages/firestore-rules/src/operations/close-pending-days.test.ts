@@ -22,6 +22,7 @@ import {
 } from '../../../../apps/client/src/operations/close-pending-days';
 import { OWNER, ownerDb, useRulesTestEnvironment } from '../support/env';
 import {
+  created,
   done,
   gamificationDoc,
   habitDoc,
@@ -353,6 +354,46 @@ describe('closePendingDays', () => {
 
     expect(result.closedDays).toMatchObject([{ dateKey: YESTERDAY, status: 'inactive' }]);
     expect(await read(db, paths.dailyLog(YESTERDAY))).toMatchObject({ status: 'inactive' });
+  });
+
+  describe('check-in (fase 15)', () => {
+    const monthPath = paths.monthlySummary(toMonthKey(YESTERDAY));
+
+    it("adds each closed day's check-in to its month and keeps it in the log", async () => {
+      await seed({ state: stateClosedDaysAgo(2), habits: [READING] });
+      await seedDocs({
+        [paths.dailyLog(YESTERDAY)]: {
+          ...openLogDoc(YESTERDAY, done('reading')),
+          checkIn: { mood: 4, motivation: 2 },
+        },
+      });
+
+      const db = ownerDb();
+      await closePendingDays(db, OWNER, TODAY);
+
+      expect(await read(db, paths.dailyLog(YESTERDAY))).toMatchObject({
+        status: 'completed',
+        checkIn: { mood: 4, motivation: 2 },
+      });
+      expect((await read(db, monthPath))?.checkInStats).toEqual({
+        mood: { days: 1, total: 4 },
+        motivation: { days: 1, total: 2 },
+      });
+    });
+
+    it('adds the check-in to a month saved before it existed', async () => {
+      const { checkInStats: _checkInStats, ...legacy } = EMPTY_MONTHLY_COUNTERS;
+      await seed({ state: stateClosedDaysAgo(2), habits: [READING] });
+      await seedDocs({
+        [paths.dailyLog(YESTERDAY)]: { ...openLogDoc(YESTERDAY), checkIn: { energy: 3 } },
+        [monthPath]: { monthKey: toMonthKey(YESTERDAY), ...legacy, ...created() },
+      });
+
+      const db = ownerDb();
+      await closePendingDays(db, OWNER, TODAY);
+
+      expect((await read(db, monthPath))?.checkInStats).toEqual({ energy: { days: 1, total: 3 } });
+    });
   });
 
   it('adds each day to the monthly summary of its own month', async () => {

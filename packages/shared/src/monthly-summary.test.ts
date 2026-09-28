@@ -56,6 +56,20 @@ describe('addClosedDay', () => {
         reading: { scheduledDays: 1, completedDays: 1 },
         water: { scheduledDays: 1, completedDays: 1 },
       },
+      checkInStats: {},
+    });
+  });
+
+  it("adds the day's check-in, scale by scale, without changing anything else", () => {
+    const day = close({ reading: { completed: true } });
+    const withoutCheckIn = addClosedDay(EMPTY_MONTHLY_COUNTERS, day);
+    const counters = addClosedDay(
+      { ...EMPTY_MONTHLY_COUNTERS, checkInStats: { mood: { days: 1, total: 2 } } },
+      { ...day, checkIn: { mood: 4, motivation: 5 } },
+    );
+    expect(counters).toEqual({
+      ...withoutCheckIn,
+      checkInStats: { mood: { days: 2, total: 6 }, motivation: { days: 1, total: 5 } },
     });
   });
 
@@ -138,6 +152,7 @@ describe('mergeMonthlyCounters', () => {
         pointsEarned: 300,
         pointsSpent: 150,
         habitStats: { reading: { scheduledDays: 30, completedDays: 25 } },
+        checkInStats: { mood: { days: 20, total: 70 } },
       },
       {
         closedDays: 5,
@@ -151,6 +166,7 @@ describe('mergeMonthlyCounters', () => {
           reading: { scheduledDays: 5, completedDays: 5 },
           water: { scheduledDays: 5, completedDays: 3 },
         },
+        checkInStats: { mood: { days: 5, total: 20 }, energy: { days: 1, total: 3 } },
       },
     );
     expect(merged).toEqual({
@@ -165,6 +181,7 @@ describe('mergeMonthlyCounters', () => {
         reading: { scheduledDays: 35, completedDays: 30 },
         water: { scheduledDays: 5, completedDays: 3 },
       },
+      checkInStats: { mood: { days: 25, total: 90 }, energy: { days: 1, total: 3 } },
     });
   });
 });

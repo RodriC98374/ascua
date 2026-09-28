@@ -217,16 +217,18 @@ async function closeNextDay(
     updatedAt: serverTimestamp(),
   });
 
+  // El check-in del día (si lo hubo) se suma al mes junto con el cierre.
+  const closing = { ...evaluation, checkIn: log?.checkIn };
   if (month) {
     const { monthKey: _monthKey, ...counters } = month;
     transaction.update(monthRef.withConverter(null), {
-      ...addClosedDay(counters, evaluation),
+      ...addClosedDay(counters, closing),
       updatedAt: serverTimestamp(),
     });
   } else {
     transaction.set(monthRef.withConverter(null), {
       monthKey,
-      ...addClosedDay(EMPTY_MONTHLY_COUNTERS, evaluation),
+      ...addClosedDay(EMPTY_MONTHLY_COUNTERS, closing),
       ...newDocumentFields(),
     });
   }

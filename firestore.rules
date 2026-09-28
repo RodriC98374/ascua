@@ -340,18 +340,24 @@ service cloud.firestore {
 
       match /dailyLogs/{dateKey} {
         allow read: if isOwner(userId);
-        // Hoy se crea abierto con la primera marca. Un día pasado sin marcas lo crea el cierre.
+        // Hoy se crea abierto con la primera marca o el check-in. Un día pasado sin actividad lo
+        // crea el cierre, sin check-in. `checkIn` es opcional: los registros de antes no lo traen.
         allow create: if isOwner(userId)
-          && hasExactly(incoming(), ['dateKey', 'entries', 'status', 'summary', 'createdAt', 'updatedAt', 'schemaVersion'])
+          && incoming().keys().hasAll(['dateKey', 'entries', 'status', 'summary', 'createdAt', 'updatedAt', 'schemaVersion'])
+          && incoming().keys().hasOnly(['dateKey', 'entries', 'status', 'summary', 'checkIn', 'createdAt', 'updatedAt', 'schemaVersion'])
           && incoming().dateKey == dateKey
           && isCreatedNow()
-          && (isOpenedToday(dateKey) || (incoming().entries == {} && isClosedLog(userId, dateKey)));
-        // Sin margen de gracia: a las 00:00 de Bolivia el día deja de aceptar marcas.
+          && (isOpenedToday(dateKey)
+            || (incoming().entries == {} && !('checkIn' in incoming()) && isClosedLog(userId, dateKey)));
+        // Sin margen de gracia: a las 00:00 de Bolivia el día deja de aceptar marcas y check-in.
         allow update: if isOwner(userId)
           && existing().status == 'open'
           && isTouchedNow()
           && (
-            (dateKey == todayKey() && onlyChanges(['entries', 'updatedAt']) && isEntries(incoming().entries))
+            (dateKey == todayKey()
+              && onlyChanges(['entries', 'checkIn', 'updatedAt'])
+              && isEntries(incoming().entries)
+              && isOptionalCheckIn(incoming()))
             || (onlyChanges(['status', 'summary', 'updatedAt']) && isClosedLog(userId, dateKey))
           );
       }
@@ -365,7 +371,25 @@ service cloud.firestore {
         return dateKey == todayKey()
           && incoming().status == 'open'
           && incoming().summary == null
-          && isEntries(incoming().entries);
+          && isEntries(incoming().entries)
+          && isOptionalCheckIn(incoming());
+      }
+
+      // Check-in (fase 15, D22): ánimo, energía y motivación de 1 a 5; cada escala se contesta sola.
+      function isOptionalCheckIn(log) {
+        return !('checkIn' in log) || isCheckIn(log.checkIn);
+      }
+
+      function isCheckIn(checkIn) {
+        return checkIn is map
+          && checkIn.keys().hasOnly(['mood', 'energy', 'motivation'])
+          && (!('mood' in checkIn) || isCheckInValue(checkIn.mood))
+          && (!('energy' in checkIn) || isCheckInValue(checkIn.energy))
+          && (!('motivation' in checkIn) || isCheckInValue(checkIn.motivation));
+      }
+
+      function isCheckInValue(value) {
+        return value is int && value >= 1 && value <= 5;
       }
 
       // Cierre: el día ya pasó, el estado avanza hasta él en esta misma escritura y el resumen es
@@ -412,8 +436,11 @@ service cloud.firestore {
         };
       }
 
+      // `checkInStats` es opcional: los resúmenes de antes de la fase 15 no lo traen.
       function isValidMonthly(monthKey, month) {
-        return hasExactly(month, ['monthKey', 'closedDays', 'completedDays', 'perfectDays', 'frozenDays', 'missedDays', 'pointsEarned', 'pointsSpent', 'habitStats', 'createdAt', 'updatedAt', 'schemaVersion'])
+        return month.keys().hasAll(['monthKey', 'closedDays', 'completedDays', 'perfectDays', 'frozenDays', 'missedDays', 'pointsEarned', 'pointsSpent', 'habitStats', 'createdAt', 'updatedAt', 'schemaVersion'])
+          && month.keys().hasOnly(['monthKey', 'closedDays', 'completedDays', 'perfectDays', 'frozenDays', 'missedDays', 'pointsEarned', 'pointsSpent', 'habitStats', 'checkInStats', 'createdAt', 'updatedAt', 'schemaVersion'])
+          && isCheckInStats(month.get('checkInStats', {}))
           && month.monthKey == monthKey
           && monthKey.matches('[0-9]{4}-(0[1-9]|1[0-2])')
           && isCount(month.closedDays)
@@ -424,6 +451,24 @@ service cloud.firestore {
           && isCount(month.pointsEarned)
           && isCount(month.pointsSpent)
           && month.habitStats is map;
+      }
+
+      // Suma y días de cada escala. Como `habitStats`, se valida la forma, no que sume el día.
+      function isCheckInStats(stats) {
+        return stats is map
+          && stats.keys().hasOnly(['mood', 'energy', 'motivation'])
+          && (!('mood' in stats) || isCheckInStat(stats.mood))
+          && (!('energy' in stats) || isCheckInStat(stats.energy))
+          && (!('motivation' in stats) || isCheckInStat(stats.motivation));
+      }
+
+      function isCheckInStat(stat) {
+        return stat is map
+          && hasExactly(stat, ['days', 'total'])
+          && isCount(stat.days)
+          && stat.total is int
+          && stat.total >= stat.days
+          && stat.total <= stat.days * 5;
       }
 
       function isValidMonthlyChange(userId, monthKey, before, after) {
@@ -459,7 +504,8 @@ service cloud.firestore {
           && after.frozenDays == before.frozenDays
           && after.missedDays == before.missedDays
           && after.pointsEarned == before.pointsEarned
-          && after.habitStats == before.habitStats;
+          && after.habitStats == before.habitStats
+          && after.get('checkInStats', {}) == before.get('checkInStats', {});
       }
 
       // --- Saldo y racha: solo initializeAccount, cierre, compra de protector y canje ---

@@ -67,6 +67,10 @@ export const REWARD_TIER_COST_RANGES: Readonly<Record<RewardTier, { min: number;
   large: { min: 500, max: 700 },
 };
 
+/** Escala del check-in diario (D22). Los mismos límites que validan las reglas. */
+export const CHECK_IN_MIN = 1;
+export const CHECK_IN_MAX = 5;
+
 /** Frecuencia y cantidad de un hábito (D20). Los mismos límites que validan las reglas. */
 export const TIMES_PER_WEEK_MIN = 1;
 export const TIMES_PER_WEEK_MAX = 6;

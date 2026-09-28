@@ -1,4 +1,5 @@
 export * from './category-stats';
+export * from './check-in';
 export * from './constants';
 export * from './dates';
 export * from './day-evaluation';

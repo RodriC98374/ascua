@@ -87,7 +87,18 @@ describe('buildHabitDaysCsv', () => {
 
   it('has one row per day from the first habit until today, oldest first', () => {
     const rows = parse(buildHabitDaysCsv({ habits, dailyLogs: [], today: '2026-09-22' }));
-    expect(rows[0]).toEqual(['Fecha', 'Estado', '% cumplido', 'Puntos', 'Racha', 'Leer', 'Correr']);
+    expect(rows[0]).toEqual([
+      'Fecha',
+      'Estado',
+      '% cumplido',
+      'Puntos',
+      'Racha',
+      'Ánimo',
+      'Energía',
+      'Motivación',
+      'Leer',
+      'Correr',
+    ]);
     expect(rows.slice(1).map((row) => row[0])).toEqual(['2026-09-20', '2026-09-21', '2026-09-22']);
   });
 
@@ -102,8 +113,8 @@ describe('buildHabitDaysCsv', () => {
         today: '2026-09-22',
       }),
     );
-    expect(rows[1]).toEqual(['2026-09-20', 'Cumplido', '100', '10', '3', '1', '']);
-    expect(rows[2]).toEqual(['2026-09-21', 'Cumplido', '50', '10', '3', '1', '0']);
+    expect(rows[1]).toEqual(['2026-09-20', 'Cumplido', '100', '10', '3', '', '', '', '1', '']);
+    expect(rows[2]).toEqual(['2026-09-21', 'Cumplido', '50', '10', '3', '', '', '', '1', '0']);
   });
 
   it('labels every closed status in Spanish', () => {
@@ -127,7 +138,7 @@ describe('buildHabitDaysCsv', () => {
       'Sin cerrar',
       'En curso',
     ]);
-    expect(rows[4]?.slice(2)).toEqual(['', '10', '3', '']);
+    expect(rows[4]?.slice(2)).toEqual(['', '10', '3', '', '', '', '']);
   });
 
   it('uses the marks of today while the day is open', () => {
@@ -145,7 +156,7 @@ describe('buildHabitDaysCsv', () => {
         today: '2026-09-22',
       }),
     );
-    expect(rows.at(-1)).toEqual(['2026-09-22', 'En curso', '50', '', '', '0', '1']);
+    expect(rows.at(-1)).toEqual(['2026-09-22', 'En curso', '50', '', '', '', '', '', '0', '1']);
   });
 
   it('counts today like the close will: targets, fixed days and weekly habits', () => {
@@ -181,7 +192,7 @@ describe('buildHabitDaysCsv', () => {
         today: '2026-09-22',
       }),
     );
-    expect(rows.at(-1)).toEqual(['2026-09-22', 'En curso', '50', '', '', '0', '', '1', '']);
+    expect(rows.at(-1)).toEqual(['2026-09-22', 'En curso', '50', '', '', '', '', '', '0', '', '1', '']);
   });
 
   it('marks archived habits in the header and leaves them empty after archiving', () => {
@@ -196,9 +207,30 @@ describe('buildHabitDaysCsv', () => {
         today: '2026-09-22',
       }),
     );
-    expect(rows[0]?.slice(5)).toEqual(['Leer (archivado)', 'Leer']);
-    expect(rows.at(-1)?.slice(5)).toEqual(['', '0']);
-    expect(rows[1]?.slice(5)).toEqual(['0', '']);
+    expect(rows[0]?.slice(8)).toEqual(['Leer (archivado)', 'Leer']);
+    expect(rows.at(-1)?.slice(8)).toEqual(['', '0']);
+    expect(rows[1]?.slice(8)).toEqual(['0', '']);
+  });
+
+  it('adds the check-in of each day, empty when a scale was not answered', () => {
+    const rows = parse(
+      buildHabitDaysCsv({
+        habits,
+        dailyLogs: [
+          { ...closedLog('2026-09-21'), checkIn: { mood: 4, motivation: 2 } },
+          {
+            dateKey: '2026-09-22',
+            entries: {},
+            status: 'open',
+            summary: null,
+            checkIn: { energy: 5 },
+          },
+        ],
+        today: '2026-09-22',
+      }),
+    );
+    expect(rows[2]?.slice(5, 8)).toEqual(['4', '', '2']);
+    expect(rows[3]?.slice(5, 8)).toEqual(['', '5', '']);
   });
 
   it('has only the header when there are no habits', () => {

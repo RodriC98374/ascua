@@ -108,6 +108,17 @@ export interface HabitEntry {
 /** Marcas del día por hábito, tal como las escribe el usuario. */
 export type DailyEntries = Readonly<Record<string, HabitEntry>>;
 
+/** Escalas del check-in diario (fase 15, D22), de 1 a 5. */
+export type CheckInDimension = 'mood' | 'energy' | 'motivation';
+
+/** El check-in de un día: cada escala contestada, de 1 a 5. Sin la clave = sin contestar. */
+export type CheckIn = Readonly<Partial<Record<CheckInDimension, number>>>;
+
+/** Suma y días contestados de cada escala: el promedio sale de ahí y se suman meses sin perder. */
+export type CheckInStats = Readonly<
+  Partial<Record<CheckInDimension, { days: number; total: number }>>
+>;
+
 /** Registro de un día (documento `dailyLogs/{dateKey}`). */
 export interface DailyLog {
   dateKey: DateKey;
@@ -123,6 +134,8 @@ export interface DailyLog {
     pointsEarned: number;
     streakAfterClose: number;
   } | null;
+  /** Solo hoy, como las marcas; los registros de antes de la fase 15 no lo traen. */
+  checkIn?: CheckIn;
 }
 
 /** Contadores de un mes; se acumulan al cerrar cada día y en cada gasto. */
@@ -137,6 +150,8 @@ export interface MonthlyCounters {
   /** Positivo: lo gastado en protectores y canjes. */
   pointsSpent: number;
   habitStats: Readonly<Record<string, { scheduledDays: number; completedDays: number }>>;
+  /** Check-in de los días cerrados; los resúmenes de antes de la fase 15 no lo traen. */
+  checkInStats: CheckInStats;
 }
 
 /** Resumen de un mes (documento `monthlySummaries/{monthKey}`). */
