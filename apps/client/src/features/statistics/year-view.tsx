@@ -20,9 +20,10 @@ import { MilestonesCard } from '@/features/milestones/milestones-card';
 import { buildTodaySummary } from '@/features/today/today-summary';
 import { useActiveColorScheme, useThemeColors } from '@/theme/colors';
 
-import { monthRate, yearPoints } from './chart-data';
+import { monthRate, yearCheckInSlots, yearPoints } from './chart-data';
 import { TouchLineChart } from './chart-parts';
 import { CategoryRadar } from './category-radar';
+import { CheckInSummary } from './check-in-summary';
 import { HabitBars } from './habit-bars';
 import { PeriodSummary } from './period-summary';
 import { formatPercent, habitCaption, monthCaption, percentValue, plural } from './statistics-text';
@@ -177,6 +178,13 @@ export function YearView({
           </>
         )}
       </Card>
+
+      <CheckInSummary
+        averages={stats.checkInAverages}
+        slots={yearCheckInSlots(stats.months)}
+        caption="Promedio de cada mes, con los días ya cerrados."
+        describeSlotName={(slot) => formatMonthYear(slot.key)}
+      />
 
       <CategoryRadar rows={stats.habits} />
 

@@ -7,7 +7,15 @@ import {
 } from '@ascua/shared';
 import { describe, expect, it } from '@jest/globals';
 
-import { axisMax, monthRate, streakPoints, weekBars, yearPoints } from './chart-data';
+import {
+  axisMax,
+  monthRate,
+  rangeCheckInSlots,
+  streakPoints,
+  weekBars,
+  yearCheckInSlots,
+  yearPoints,
+} from './chart-data';
 
 const TODAY = '2026-10-05';
 
@@ -140,5 +148,56 @@ describe('axisMax', () => {
   it('keeps a minimal axis when every value is small or there are none', () => {
     expect(axisMax([0, 1], 4)).toBe(4);
     expect(axisMax([], 4)).toBe(4);
+  });
+});
+
+describe('rangeCheckInSlots', () => {
+  const week = ['2026-09-21', '2026-09-22', '2026-09-23'];
+
+  it('gives each day its answers, with the weekday initial in a week', () => {
+    const slots = rangeCheckInSlots(
+      week,
+      [{ dateKey: '2026-09-22', checkIn: { mood: 4 } }],
+      'week',
+    );
+    expect(slots).toEqual([
+      { key: '2026-09-21', label: 'L', values: {} },
+      { key: '2026-09-22', label: 'M', values: { mood: 4 } },
+      { key: '2026-09-23', label: 'X', values: {} },
+    ]);
+  });
+
+  it('labels one day every five in a month', () => {
+    const month = Array.from(
+      { length: 12 },
+      (_, index) => `2026-09-${String(index + 1).padStart(2, '0')}`,
+    );
+    expect(rangeCheckInSlots(month, [], 'month').map((slot) => slot.label)).toEqual([
+      '1',
+      '',
+      '',
+      '',
+      '',
+      '6',
+      '',
+      '',
+      '',
+      '',
+      '11',
+      '',
+    ]);
+  });
+});
+
+describe('yearCheckInSlots', () => {
+  it('averages each month, leaving the months without answers empty', () => {
+    const slots = yearCheckInSlots([
+      { ...month('2026-08', null), checkInStats: { mood: { days: 2, total: 7 } } },
+      month('2026-09', null),
+    ]);
+    expect(slots).toEqual([
+      { key: '2026-08', label: 'Ago', values: { mood: 3.5 } },
+      { key: '2026-09', label: 'Sep', values: {} },
+    ]);
   });
 });

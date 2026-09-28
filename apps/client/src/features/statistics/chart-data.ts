@@ -1,14 +1,18 @@
 // Datos de las gráficas a partir de las estadísticas de `shared`.
 import {
+  CHECK_IN_DIMENSIONS,
+  checkInAverages,
   formatMonthAbbrev,
   formatWeekdayInitial,
   monthHabitStats,
+  type CheckInDimension,
   type DateKey,
   type DayStats,
   type DayStatsStatus,
   type Habit,
   type MonthKey,
   type MonthStats,
+  type RangeCheckIn,
 } from '@ascua/shared';
 
 import { percentValue } from './statistics-text';
@@ -89,6 +93,47 @@ export function yearPoints(
             label: formatMonthAbbrev(month.monthKey),
           },
         ];
+  });
+}
+
+/** Un punto del eje de la gráfica del check-in: un día (semana, mes) o un mes (año). */
+export interface CheckInSlot {
+  key: string;
+  /** Etiqueta del eje; puede ir vacía. */
+  label: string;
+  /** Lo contestado ese día, o el promedio del mes; sin la escala = sin datos. */
+  values: Partial<Record<CheckInDimension, number>>;
+}
+
+/** Todos los días del rango (también los que vienen, vacíos) con lo contestado en cada uno. */
+export function rangeCheckInSlots(
+  dateKeys: readonly DateKey[],
+  checkInDays: RangeCheckIn['days'],
+  kind: 'week' | 'month',
+): CheckInSlot[] {
+  const byDay = new Map(checkInDays.map((day) => [day.dateKey, day.checkIn]));
+  return dateKeys.map((dateKey, index) => ({
+    key: dateKey,
+    label:
+      kind === 'week'
+        ? formatWeekdayInitial(dateKey)
+        : index % STREAK_LABEL_EVERY === 0
+          ? String(Number(dateKey.slice(8, 10)))
+          : '',
+    values: { ...byDay.get(dateKey) },
+  }));
+}
+
+/** Los meses del año con el promedio de cada escala (días cerrados). */
+export function yearCheckInSlots(months: readonly MonthStats[]): CheckInSlot[] {
+  return months.map((month) => {
+    const averages = checkInAverages(month.checkInStats);
+    const values: CheckInSlot['values'] = {};
+    for (const dimension of CHECK_IN_DIMENSIONS) {
+      const average = averages[dimension];
+      if (average !== null) values[dimension] = average;
+    }
+    return { key: month.monthKey, label: formatMonthAbbrev(month.monthKey), values };
   });
 }
 

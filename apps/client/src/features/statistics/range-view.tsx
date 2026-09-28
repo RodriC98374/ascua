@@ -1,5 +1,6 @@
 import {
   buildRangeStats,
+  formatShortWeekday,
   toMonthKey,
   type DailyLog,
   type DateKey,
@@ -15,6 +16,8 @@ import { useDailyLogsInRange, useMonthlySummary, useTasksInRange } from '@/data/
 import { TaskWeek } from '@/features/tasks/task-week';
 import { useThemeColors } from '@/theme/colors';
 
+import { rangeCheckInSlots } from './chart-data';
+import { CheckInSummary } from './check-in-summary';
 import { DayDetail } from './day-detail';
 import { HabitBars } from './habit-bars';
 import { HabitDonut } from './habit-donut';
@@ -178,6 +181,16 @@ function RangeContent({
         rows={stats.habits}
         selectedHabitId={selectedHabitId}
         onSelectHabit={toggleHabit}
+      />
+      <CheckInSummary
+        averages={stats.checkIn.averages}
+        slots={rangeCheckInSlots(
+          stats.days.map((day) => day.dateKey),
+          stats.checkIn.days,
+          kind,
+        )}
+        caption="Promedio de los días que contestaste, hoy incluido."
+        describeSlotName={(slot) => formatShortWeekday(slot.key)}
       />
       {tasks && <TaskWeek tasks={tasks} period={period} today={today} />}
     </View>

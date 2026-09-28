@@ -26,6 +26,7 @@ import {
   startOfWeek,
   todayDateKey,
   toMonthKey,
+  type CheckIn,
   type DailyEntries,
   type DateKey,
   type GamificationState,
@@ -260,17 +261,10 @@ function buildDemoData(uid: string, options: DemoOptions): DemoData {
       addDays(start, 50),
     ),
     // D20: un hábito de cada frecuencia nueva y uno con cantidad, para verlos en la demo.
-    habit(
-      'yoga',
-      'Yoga',
-      'secondary',
-      6,
-      start,
-      'physical',
-      '#EFA98A',
-      null,
-      { type: 'days_of_week', daysOfWeek: [2, 4, 6] },
-    ),
+    habit('yoga', 'Yoga', 'secondary', 6, start, 'physical', '#EFA98A', null, {
+      type: 'days_of_week',
+      daysOfWeek: [2, 4, 6],
+    }),
     habit(
       'natacion',
       'Natación',
@@ -358,6 +352,18 @@ function buildDemoData(uid: string, options: DemoOptions): DemoData {
 
   // Las tareas usan su propio azar: así la historia de los hábitos es la misma que antes de ellas.
   const taskRandom = seededRandom(20260925);
+  // El check-in (fase 15) también tiene su propio azar. Tres de cada cuatro días se contesta, un
+  // poco mejor los días en que se cumplió la meta.
+  const checkInRandom = seededRandom(20260928);
+  const buildCheckIn = (isGoodDay: boolean): CheckIn => {
+    if (checkInRandom() >= 0.75) return {};
+    const score = (base: number) =>
+      Math.min(
+        5,
+        Math.max(1, Math.round(base + (isGoodDay ? 0.8 : -0.6) + checkInRandom() * 2 - 1)),
+      );
+    return { mood: score(3.2), energy: score(2.9), motivation: score(3.4) };
+  };
   let taskCount = 0;
   const addTask = (
     dueDateKey: DateKey,
@@ -410,8 +416,7 @@ function buildDemoData(uid: string, options: DemoOptions): DemoData {
     const weekLogs: WeekLog[] = dateKeyRange(startOfWeek(dateKey), addDays(dateKey, -1)).flatMap(
       (weekDateKey) => {
         const log = documents.get(`${user}/dailyLogs/${weekDateKey}`) as
-          | { entries: DailyEntries }
-          | undefined;
+          { entries: DailyEntries } | undefined;
         return log ? [{ dateKey: weekDateKey, entries: log.entries }] : [];
       },
     );
@@ -434,6 +439,7 @@ function buildDemoData(uid: string, options: DemoOptions): DemoData {
     });
     const closedAt = at(addDays(dateKey, 1), '07:30:00');
     const markedAt = at(dateKey, '20:00:00');
+    const checkIn = buildCheckIn(evaluation.isGoalMet);
 
     documents.set(`${user}/dailyLogs/${dateKey}`, {
       dateKey,
@@ -442,6 +448,7 @@ function buildDemoData(uid: string, options: DemoOptions): DemoData {
       ),
       status: evaluation.status,
       summary: { ...evaluation.summary, closedAt },
+      ...(Object.keys(checkIn).length > 0 && { checkIn }),
       ...meta(markedAt),
     });
     evaluation.transactions.forEach((transaction, index) => {
@@ -451,7 +458,9 @@ function buildDemoData(uid: string, options: DemoOptions): DemoData {
         transactionDoc(transaction, createdAt),
       );
     });
-    addToMonth(toMonthKey(dateKey), (counters) => addClosedDay(counters, evaluation));
+    addToMonth(toMonthKey(dateKey), (counters) =>
+      addClosedDay(counters, { ...evaluation, checkIn }),
+    );
     state = evaluation.nextState;
     if (!canSpend) continue;
 
@@ -525,6 +534,8 @@ function buildDemoData(uid: string, options: DemoOptions): DemoData {
     },
     status: 'open',
     summary: null,
+    // El check-in de hoy, a medias: falta energía y motivación.
+    checkIn: { mood: 4 },
     ...meta(nowAt),
   });
   documents.set(`${user}/meta/gamification`, { ...state, ...meta(nowAt) });
@@ -619,7 +630,9 @@ export async function seedDemo(options: DemoOptions): Promise<void> {
     console.log('Racha en riesgo desde las 00:00: la franja de Hoy se ve a cualquier hora.');
   }
   if (options.isWeekPowered) {
-    console.log('Semana potenciada: Natación ya cumplió esta semana, la llama de Hoy se ve morada.');
+    console.log(
+      'Semana potenciada: Natación ya cumplió esta semana, la llama de Hoy se ve morada.',
+    );
   }
   console.log(`Entra con ${DEMO_EMAIL} / ${DEMO_PASSWORD} (la app debe usar los emuladores).`);
 }

@@ -5,6 +5,7 @@ import {
   PERFECT_DAY_BONUS,
   startOfWeek,
   streakRiskAt,
+  type CheckInDimension,
   type DateKey,
   type GamificationState,
   type HabitRecord,
@@ -23,6 +24,7 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 
+import { CheckInCard } from '@/features/check-in/check-in-card';
 import { HabitActions } from '@/features/habits/habit-actions';
 import { HabitCheck } from '@/features/today/habit-check';
 import { NotTodayRow } from '@/features/today/not-today-row';
@@ -54,7 +56,7 @@ import { buildTodaySummary, type TodaySummary } from '@/features/today/today-sum
 import { useMinuteClock } from '@/features/today/use-minute-clock';
 import { useToday } from '@/features/today/use-today';
 import { db } from '@/lib/firebase';
-import { setHabitCompletion } from '@/operations/daily-log';
+import { setCheckIn, setHabitCompletion } from '@/operations/daily-log';
 import { reorderHabits } from '@/operations/habits';
 import { setTaskCompletion } from '@/operations/tasks';
 import { useThemeColors } from '@/theme/colors';
@@ -180,6 +182,10 @@ function TodayContent({
         logExists: log.exists,
       }),
     );
+  }
+
+  function answerCheckIn(dimension: CheckInDimension, value: number | null) {
+    trackWrite(setCheckIn(db, uid, { today, dimension, value, logExists: log.exists }));
   }
 
   function toggleTask(task: TaskRecord) {
@@ -381,6 +387,7 @@ function TodayContent({
           ) : (
             <EmptyState />
           )}
+          <CheckInCard checkIn={log.data?.checkIn ?? {}} onAnswer={answerCheckIn} />
           <TasksSection
             tasks={tasks.data}
             today={today}
