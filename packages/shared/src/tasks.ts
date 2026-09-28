@@ -29,6 +29,11 @@ export interface TodayTaskList<T extends Task> {
   dueToday: T[];
   /** Cumplidas hoy, sea cual sea su fecha. */
   doneToday: T[];
+  /**
+   * Vencidas, de hoy y cumplidas hoy, por fecha y título: marcar o desmarcar no mueve ninguna de
+   * lugar (si saltara, la de abajo quedaría bajo el dedo).
+   */
+  forToday: T[];
   /** Para días que vienen; la más cercana primero. */
   upcoming: T[];
 }
@@ -43,13 +48,23 @@ export function todayTaskList<T extends Task>(
   tasks: readonly T[],
   today: DateKey,
 ): TodayTaskList<T> {
-  const list: TodayTaskList<T> = { overdue: [], dueToday: [], doneToday: [], upcoming: [] };
+  const list: TodayTaskList<T> = {
+    overdue: [],
+    dueToday: [],
+    doneToday: [],
+    forToday: [],
+    upcoming: [],
+  };
   for (const task of [...tasks].sort(byDueDate)) {
     if (task.completedDateKey === today) list.doneToday.push(task);
     else if (task.completedDateKey !== null) continue;
     else if (task.dueDateKey < today) list.overdue.push(task);
     else if (task.dueDateKey === today) list.dueToday.push(task);
-    else list.upcoming.push(task);
+    else {
+      list.upcoming.push(task);
+      continue;
+    }
+    list.forToday.push(task);
   }
   return list;
 }

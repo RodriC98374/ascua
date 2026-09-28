@@ -1,5 +1,5 @@
-// Tareas en Hoy: las vencidas primero, las de hoy y las cumplidas hoy; debajo, los puntos del día
-// frente al tope y, plegadas, las próximas.
+// Tareas en Hoy: vencidas, de hoy y cumplidas hoy, por fecha (marcar no las mueve); debajo, los
+// puntos del día frente al tope y, plegadas, las próximas.
 import {
   DAILY_TASK_POINTS_CAP,
   TASK_POINTS,
@@ -32,7 +32,7 @@ export function TasksSection({ tasks, today, taskPoints, onToggle }: TasksSectio
   const colors = useThemeColors();
   const [isShowingUpcoming, setIsShowingUpcoming] = useState(false);
   const list = todayTaskList(tasks, today);
-  const forToday = [...list.overdue, ...list.dueToday, ...list.doneToday];
+  const { forToday } = list;
   const remainingPoints = Math.max(0, DAILY_TASK_POINTS_CAP - taskPoints.points);
 
   const row = (task: TaskRecord, index: number) => (

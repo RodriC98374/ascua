@@ -115,6 +115,19 @@ describe('todayTaskList', () => {
     );
     expect(ids(sameDay.dueToday)).toEqual(['1', '2']);
   });
+
+  it('lists the tasks for today by date, done or not', () => {
+    expect(ids(list.forToday)).toEqual(['done-today', 'overdue-old', 'overdue-recent', 'today-open']);
+  });
+
+  it('keeps each task in its place when it is marked or unmarked', () => {
+    const open = [task('a', { title: 'Agenda' }), task('b', { title: 'Banco' })];
+    const marked = [open[0]!, { ...open[1]!, completedDateKey: TODAY }];
+    const unmarked = [{ ...open[0]!, completedDateKey: TODAY }, open[1]!];
+    expect(ids(todayTaskList(open, TODAY).forToday)).toEqual(['a', 'b']);
+    expect(ids(todayTaskList(marked, TODAY).forToday)).toEqual(['a', 'b']);
+    expect(ids(todayTaskList(unmarked, TODAY).forToday)).toEqual(['a', 'b']);
+  });
 });
 
 describe('taskDays', () => {
