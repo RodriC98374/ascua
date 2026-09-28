@@ -11,7 +11,7 @@ Todo cuelga de `users/{userId}`. Cada funcionalidad es una subcolección indepen
 ```
 users/{userId}                             UserProfile         libre (campos permitidos)
 ├── habits/{habitId}                       Habit               libre (forma validada)
-├── dailyLogs/{dateKey}                    DailyLog            entries: solo hoy · summary: solo al cerrar
+├── dailyLogs/{dateKey}                    DailyLog            entries y checkIn: solo hoy · summary: solo al cerrar
 ├── monthlySummaries/{monthKey}            MonthlySummary      solo al cerrar, compra o canje
 ├── meta/gamification                      GamificationState   solo al cerrar, compra o canje
 ├── pointTransactions/{transactionId}      PointTransaction    solo crear; nunca editar ni borrar
@@ -20,8 +20,7 @@ users/{userId}                             UserProfile         libre (campos per
 └── tasks/{taskId}                         Task (fase 14)      libre; se marca solo hoy; lo cumplido en un día pasado queda fijo
 
 Futuro (sin tocar lo anterior):
-├── goals/{goalId}, journalEntries/{...}   crecimiento personal
-└── dailyLogs/{dateKey}.checkIn            ánimo / energía / foco / motivación
+└── goals/{goalId}, journalEntries/{...}   crecimiento personal
 ```
 
 La columna derecha resume qué permiten las reglas de seguridad (sección 10). Las escrituras "sensibles" (saldo, racha, ledger) solo se aceptan dentro de las tres operaciones de la sección 7, y las reglas comprueban que cuadren.
@@ -79,6 +78,11 @@ const TASK_POINTS: Record<TaskSize, number> = { small: 5, medium: 10, large: 20 
 const DAILY_TASK_POINTS_CAP = 30;
 // Fase 12: hitos con insignia. Se derivan de longestStreak (no se guardan): una insignia no se pierde.
 const STREAK_MILESTONES = [7, 30, 100, 365] as const;
+// Fase 16 (D20): veces por semana de 1 a 6; meta de cantidad de 2 a 999 con unidad de hasta 20.
+const TIMES_PER_WEEK_MIN = 1, TIMES_PER_WEEK_MAX = 6;
+const TARGET_AMOUNT_MIN = 2, TARGET_AMOUNT_MAX = 999, TARGET_UNIT_MAX_LENGTH = 20;
+// Fase 15 (D22): cada escala del check-in, de 1 a 5.
+const CHECK_IN_MIN = 1, CHECK_IN_MAX = 5;
 // Solo sugerencia para la UI; no se valida (ver sección 11).
 const REWARD_TIER_COST_RANGES: Record<RewardTier, { min: number; max: number }> = {
   small: { min: 50, max: 80 },
@@ -117,7 +121,11 @@ interface Habit {
   icon: string;
   color: string;                       // hex, ej. '#8B5CF6'
   tier: HabitTier;                     // máximo MAX_PRIMARY_HABITS activos como 'primary'
-  schedule: { type: 'daily' };         // extensible: { type: 'weekly'; daysOfWeek: number[] }
+  schedule:                            // fase 16 (D20); fija al crear el hábito
+    | { type: 'daily' }
+    | { type: 'days_of_week'; daysOfWeek: number[] }   // 1 = lunes … 7 = domingo; de 1 a 6 días
+    | { type: 'times_per_week'; timesPerWeek: number }; // 1..6, semana de lunes a domingo
+  target?: { amount: number; unit: string } | null;   // con cantidad; fija al crear. Sin el campo = sin cantidad
   status: EntityStatus;
   sortOrder: number;
   startDateKey: DateKey;               // primer día en que cuenta
@@ -129,6 +137,7 @@ interface Habit {
 - **Valor en puntos:** sale de `tier` vía `HABIT_POINTS`; no se guarda en el hábito. El monto acreditado queda fijo en cada `PointTransaction`, así que cambiar las reglas o el tier nunca reescribe el historial.
 - **Nunca se borra**, solo se archiva. **Un hábito archivado no se reactiva** (se crea uno nuevo) y un hábito nuevo empieza hoy o después: ambas cosas cambiarían el resultado de días pasados todavía sin cerrar.
 - **Máximo 3 principales:** se valida en la UI (sección 10, deudas aceptadas).
+- **Frecuencia (fase 16):** un hábito de días fijos solo cuenta esos días; uno de N veces por semana no entra en la meta de racha ni en el día perfecto y suma sus puntos hasta N marcas por semana. Con todos los semanales cumplidos, la semana queda potenciada (la llama se ve morada); se deriva de las marcas, no se guarda. Con cantidad, se cumple al llegar a `target.amount` en el día.
 
 ### `users/{userId}/dailyLogs/{dateKey}` — DailyLog
 Un documento por día. El ID es la fecha (`'2026-09-21'`).
@@ -140,8 +149,14 @@ interface DailyLog {
   // Se escribe solo mientras dateKey es hoy en Bolivia
   entries: Record<string /* habitId */, {
     completed: boolean;
+    count?: number;                    // fase 16: lo hecho de un hábito con cantidad; manda sobre completed
     updatedAt: Timestamp;
   }>;
+  checkIn?: {                          // fase 15 (D22): opcional; cada escala de 1 a 5, sin la clave = sin contestar
+    mood?: number;                     // ánimo
+    energy?: number;                   // energía
+    motivation?: number;               // motivación
+  };
 
   // Se escribe solo al cerrar el día
   status: DayStatus;                   // al crear el documento: 'open'
@@ -185,7 +200,10 @@ interface MonthlySummary {
     scheduledDays: number;
     completedDays: number;
   }>;
-  // futuro: promedios del check-in (ánimo, energía, foco, motivación)
+  checkInStats?: Partial<Record<'mood' | 'energy' | 'motivation', {
+    days: number;                      // días cerrados con esa escala contestada
+    total: number;                     // suma de las respuestas; promedio = total / days
+  }>>;                                 // fase 15: los resúmenes de antes no lo traen (se leen como {})
 }
 ```
 
@@ -493,7 +511,7 @@ Sin servidor, las reglas son la única barrera: validan que cada operación de l
 - **Registro cerrado:** la cuenta del usuario se creó a mano en la consola y el registro está desactivado (*Authentication → Settings → User actions*). La app no tiene pantalla de registro. La lista de permitidos es la segunda barrera.
 - **Clave de API restringida** (Google Cloud → Credenciales → "Browser key (auto created by Firebase)"): sin restricción de aplicación (Android con el SDK JS no envía los datos que esa restricción verifica) y **solo** Identity Toolkit API, Token Service API y Cloud Firestore API. La clave es pública por diseño; si se agrega otro servicio de Firebase, sumarlo a esa lista o fallará con un error 403.
 - **Libre, con forma validada** (tipos, enums, longitudes): `users/{userId}` (solo `displayName` y `reminderSettings` después de crearlo), `habits`, `rewards`. Hábitos y recompensas no se pueden borrar.
-- **`dailyLogs/{D}.entries`:** solo si `D` es hoy en Bolivia según `request.time`. Al crear el documento, `status == 'open'` y `summary == null`.
+- **`dailyLogs/{D}.entries` y `checkIn`:** solo si `D` es hoy en Bolivia según `request.time`. Al crear el documento, `status == 'open'` y `summary == null`. `checkIn` solo acepta `mood`, `energy` y `motivation` con enteros de 1 a 5; el cierre no lo cambia y un día cerrado sin actividad se crea sin él.
 - **Cierre de un día** (`status`/`summary` de `dailyLogs/{D}`, movimientos de cierre, `meta/gamification`, `monthlySummaries`):
   - `D` es estrictamente anterior a hoy (según `request.time`).
   - `lastClosedDateKey` avanza **exactamente un día**, hasta `D`.
@@ -510,7 +528,7 @@ Sin servidor, las reglas son la única barrera: validan que cada operación de l
 - **Tier al cierre:** si se cambia el tier de un hábito durante el día, el cierre usa el tier nuevo.
 - **Marcas offline tardías:** una marca hecha sin conexión a las 23:58 que se sincroniza después de medianoche es rechazada (política sin gracia). La app muestra un indicador de "pendiente de sincronizar".
 - **Offline en Android:** las marcas pendientes se pierden si se cierra la app antes de recuperar la conexión (sección 9).
-- **Lo que las reglas no pueden recorrer:** la forma de cada marca de `entries` (solo se limita a 100 claves), `habitStats` del resumen mensual y que la suma de los movimientos del día sea igual a `summary.pointsEarned`. Lo garantiza la app, probada con los tests de `evaluateDay`.
+- **Lo que las reglas no pueden recorrer:** la forma de cada marca de `entries` (solo se limita a 100 claves), `habitStats` del resumen mensual, que `checkInStats` sume el check-in del día cerrado (se valida su forma y que cada total quepa entre días × 1 y días × 5; un gasto no lo cambia) y que la suma de los movimientos del día sea igual a `summary.pointsEarned`. Lo garantiza la app, probada con los tests de `evaluateDay`.
 - **Tier de cada movimiento de hábito:** las reglas aceptan 10 o 5 sin leer el hábito (leerlo sumaría una lectura por hábito y superaría el límite).
 - **Monto del movimiento de tareas:** las reglas aceptan de 1 al tope sin leer las tareas, por la misma razón. Que cuadre con las tareas cumplidas ese día lo garantizan los tests de `evaluateDay`.
 - **Límite de las reglas:** hasta 10 lecturas `get()`/`getAfter()` distintas por documento y 20 por transacción. Verificado en la fase 03: cada regla lee a lo sumo 4 documentos distintos y el cierre más grande (13 movimientos) pasa, porque las lecturas repetidas del mismo documento no cuentan dos veces.
@@ -530,5 +548,5 @@ Sin servidor, las reglas son la única barrera: validan que cada operación de l
 - Una funcionalidad nueva = una subcolección nueva + nuevos valores en los enums (`PointTransactionType`, `sourceType`). Nada existente cambia de forma.
 - `schemaVersion` en cada documento permite migraciones graduales.
 - El task tracker (fase 14, sección 3) reutiliza `DateKey`, el ledger y `closePendingDays` para acreditar puntos.
-- El check-in de ánimo va dentro de `DailyLog` (misma granularidad diaria) y sus promedios, en `MonthlySummary`.
+- El check-in (fase 15) va dentro de `DailyLog` (misma granularidad diaria) y su suma por escala, en `MonthlySummary.checkInStats`. No da puntos ni toca la racha.
 - Si algún día se necesitara un servidor (por ejemplo, para varios usuarios reales), las operaciones de la sección 7 se mueven a Cloud Functions sin cambiar el modelo, porque la lógica ya vive en `packages/shared`.
