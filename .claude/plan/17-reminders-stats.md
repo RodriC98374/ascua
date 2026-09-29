@@ -64,7 +64,8 @@ interface Habit {
 - [x] Demo con recordatorios de ejemplo.
 
 **Cierre**
-- [ ] Revisión en web, typecheck, lint y tests; `data-model.md` al día; revisión del usuario.
+- [x] Revisión en web, typecheck, lint y tests; `data-model.md` al día; revisión del usuario.
+      Aprobada el 29-09-2026 junto con la propuesta de UI y unida a `main`.
       **Toca reglas:** publicar reglas antes que la web.
 
 ## Definición de terminado

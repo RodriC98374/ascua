@@ -2,8 +2,12 @@
 
 **Rama:** `feat/ui-refresh`, desde `feat/17-reminders-stats` (usa el formulario con recordatorio de
 la 17). Pedida por el usuario el 29-09-2026: la interfaz le resultaba poco amigable y no le gustaba
-elegir la hora en una grilla de casillas. **Es una propuesta:** se revisa y se aprueba o se ajusta
-antes de unirla. No toca datos, reglas ni `shared`; no quita ninguna función.
+elegir la hora en una grilla de casillas. No toca datos, reglas ni `shared`; no quita ninguna
+función.
+
+**Estado: aprobada por el usuario el 29-09-2026 (decisión D24) y unida a `main` junto con la 17.**
+Las reglas que salen de aquí están en [01-design-system.md](01-design-system.md) y en
+`.claude/rules/frontend.md`.
 
 ## Qué se revisó
 
@@ -38,14 +42,14 @@ Lo que más pesaba:
 | Formulario de hábito | Una columna | Cuatro tarjetas: **Lo básico, Cómo cuenta, Recordatorio, Aspecto**; frecuencia con círculo de opción; lo que no se puede cambiar al editar, en una caja gris con el porqué; **vista previa** de la casilla con el color elegido; días en una sola fila |
 | Ajustes | Cuenta arriba | Cuenta al final |
 
-## Pendiente de decidir con el usuario
+## Siguientes candidatos (sin hacer)
 
-- Si aprueba el fondo gris con tarjetas blancas: cambia la revisión de la paleta del 22-09-2026
-  (anotarla en [01-design-system.md](01-design-system.md) como definitiva y pasarla al artefacto de
-  Claude Design, pendiente 5).
-- Siguientes candidatos, sin hacer: barra inferior fija con "Guardar" en formularios largos,
-  cerrar la hoja deslizándola hacia abajo, texto de cuerpo a 15–16 px, y la grilla "Hábito por
-  hábito" de Mes (nombres cortados).
+- Barra inferior fija con "Guardar" en los formularios largos.
+- Cerrar la hoja deslizándola hacia abajo.
+- Texto de cuerpo a 15–16 px.
+- La grilla "Hábito por hábito" de Mes (nombres cortados).
+- Pasar la paleta nueva al artefacto de Claude Design (pendiente 5 de
+  [01-design-system.md](01-design-system.md)).
 
 ## Cómo verla
 

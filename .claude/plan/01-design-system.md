@@ -34,6 +34,26 @@ mockup**. Dos cambios, aprobados antes de implementarlos:
 
 Como el artefacto de Claude Design todavía tiene la paleta cálida, **la fuente de verdad de estos
 dos puntos es este archivo** hasta que el artefacto se actualice (pendiente 5).
+
+## Revisión de la interfaz (29-09-2026, D24)
+
+El usuario encontró la interfaz poco amigable; la propuesta ([ui-refresh.md](ui-refresh.md)) se
+aprobó y manda sobre lo anterior en estos puntos:
+
+1. **Superficies en claro** (reemplazan las del punto 1 de arriba): `surface-100` `#F5F4F2` (fondo
+   gris cálido), `surface-200` `#FFFFFF` (tarjetas, campos, hojas), `surface-300` `#EBE9E6`
+   (pistas, chips libres, franja de la rueda). El resto de los neutrales y todo el oscuro no
+   cambian. Algo blanco sobre el fondo es `surface-200`, no `surface-100`.
+2. **Sombras:** `Card` lleva una sombra neutra y corta (6 px, 6 %). La sombra cálida (`shadowWarm`)
+   queda solo para lo que es de la racha: la tarjeta de Hoy y el botón flotante.
+3. **Opción elegida:** un solo estilo en toda la app, `components/ui/choice-styles.ts` (relleno
+   `warning-soft` y borde `ember-strong`, texto `ember-strong`). Un color elegido lleva un check de
+   su tono oscuro. Nada de bordes negros para marcar lo elegido.
+4. **Listas de Hoy:** una tarjeta por sección con separadores, casillas **redondas** de 28 px, lo
+   hecho con el nombre en `ink-muted`, y el avance en `SectionHeader` (pastilla que se pone verde
+   con check al completar).
+5. **Selectores:** la hora se elige con dos ruedas (`WheelPicker`) dentro de una hoja inferior
+   (`BottomSheet`), con horas rápidas; nunca en una grilla de casillas.
 - **Tipografía:** Baloo 2 para títulos y números; Nunito para texto. Se cargan con `@expo-google-fonts` (un archivo por peso).
 - **Forma:** espaciado de Tailwind por defecto (4 px); radios `sm` 8, `md` 12, `lg` 18, `xl` 24, `full`; sombras con tinte cálido en claro.
 - **Estados del día:** completado (verde + check), perfecto (degradado brasa + estrella), protegido (azul + copo), perdido (rojo), sin hábitos (apagado), hoy (anillo `ember-strong` de 2 px, sin relleno).
@@ -54,7 +74,9 @@ dos puntos es este archivo** hasta que el artefacto se actualice (pendiente 5).
 3. **Sombras en Android** (fase 09, con la primera APK): `boxShadow` funciona en web; en Android revisar el soporte de NativeWind o usar `elevation`.
 4. ~~**Regla de racha**~~ Resuelto: el README del diseño dice "los 3 principales"; la regla real es **todos los principales programados** (pueden ser menos de 3). En el código manda `data-model.md`, y los textos de la app lo dicen así.
 5. **Sincronizar el artefacto de Claude Design** con la revisión de la paleta de arriba (neutrales
-   fríos y colores por hábito). Hasta entonces, en esos dos puntos manda este archivo, no el
-   artefacto. Al hacerlo, pasarle también los valores oscuros de `palette.json` (punto 2).
+   fríos y colores por hábito) y con la revisión de la interfaz del 29-09-2026 (superficies,
+   sombras, opción elegida, listas y selectores). Hasta entonces, en esos puntos manda este
+   archivo, no el artefacto. Al hacerlo, pasarle también los valores oscuros de `palette.json`
+   (punto 2).
 
 Hecho en la fase 04: tokens en `apps/client/tailwind.config.js` (desde la fase 10 salen de `src/theme/palette.json`, con los dos temas) y fuentes en `src/theme/fonts.ts`. **Ojo:** el README del diseño llama a la fuente `BalooTwo_*`, pero el paquete la exporta como `Baloo2_*`; en el código manda `Baloo2_*`.
