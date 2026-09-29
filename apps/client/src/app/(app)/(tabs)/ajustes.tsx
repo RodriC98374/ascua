@@ -11,7 +11,7 @@ import { ExportSection } from '@/features/export/export-section';
 import { ReminderSettingsSection } from '@/features/reminders/reminder-settings';
 import { SoundsSection } from '@/features/sounds/sounds-section';
 
-/** Preferencias y cuenta. Los hábitos se crean, editan y ordenan desde Hoy. */
+/** Preferencias y, al final, la cuenta. Los hábitos se crean, editan y ordenan desde Hoy. */
 export default function SettingsScreen() {
   const uid = useUid();
   const { user } = useSession();
@@ -22,19 +22,6 @@ export default function SettingsScreen() {
     <Screen edges={['top']}>
       <View className="gap-8">
         <Text className="font-heading-extrabold text-display-md text-ink">Ajustes</Text>
-
-        <View className="gap-3">
-          <Text className="font-heading text-heading-md text-ink">Cuenta</Text>
-          <Card className="gap-4">
-            <View className="gap-0.5">
-              <Text className="font-body-semibold text-caption text-ink-muted">
-                Sesión iniciada como
-              </Text>
-              <Text className="font-body-bold text-body text-ink">{user?.email}</Text>
-            </View>
-            <Button label="Cerrar sesión" variant="secondary" onPress={signOut} />
-          </Card>
-        </View>
 
         <ReminderSettingsSection />
 
@@ -68,6 +55,20 @@ export default function SettingsScreen() {
             </Card>
           </View>
         )}
+
+        {/* Al final: cerrar sesión no debe quedar a mano de un toque sin querer. */}
+        <View className="gap-3">
+          <Text className="font-heading text-heading-md text-ink">Cuenta</Text>
+          <Card className="gap-4">
+            <View className="gap-0.5">
+              <Text className="font-body-semibold text-caption text-ink-muted">
+                Sesión iniciada como
+              </Text>
+              <Text className="font-body-bold text-body text-ink">{user?.email}</Text>
+            </View>
+            <Button label="Cerrar sesión" variant="secondary" onPress={signOut} />
+          </Card>
+        </View>
       </View>
     </Screen>
   );

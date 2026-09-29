@@ -41,7 +41,6 @@ export function QuantityCheck({
   weeklyCaption,
   trailing,
 }: QuantityCheckProps) {
-  const colors = useThemeColors();
   const isPrimary = tier === 'primary';
 
   function increment() {
@@ -62,23 +61,11 @@ export function QuantityCheck({
   }
 
   return (
-    <View
-      className={`bg-surface-200 gap-2 ${isPrimary ? 'rounded-lg px-4 py-3' : 'min-h-12 px-0 py-2'}`}
-      style={
-        isPrimary
-          ? {
-              shadowColor: colors.shadowNeutral,
-              shadowOffset: { width: 0, height: 1 },
-              shadowOpacity: 0.08,
-              shadowRadius: 2,
-              elevation: 1,
-            }
-          : undefined
-      }
-    >
+    // Una fila más de la tarjeta de su sección, como las casillas.
+    <View className="bg-surface-200 min-h-14 gap-2 py-3">
       <View className="flex-row items-center gap-3">
         <Text
-          className={`flex-1 ${isPrimary ? 'font-heading text-heading-sm text-ink' : 'font-body text-body text-ink-muted'}`}
+          className={`flex-1 ${isPrimary ? 'font-heading text-heading-sm' : 'font-body-semibold text-body'} ${isDone ? 'text-ink-muted' : 'text-ink'}`}
         >
           {name}
         </Text>
@@ -125,25 +112,25 @@ function Stepper({
 }) {
   const colors = useThemeColors();
   return (
-    <View className="flex-row items-center gap-1">
+    <View className="flex-row items-center gap-2">
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Restar uno"
         disabled={disabled}
         onPress={onDecrement}
-        className={`border-border h-9 w-9 items-center justify-center rounded-full border-2 ${disabled ? 'opacity-30' : 'active:opacity-85'}`}
+        className={`border-border h-11 w-11 items-center justify-center rounded-full border-2 ${disabled ? 'opacity-30' : 'active:opacity-85'}`}
       >
-        <MinusIcon size={16} color={colors.inkMuted} />
+        <MinusIcon size={18} color={colors.inkMuted} />
       </Pressable>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Sumar uno"
         disabled={disabled}
         onPress={onIncrement}
-        className={`h-9 w-9 items-center justify-center rounded-full ${disabled ? 'opacity-30' : 'active:opacity-85'}`}
+        className={`h-11 w-11 items-center justify-center rounded-full ${disabled ? 'opacity-30' : 'active:opacity-85'}`}
         style={{ backgroundColor: color }}
       >
-        <PlusIcon size={16} color={colors.inkOnFill} />
+        <PlusIcon size={18} color={colors.inkOnFill} />
       </Pressable>
     </View>
   );

@@ -15,6 +15,7 @@ import { Pressable, Text, View } from 'react-native';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ChevronIcon } from '@/components/ui/icons';
+import { SectionHeader } from '@/components/ui/section-header';
 import { useThemeColors } from '@/theme/colors';
 
 import { TaskActions } from './task-actions';
@@ -48,14 +49,12 @@ export function TasksSection({ tasks, today, taskPoints, onToggle }: TasksSectio
   );
 
   return (
-    <View className="gap-3">
-      <View className="min-h-11 flex-row items-center gap-3">
-        <Text className="font-heading text-heading-md text-ink">Tareas</Text>
-        <Text className="font-body-bold text-caption text-ink-muted flex-1">
-          {forToday.length > 0 && `${list.doneToday.length} de ${forToday.length}`}
-        </Text>
-        <Button label="Agregar" variant="link" onPress={() => router.push('/tasks/new')} />
-      </View>
+    <View className="gap-2">
+      <SectionHeader
+        title="Tareas"
+        progress={{ done: list.doneToday.length, total: forToday.length }}
+        action={<Button label="Agregar" variant="link" onPress={() => router.push('/tasks/new')} />}
+      />
 
       {forToday.length > 0 ? (
         <Card className="py-1">{forToday.map(row)}</Card>

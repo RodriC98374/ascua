@@ -68,8 +68,8 @@ export function Toggle({ value, onChange, accessibilityLabel }: ToggleProps) {
               height: 24,
               width: 24,
               borderRadius: 12,
-              // En oscuro el pulgar va claro: el fondo de pantalla desaparecería sobre la pista.
-              backgroundColor: isDark ? colors.ink : colors.surface100,
+              // Blanco en claro; en oscuro va claro: el fondo de pantalla desaparecería sobre la pista.
+              backgroundColor: isDark ? colors.ink : colors.surface200,
               // shadow-sm del diseño.
               shadowColor: colors.shadowNeutral,
               shadowOffset: { width: 0, height: 1 },

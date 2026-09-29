@@ -2,15 +2,11 @@ import { HABIT_POINTS, type HabitTier } from '@ascua/shared';
 import type { ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
-import { useThemeColors } from '@/theme/colors';
-
 import { Checkbox, FloatingPoints, useCheckToggle } from './check-parts';
 import { SwipeToCheckRow } from './swipe-to-check-row';
 
-/** `rounded-lg` de la ficha de un principal. */
-const PRIMARY_ROW_RADIUS = 18;
-/** Las secundarias no tienen forma propia: el fondo de atrás usa `rounded-md`. */
-export const SECONDARY_ROW_RADIUS = 12;
+/** Las filas no tienen forma propia (van en una tarjeta): el fondo de atrás usa `rounded-md`. */
+export const ROW_RADIUS = 12;
 
 interface HabitCheckProps {
   name: string;
@@ -31,9 +27,8 @@ interface HabitCheckProps {
 
 /**
  * Fila de un hábito del día: tocar la casilla o el nombre, o deslizar la fila a la derecha, marca y
- * desmarca. La sección ya dice si es principal o secundario; los principales van en su propia
- * ficha (cuentan para la racha) y los secundarios, como filas simples dentro de una tarjeta
- * compartida.
+ * desmarca. La sección ya dice si es principal o secundario; todas van como filas de una tarjeta
+ * por sección, como una lista del celular. Hecho, el nombre se apaga un poco: lo pendiente resalta.
  */
 export function HabitCheck({
   name,
@@ -46,7 +41,6 @@ export function HabitCheck({
   trailing,
   caption,
 }: HabitCheckProps) {
-  const colors = useThemeColors();
   const check = useCheckToggle(isDone, onToggle);
   const isPrimary = tier === 'primary';
 
@@ -55,25 +49,12 @@ export function HabitCheck({
       isDone={isDone}
       color={color}
       isDisabled={isToggleDisabled}
-      borderRadius={isPrimary ? PRIMARY_ROW_RADIUS : SECONDARY_ROW_RADIUS}
+      borderRadius={ROW_RADIUS}
       onSwipeStart={check.onSwipeStart}
       onCommit={check.toggle}
     >
-      <View
-        // Fondo opaco también en las secundarias (el de su tarjeta): tapa lo que aparece detrás.
-        className={`bg-surface-200 flex-row items-center gap-1 ${isPrimary ? 'min-h-14 rounded-lg pl-4 pr-1' : 'min-h-12'}`}
-        style={
-          isPrimary
-            ? {
-                shadowColor: colors.shadowNeutral,
-                shadowOffset: { width: 0, height: 1 },
-                shadowOpacity: 0.08,
-                shadowRadius: 2,
-                elevation: 1,
-              }
-            : undefined
-        }
-      >
+      {/* Fondo opaco (el de la tarjeta): tapa lo que aparece detrás al deslizar. */}
+      <View className="bg-surface-200 min-h-14 flex-row items-center gap-1">
         <Pressable
           accessibilityRole="checkbox"
           accessibilityState={{ checked: isDone, disabled: isToggleDisabled }}
@@ -84,16 +65,12 @@ export function HabitCheck({
           className={`min-h-11 flex-1 flex-row items-center gap-3 py-2 ${isToggleDisabled ? '' : 'active:opacity-85'}`}
         >
           <View>
-            <Checkbox isDone={isDone} size={isPrimary ? 28 : 24} color={color} />
+            <Checkbox isDone={isDone} size={28} color={color} />
             <FloatingPoints burst={check.pointsBurst} amount={HABIT_POINTS[tier]} />
           </View>
           <View className="flex-1">
             <Text
-              className={
-                isPrimary
-                  ? 'font-heading text-heading-sm text-ink'
-                  : 'font-body text-body text-ink-muted'
-              }
+              className={`${isPrimary ? 'font-heading text-heading-sm' : 'font-body-semibold text-body'} ${isDone ? 'text-ink-muted' : 'text-ink'}`}
             >
               {name}
             </Text>

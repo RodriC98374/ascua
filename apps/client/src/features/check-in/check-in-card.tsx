@@ -14,7 +14,7 @@ import { selectionFeedback } from '@/features/celebration/haptics';
 import { useActiveColorScheme, useThemeColors } from '@/theme/colors';
 
 import { useCheckInColors } from './check-in-colors';
-import { CHECK_IN_LABELS, checkInStatusText } from './check-in-text';
+import { CHECK_IN_LABELS, checkInLevelLabel, checkInStatusText } from './check-in-text';
 
 const VALUES = Array.from(
   { length: CHECK_IN_MAX - CHECK_IN_MIN + 1 },
@@ -28,14 +28,16 @@ interface CheckInCardProps {
 
 export function CheckInCard({ checkIn, onAnswer }: CheckInCardProps) {
   return (
-    <View className="gap-3">
+    <View className="gap-2">
       <View className="gap-0.5">
-        <Text className="font-heading text-heading-md text-ink">¿Cómo estás hoy?</Text>
+        <Text accessibilityRole="header" className="font-heading text-heading-md text-ink">
+          ¿Cómo estás hoy?
+        </Text>
         <Text className="font-body-semibold text-caption text-ink-muted">
           {checkInStatusText(checkIn)}
         </Text>
       </View>
-      <Card className="gap-4">
+      <Card className="gap-5">
         {CHECK_IN_DIMENSIONS.map((dimension) => (
           <ScaleRow
             key={dimension}
@@ -64,40 +66,43 @@ function ScaleRow({
   const colors = useThemeColors();
   const scaleColor = useCheckInColors()[dimension];
   // En claro, los colores de escala son oscuros y llevan texto blanco; en oscuro, al revés.
-  const selectedText = useActiveColorScheme() === 'dark' ? colors.inkOnFill : colors.surface100;
-  const { name, low, high } = CHECK_IN_LABELS[dimension];
+  const filledText = useActiveColorScheme() === 'dark' ? colors.inkOnFill : colors.surface200;
+  const { name, levels } = CHECK_IN_LABELS[dimension];
   return (
-    <View className="gap-1.5">
-      <Text className="font-body-bold text-body text-ink">{name}</Text>
-      <View accessibilityRole="radiogroup" accessibilityLabel={name} className="flex-row gap-2">
+    <View className="gap-2">
+      <View className="flex-row items-baseline justify-between gap-2">
+        <Text className="font-body-bold text-body text-ink">{name}</Text>
+        <Text
+          className="font-body-bold text-body"
+          style={{ color: value === null ? colors.inkFaint : scaleColor }}
+        >
+          {checkInLevelLabel(dimension, value)}
+        </Text>
+      </View>
+      {/* Barra de nivel: se llena hasta el valor elegido, como el volumen del celular. */}
+      <View accessibilityRole="radiogroup" accessibilityLabel={name} className="flex-row gap-1.5">
         {VALUES.map((option) => {
           const isSelected = option === value;
+          const isFilled = value !== null && option <= value;
           return (
             <Pressable
               key={option}
               accessibilityRole="radio"
-              accessibilityLabel={`${name}: ${option} de ${CHECK_IN_MAX}`}
+              accessibilityLabel={`${name}: ${option} de ${CHECK_IN_MAX}, ${levels[option - CHECK_IN_MIN]}`}
               accessibilityState={{ checked: isSelected }}
               onPress={() => onChange(isSelected ? null : option)}
-              className="h-11 flex-1 items-center justify-center rounded-full border-2 active:opacity-85"
-              style={{
-                borderColor: isSelected ? scaleColor : colors.border,
-                backgroundColor: isSelected ? scaleColor : colors.surface300,
-              }}
+              className="h-11 flex-1 items-center justify-center rounded-md active:opacity-85"
+              style={{ backgroundColor: isFilled ? scaleColor : colors.surface300 }}
             >
               <Text
                 className="font-body-extrabold text-button"
-                style={{ color: isSelected ? selectedText : colors.inkMuted }}
+                style={{ color: isFilled ? filledText : colors.inkMuted }}
               >
                 {option}
               </Text>
             </Pressable>
           );
         })}
-      </View>
-      <View className="flex-row justify-between">
-        <Text className="font-body-semibold text-caption text-ink-faint">{low}</Text>
-        <Text className="font-body-semibold text-caption text-ink-faint">{high}</Text>
       </View>
     </View>
   );

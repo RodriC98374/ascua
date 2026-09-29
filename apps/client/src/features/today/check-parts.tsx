@@ -52,8 +52,9 @@ export function useCheckToggle(isDone: boolean, onToggle: () => void) {
 }
 
 /**
- * Marcada: relleno pastel con borde y check del tono oscuro del mismo color. Al marcarla el relleno
- * entra con un rebote y el check aparece un instante después; al desmarcarla se apaga rápido.
+ * Casilla redonda, como las listas de pendientes del celular. Marcada: relleno pastel con borde y
+ * check del tono oscuro del mismo color. Al marcarla el relleno entra con un rebote y el check
+ * aparece un instante después; al desmarcarla se apaga rápido.
  */
 export function Checkbox({
   isDone,
@@ -83,17 +84,17 @@ export function Checkbox({
     transform: [{ scale: interpolate(progress.value, [0.45, 1], [0.3, 1], 'clamp') }],
   }));
 
-  const box = { width: size, height: size, borderRadius: 8 };
+  const box = { width: size, height: size, borderRadius: size / 2 };
   const strong = strongHabitColor(color);
   return (
-    <View className="border-border bg-surface-300 border-[1.5px]" style={box}>
+    <View className="border-ink-faint bg-surface-200 border-2" style={box}>
       <Animated.View
         style={[
           {
             ...box,
             position: 'absolute',
-            top: -1.5,
-            left: -1.5,
+            top: -2,
+            left: -2,
             alignItems: 'center',
             justifyContent: 'center',
             backgroundColor: color,

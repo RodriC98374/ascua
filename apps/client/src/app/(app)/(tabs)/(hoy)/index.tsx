@@ -35,6 +35,7 @@ import { Card } from '@/components/ui/card';
 import { Fab } from '@/components/ui/fab';
 import { ArrowIcon, CloudIcon, StarIcon } from '@/components/ui/icons';
 import { Screen } from '@/components/ui/screen';
+import { SectionHeader } from '@/components/ui/section-header';
 import { Sparks } from '@/components/ui/sparks';
 import { celebrationFeedback } from '@/features/celebration/haptics';
 import { StreakCelebrationModal } from '@/features/celebration/streak-celebration';
@@ -316,7 +317,13 @@ function TodayContent({
                   progress={summary.primaryProgress}
                   action={reorderAction}
                 >
-                  <View className="gap-2">{summary.primaries.map(row)}</View>
+                  <Card className="py-1">
+                    {summary.primaries.map((habit, index) => (
+                      <View key={habit.id} className={index > 0 ? 'border-border border-t' : ''}>
+                        {row(habit)}
+                      </View>
+                    ))}
+                  </Card>
                 </HabitSection>
               )}
               {summary.secondaries.length > 0 && (
@@ -362,10 +369,8 @@ function TodayContent({
                 </HabitSection>
               )}
               {summary.notToday.length > 0 && (
-                <View className="gap-3">
-                  <Text className="font-heading text-heading-md text-ink-muted">
-                    No te tocan hoy
-                  </Text>
+                <View className="gap-2">
+                  <SectionHeader title="No te tocan hoy" isMuted />
                   <Card className="py-1">
                     {summary.notToday.map((habit, index) => (
                       <View key={habit.id} className={index > 0 ? 'border-border border-t' : ''}>
@@ -422,14 +427,8 @@ function HabitSection({
   children: ReactNode;
 }) {
   return (
-    <View className="gap-3">
-      <View className="min-h-11 flex-row items-center gap-3">
-        <Text className="font-heading text-heading-md text-ink">{title}</Text>
-        <Text className="font-body-bold text-caption text-ink-muted flex-1">
-          {progress.done} de {progress.total}
-        </Text>
-        {action}
-      </View>
+    <View className="gap-2">
+      <SectionHeader title={title} progress={progress} action={action} />
       {children}
     </View>
   );

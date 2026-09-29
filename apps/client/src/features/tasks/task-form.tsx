@@ -11,6 +11,7 @@ import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/button';
+import { choiceContainer, choiceLabel } from '@/components/ui/choice-styles';
 import { TextField } from '@/components/ui/text-field';
 import type { TaskInput } from '@/operations/tasks';
 
@@ -83,16 +84,12 @@ export function TaskForm({ today, task, onSubmit }: TaskFormProps) {
                 accessibilityRole="radio"
                 accessibilityState={{ checked: isSelected }}
                 onPress={() => setDraft((current) => ({ ...current, size: option.size }))}
-                className={`min-h-14 flex-1 items-center justify-center rounded-md border-2 py-1 ${isSelected ? 'border-ember-strong bg-warning-soft' : 'border-border bg-surface-200 active:opacity-85'}`}
+                className={`min-h-14 flex-1 items-center justify-center rounded-md border-2 py-1 ${choiceContainer(isSelected)}`}
               >
-                <Text
-                  className={`font-body-extrabold text-button ${isSelected ? 'text-ember-strong' : 'text-ink-muted'}`}
-                >
+                <Text className={`font-body-extrabold text-button ${choiceLabel(isSelected)}`}>
                   {option.label}
                 </Text>
-                <Text
-                  className={`font-body-semibold text-caption ${isSelected ? 'text-ember-strong' : 'text-ink-muted'}`}
-                >
+                <Text className={`font-body-semibold text-caption ${choiceLabel(isSelected)}`}>
                   {TASK_POINTS[option.size]} pts
                 </Text>
               </Pressable>
@@ -116,11 +113,9 @@ export function TaskForm({ today, task, onSubmit }: TaskFormProps) {
                 accessibilityRole="radio"
                 accessibilityState={{ checked: isSelected }}
                 onPress={() => setDraft((current) => ({ ...current, dueDateKey: day.dateKey }))}
-                className={`min-h-11 justify-center rounded-full border-2 px-4 ${isSelected ? 'border-ink bg-surface-300' : 'border-border bg-surface-200 active:opacity-85'}`}
+                className={`min-h-11 justify-center rounded-full border-2 px-4 ${choiceContainer(isSelected)}`}
               >
-                <Text
-                  className={`font-body-extrabold text-button ${isSelected ? 'text-ink' : 'text-ink-muted'}`}
-                >
+                <Text className={`font-body-extrabold text-button ${choiceLabel(isSelected)}`}>
                   {day.label}
                 </Text>
               </Pressable>

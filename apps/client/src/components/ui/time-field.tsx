@@ -1,8 +1,11 @@
 import { useState } from 'react';
-import { Modal, Pressable, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
+import { BottomSheet } from '@/components/ui/bottom-sheet';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { ClockIcon } from '@/components/ui/icons';
+import { WHEEL_ITEM_HEIGHT, WHEEL_VISIBLE_ITEMS, WheelPicker } from '@/components/ui/wheel-picker';
+import { selectionFeedback } from '@/features/celebration/haptics';
 import { useThemeColors } from '@/theme/colors';
 
 interface TimeFieldProps {
@@ -18,6 +21,14 @@ interface TimeFieldProps {
 const HOURS = Array.from({ length: 24 }, (_, hour) => hour);
 const MINUTES = Array.from({ length: 12 }, (_, index) => index * 5);
 
+/** Horas rápidas: las que más se eligen para un recordatorio, a un toque. */
+const PRESETS = [
+  { label: 'Mañana', time: [7, 0] },
+  { label: 'Mediodía', time: [12, 0] },
+  { label: 'Tarde', time: [18, 0] },
+  { label: 'Noche', time: [21, 0] },
+] as const satisfies readonly { label: string; time: readonly [number, number] }[];
+
 const pad = (value: number) => String(value).padStart(2, '0');
 
 function splitTime(value: string): [number, number] {
@@ -26,8 +37,8 @@ function splitTime(value: string): [number, number] {
 }
 
 /**
- * Fila con una hora 'HH:mm' que abre un selector de hora y minutos (cada 5). Igual en Android y
- * en web, sin selectores nativos.
+ * Fila con una hora 'HH:mm' que abre una hoja con dos ruedas (hora y minutos, cada 5) y horas
+ * rápidas. Igual en Android y en web, sin selectores nativos.
  */
 export function TimeField({ label, value, onChange, hint, isDisabled = false }: TimeFieldProps) {
   const colors = useThemeColors();
@@ -52,106 +63,92 @@ export function TimeField({ label, value, onChange, hint, isDisabled = false }: 
         accessibilityState={{ disabled: isDisabled }}
         disabled={isDisabled}
         onPress={() => setDraft(splitTime(value))}
-        className={`min-h-12 flex-row items-center gap-3 py-2 ${isDisabled ? 'opacity-50' : ''}`}
+        className={`min-h-12 flex-row items-center gap-3 py-2 ${isDisabled ? 'opacity-50' : 'active:opacity-85'}`}
       >
         <View className="flex-1 gap-0.5">
           <Text className="font-body-bold text-body text-ink">{label}</Text>
           {hint && <Text className="font-body text-caption text-ink-muted">{hint}</Text>}
         </View>
-        <View className="bg-surface-300 min-w-16 items-center rounded-sm px-3 py-2">
+        <View className="bg-warning-soft flex-row items-center gap-1.5 rounded-full px-3 py-1.5">
+          <ClockIcon size={16} color={colors.emberStrong} />
           <Text className="font-heading text-heading-sm text-ember-strong">{value}</Text>
         </View>
       </Pressable>
 
-      <Modal
-        transparent
-        visible={draft !== null}
-        animationType="fade"
-        statusBarTranslucent
-        navigationBarTranslucent
-        onRequestClose={() => setDraft(null)}
-      >
-        <View className="flex-1 items-center justify-center px-4">
-          <Pressable
-            accessibilityLabel="Cancelar"
-            onPress={() => setDraft(null)}
-            style={{ position: 'absolute', inset: 0, backgroundColor: colors.scrim }}
+      <BottomSheet isOpen={draft !== null} title={label} onClose={() => setDraft(null)}>
+        <View className="items-center justify-center">
+          {/* Franja de la opción elegida, detrás de las dos ruedas. */}
+          <View
+            pointerEvents="none"
+            className="bg-surface-300 absolute left-0 right-0 rounded-md"
+            style={{
+              top: ((WHEEL_VISIBLE_ITEMS - 1) / 2) * WHEEL_ITEM_HEIGHT,
+              height: WHEEL_ITEM_HEIGHT,
+            }}
           />
-          <View accessibilityViewIsModal className="w-full max-w-sm">
-            <Card className="gap-4">
-              <View className="flex-row items-baseline justify-between">
-                <Text accessibilityRole="header" className="font-heading text-heading-md text-ink">
-                  {label}
-                </Text>
-                <Text className="font-heading-extrabold text-heading-lg text-ember-strong">
-                  {pad(hours)}:{pad(minutes)}
-                </Text>
-              </View>
-              <OptionGrid
-                title="Hora"
-                options={HOURS}
-                selected={hours}
-                onSelect={(hour) => setDraft([hour, minutes])}
-              />
-              <OptionGrid
-                title="Minutos"
-                options={minuteOptions}
-                selected={minutes}
-                onSelect={(minute) => setDraft([hours, minute])}
-              />
-              <View className="flex-row gap-2">
-                <View className="flex-1">
-                  <Button label="Cancelar" variant="secondary" onPress={() => setDraft(null)} />
-                </View>
-                <View className="flex-1">
-                  <Button label="Guardar" onPress={confirm} />
-                </View>
-              </View>
-            </Card>
+          <View className="flex-row items-center gap-2">
+            <WheelPicker
+              label="Hora"
+              options={HOURS}
+              value={hours}
+              format={pad}
+              onChange={(hour) => setDraft((current) => [hour, current?.[1] ?? minutes])}
+            />
+            <Text className="font-heading text-heading-lg text-ink">:</Text>
+            <WheelPicker
+              label="Minutos"
+              options={minuteOptions}
+              value={minutes}
+              format={pad}
+              onChange={(minute) => setDraft((current) => [current?.[0] ?? hours, minute])}
+            />
           </View>
         </View>
-      </Modal>
-    </>
-  );
-}
 
-interface OptionGridProps {
-  title: string;
-  options: readonly number[];
-  selected: number;
-  onSelect: (value: number) => void;
-}
-
-function OptionGrid({ title, options, selected, onSelect }: OptionGridProps) {
-  return (
-    <View className="gap-2">
-      <Text className="font-body-bold text-caption text-ink-muted">{title}</Text>
-      <View
-        accessibilityRole="radiogroup"
-        accessibilityLabel={title}
-        className="flex-row flex-wrap gap-1"
-      >
-        {options.map((option) => {
-          const isSelected = option === selected;
-          return (
-            <Pressable
-              key={option}
-              accessibilityRole="radio"
-              accessibilityState={{ checked: isSelected }}
-              onPress={() => onSelect(option)}
-              className={`min-h-11 items-center justify-center rounded-sm ${isSelected ? 'bg-ember' : 'bg-surface-300'}`}
-              // Seis por fila, con el espacio entre ellas.
-              style={{ width: '15%' }}
-            >
-              <Text
-                className={`font-body-bold text-body ${isSelected ? 'text-ink-on-fill' : 'text-ink'}`}
+        <View
+          accessibilityRole="radiogroup"
+          accessibilityLabel="Horas rápidas"
+          className="flex-row gap-2"
+        >
+          {PRESETS.map((preset) => {
+            const [presetHours, presetMinutes] = preset.time;
+            const isSelected = presetHours === hours && presetMinutes === minutes;
+            return (
+              <Pressable
+                key={preset.label}
+                accessibilityRole="radio"
+                accessibilityState={{ checked: isSelected }}
+                accessibilityLabel={`${preset.label}, ${pad(presetHours)}:${pad(presetMinutes)}`}
+                onPress={() => {
+                  selectionFeedback();
+                  setDraft([presetHours, presetMinutes]);
+                }}
+                className={`min-h-12 flex-1 items-center justify-center rounded-md border-[1.5px] py-1.5 ${isSelected ? 'border-ember-strong bg-warning-soft' : 'border-border bg-surface-200 active:opacity-85'}`}
               >
-                {pad(option)}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
-    </View>
+                <Text
+                  className={`font-body-bold text-caption ${isSelected ? 'text-ember-strong' : 'text-ink-muted'}`}
+                >
+                  {preset.label}
+                </Text>
+                <Text
+                  className={`font-heading text-heading-sm ${isSelected ? 'text-ember-strong' : 'text-ink'}`}
+                >
+                  {pad(presetHours)}:{pad(presetMinutes)}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+
+        <View className="flex-row gap-2">
+          <View className="flex-1">
+            <Button label="Cancelar" variant="secondary" onPress={() => setDraft(null)} />
+          </View>
+          <View className="flex-1">
+            <Button label="Listo" onPress={confirm} />
+          </View>
+        </View>
+      </BottomSheet>
+    </>
   );
 }

@@ -1,8 +1,8 @@
 {
   "light": {
-    "surface-100": "#FFFFFF",
-    "surface-200": "#FAFAF9",
-    "surface-300": "#F1F0EE",
+    "surface-100": "#F5F4F2",
+    "surface-200": "#FFFFFF",
+    "surface-300": "#EBE9E6",
     "border": "#E0DEDA",
     "ink": "#1C1917",
     "ink-muted": "#57534E",

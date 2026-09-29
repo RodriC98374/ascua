@@ -1,13 +1,25 @@
-// Textos del check-in (fase 15, D22): nombre de cada escala y qué significan sus extremos.
-import { CHECK_IN_DIMENSIONS, type CheckIn, type CheckInDimension } from '@ascua/shared';
+// Textos del check-in (fase 15, D22): nombre de cada escala y qué significa cada nivel.
+import {
+  CHECK_IN_DIMENSIONS,
+  CHECK_IN_MIN,
+  type CheckIn,
+  type CheckInDimension,
+} from '@ascua/shared';
 
-export const CHECK_IN_LABELS: Readonly<
-  Record<CheckInDimension, { name: string; low: string; high: string }>
-> = {
-  mood: { name: 'Ánimo', low: 'Muy mal', high: 'Muy bien' },
-  energy: { name: 'Energía', low: 'Sin energía', high: 'A tope' },
-  motivation: { name: 'Motivación', low: 'Nada', high: 'Mucha' },
-};
+type Levels = readonly [string, string, string, string, string];
+
+export const CHECK_IN_LABELS: Readonly<Record<CheckInDimension, { name: string; levels: Levels }>> =
+  {
+    mood: { name: 'Ánimo', levels: ['Muy mal', 'Mal', 'Normal', 'Bien', 'Muy bien'] },
+    energy: { name: 'Energía', levels: ['Sin energía', 'Poca', 'Normal', 'Buena', 'A tope'] },
+    motivation: { name: 'Motivación', levels: ['Nada', 'Poca', 'Algo', 'Bastante', 'Mucha'] },
+  };
+
+/** El nivel elegido en palabras ("Bien", "A tope"), junto al nombre de la escala. */
+export function checkInLevelLabel(dimension: CheckInDimension, value: number | null): string {
+  if (value === null) return 'Sin responder';
+  return CHECK_IN_LABELS[dimension].levels[value - CHECK_IN_MIN] ?? String(value);
+}
 
 /** '3,5' (coma decimal, como se escribe en español); una raya sin respuestas. */
 export function formatCheckInAverage(value: number | null): string {

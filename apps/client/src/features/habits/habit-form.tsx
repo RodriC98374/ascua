@@ -7,6 +7,7 @@ import {
   HABIT_NAME_MAX_LENGTH,
   MAX_PRIMARY_HABITS,
   reminderDaysFor,
+  strongHabitColor,
   TARGET_UNIT_MAX_LENGTH,
   TIMES_PER_WEEK_MAX,
   TIMES_PER_WEEK_MIN,
@@ -15,10 +16,13 @@ import {
   type HabitScheduleType,
   type HabitTier,
 } from '@ascua/shared';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { choiceContainer, choiceLabel } from '@/components/ui/choice-styles';
+import { CheckIcon } from '@/components/ui/icons';
 import { TextField } from '@/components/ui/text-field';
 import { TimeField } from '@/components/ui/time-field';
 import { Toggle } from '@/components/ui/toggle';
@@ -28,6 +32,7 @@ import {
   validateHabit,
   type HabitDraft,
 } from '@/features/habits/habit-validation';
+import { Checkbox } from '@/features/today/check-parts';
 import type { NewHabitInput } from '@/operations/habits';
 
 interface HabitFormProps {
@@ -75,7 +80,59 @@ function reminderHelp(schedule: HabitDraft['schedule']): string {
   return 'Llega a tu celular esos días si todavía no lo marcaste.';
 }
 
-/** Círculos de L a D; marca los elegidos. Sirve para los días fijos y para el recordatorio. */
+/** Un grupo del formulario: título y una tarjeta con sus campos. */
+function FormSection({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <View className="gap-2">
+      <Text accessibilityRole="header" className="font-heading text-heading-md text-ink">
+        {title}
+      </Text>
+      <Card className="gap-5">{children}</Card>
+    </View>
+  );
+}
+
+function FieldLabel({ children }: { children: ReactNode }) {
+  return <Text className="font-body-bold text-body text-ink">{children}</Text>;
+}
+
+function Hint({ children }: { children: ReactNode }) {
+  return <Text className="font-body-semibold text-caption text-ink-muted">{children}</Text>;
+}
+
+function FieldError({ children }: { children: ReactNode }) {
+  return (
+    <Text accessibilityLiveRegion="polite" className="font-body-bold text-caption text-error">
+      {children}
+    </Text>
+  );
+}
+
+/** Lo que ya no se puede cambiar al editar, en gris y con el porqué. */
+function FixedValue({ value, note }: { value: string; note?: string }) {
+  return (
+    <View className="bg-surface-100 gap-0.5 rounded-md px-3 py-2.5">
+      <Text className="font-body-bold text-body text-ink">{value}</Text>
+      {note && <Hint>{note}</Hint>}
+    </View>
+  );
+}
+
+/** Círculo de opción única: deja claro que se elige una sola de la lista. */
+function RadioDot({ isSelected }: { isSelected: boolean }) {
+  return (
+    <View
+      className={`h-5 w-5 items-center justify-center rounded-full border-2 ${isSelected ? 'border-ember-strong' : 'border-ink-faint'}`}
+    >
+      {isSelected && <View className="bg-ember-strong h-2.5 w-2.5 rounded-full" />}
+    </View>
+  );
+}
+
+/**
+ * Días de L a D en una sola fila que se reparte el ancho (a 360 px no caben siete círculos de 44);
+ * marca los elegidos. Sirve para los días fijos y para el recordatorio.
+ */
 function WeekdayPicker({
   days,
   selected,
@@ -86,7 +143,7 @@ function WeekdayPicker({
   onToggle: (isoWeekday: number) => void;
 }) {
   return (
-    <View className="flex-row flex-wrap gap-2">
+    <View className="flex-row gap-1.5">
       {WEEKDAY_OPTIONS.filter((day) => days.includes(day.isoWeekday)).map((day) => {
         const isSelected = selected.includes(day.isoWeekday);
         return (
@@ -95,11 +152,9 @@ function WeekdayPicker({
             accessibilityRole="checkbox"
             accessibilityState={{ checked: isSelected }}
             onPress={() => onToggle(day.isoWeekday)}
-            className={`h-11 w-11 items-center justify-center rounded-full border-2 ${isSelected ? 'border-ink bg-surface-300' : 'border-border bg-surface-200 active:opacity-85'}`}
+            className={`h-11 max-w-11 flex-1 items-center justify-center rounded-full border-2 ${choiceContainer(isSelected)}`}
           >
-            <Text
-              className={`font-body-extrabold text-button ${isSelected ? 'text-ink' : 'text-ink-muted'}`}
-            >
+            <Text className={`font-body-extrabold text-button ${choiceLabel(isSelected)}`}>
               {day.label}
             </Text>
           </Pressable>
@@ -209,10 +264,11 @@ export function HabitForm({ habits, habit, onSubmit }: HabitFormProps) {
 
   const selectedHelp = TIER_OPTIONS.find((option) => option.tier === draft.tier)?.help;
   const tierError = visibleError('tier');
+  const reminderDaysError = visibleError('reminderDays');
 
   return (
     <View className="gap-6">
-      <View className="gap-4">
+      <FormSection title="Lo básico">
         <TextField
           label="Nombre"
           value={draft.name}
@@ -236,145 +292,137 @@ export function HabitForm({ habits, habit, onSubmit }: HabitFormProps) {
           error={visibleError('description')}
           hint={`${draft.description.trim().length}/${HABIT_DESCRIPTION_MAX_LENGTH}`}
         />
-      </View>
+      </FormSection>
 
-      <View className="gap-2">
-        <Text className="font-body-bold text-caption text-ink-muted">Tipo</Text>
-        <View accessibilityRole="radiogroup" className="flex-row gap-2">
-          {TIER_OPTIONS.map((option) => {
-            const isSelected = option.tier === draft.tier;
-            const isDisabled = option.tier === 'primary' && !isPrimaryAllowed;
-            return (
-              <Pressable
-                key={option.tier}
-                accessibilityRole="radio"
-                accessibilityState={{ checked: isSelected, disabled: isDisabled }}
-                disabled={isDisabled}
-                onPress={() => update('tier', option.tier)}
-                className={`min-h-12 flex-1 items-center justify-center rounded-md border-2 ${isSelected ? 'border-ember-strong bg-warning-soft' : 'border-border bg-surface-200'} ${isDisabled ? 'opacity-40' : 'active:opacity-85'}`}
-              >
-                <Text
-                  className={`font-body-extrabold text-button ${isSelected ? 'text-ember-strong' : 'text-ink-muted'}`}
+      <FormSection title="Cómo cuenta">
+        <View className="gap-2">
+          <FieldLabel>Tipo</FieldLabel>
+          <View accessibilityRole="radiogroup" className="flex-row gap-2">
+            {TIER_OPTIONS.map((option) => {
+              const isSelected = option.tier === draft.tier;
+              const isDisabled = option.tier === 'primary' && !isPrimaryAllowed;
+              return (
+                <Pressable
+                  key={option.tier}
+                  accessibilityRole="radio"
+                  accessibilityState={{ checked: isSelected, disabled: isDisabled }}
+                  disabled={isDisabled}
+                  onPress={() => update('tier', option.tier)}
+                  className={`min-h-12 flex-1 items-center justify-center rounded-md border-2 ${choiceContainer(isSelected)} ${isDisabled ? 'opacity-40' : ''}`}
                 >
-                  {option.label}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-        <Text className="font-body-semibold text-caption text-ink-muted">{selectedHelp}</Text>
-        {tierError ? (
-          <Text accessibilityLiveRegion="polite" className="font-body-bold text-caption text-error">
-            {tierError}
-          </Text>
-        ) : (
-          !isPrimaryAllowed && (
-            <Text className="font-body-semibold text-caption text-warning">
-              Ya tienes {MAX_PRIMARY_HABITS} hábitos principales. Cambia uno a secundario para
-              elegir este.
-            </Text>
-          )
-        )}
-      </View>
-
-      <View className="gap-2">
-        <Text className="font-body-bold text-caption text-ink-muted">Frecuencia</Text>
-        {isNew ? (
-          <>
-            <View accessibilityRole="radiogroup" className="gap-2">
-              {SCHEDULE_OPTIONS.map((option) => {
-                const isSelected = option.type === draft.schedule.type;
-                return (
-                  <Pressable
-                    key={option.type}
-                    accessibilityRole="radio"
-                    accessibilityState={{ checked: isSelected }}
-                    onPress={() => selectScheduleType(option.type)}
-                    className={`gap-0.5 rounded-md border-2 px-3 py-2 ${isSelected ? 'border-ember-strong bg-warning-soft' : 'border-border bg-surface-200 active:opacity-85'}`}
-                  >
-                    <Text
-                      className={`font-body-extrabold text-button ${isSelected ? 'text-ember-strong' : 'text-ink'}`}
-                    >
-                      {option.label}
-                    </Text>
-                    <Text className="font-body-semibold text-caption text-ink-muted">
-                      {option.help}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-
-            {draft.schedule.type === 'days_of_week' && (
-              <View className="gap-1">
-                <WeekdayPicker
-                  days={WEEKDAY_OPTIONS.map((day) => day.isoWeekday)}
-                  selected={draft.schedule.daysOfWeek}
-                  onToggle={toggleWeekday}
-                />
-                {(hasTriedSubmit || touched.schedule) && errors.schedule && (
-                  <Text
-                    accessibilityLiveRegion="polite"
-                    className="font-body-bold text-caption text-error"
-                  >
-                    {errors.schedule}
+                  <Text className={`font-body-extrabold text-button ${choiceLabel(isSelected)}`}>
+                    {option.label}
                   </Text>
-                )}
-              </View>
-            )}
+                </Pressable>
+              );
+            })}
+          </View>
+          <Hint>{selectedHelp}</Hint>
+          {tierError ? (
+            <FieldError>{tierError}</FieldError>
+          ) : (
+            !isPrimaryAllowed && (
+              <Text className="font-body-semibold text-caption text-warning">
+                Ya tienes {MAX_PRIMARY_HABITS} hábitos principales. Cambia uno a secundario para
+                elegir este.
+              </Text>
+            )
+          )}
+        </View>
 
-            {draft.schedule.type === 'times_per_week' && (
-              <View accessibilityRole="radiogroup" className="flex-row flex-wrap gap-2">
-                {Array.from(
-                  { length: TIMES_PER_WEEK_MAX - TIMES_PER_WEEK_MIN + 1 },
-                  (_, index) => TIMES_PER_WEEK_MIN + index,
-                ).map((n) => {
-                  const isSelected =
-                    draft.schedule.type === 'times_per_week' && draft.schedule.timesPerWeek === n;
+        <View className="gap-2">
+          <FieldLabel>Frecuencia</FieldLabel>
+          {isNew ? (
+            <>
+              <View accessibilityRole="radiogroup" className="gap-2">
+                {SCHEDULE_OPTIONS.map((option) => {
+                  const isSelected = option.type === draft.schedule.type;
                   return (
                     <Pressable
-                      key={n}
+                      key={option.type}
                       accessibilityRole="radio"
                       accessibilityState={{ checked: isSelected }}
-                      onPress={() =>
-                        update('schedule', { type: 'times_per_week', timesPerWeek: n })
-                      }
-                      className={`h-11 w-11 items-center justify-center rounded-full border-2 ${isSelected ? 'border-ink bg-surface-300' : 'border-border bg-surface-200 active:opacity-85'}`}
+                      onPress={() => selectScheduleType(option.type)}
+                      className={`flex-row items-center gap-3 rounded-md border-2 px-3 py-2.5 ${choiceContainer(isSelected)}`}
                     >
-                      <Text
-                        className={`font-body-extrabold text-button ${isSelected ? 'text-ink' : 'text-ink-muted'}`}
-                      >
-                        {n}
-                      </Text>
+                      <RadioDot isSelected={isSelected} />
+                      <View className="flex-1 gap-0.5">
+                        <Text
+                          className={`font-body-extrabold text-button ${isSelected ? 'text-ember-strong' : 'text-ink'}`}
+                        >
+                          {option.label}
+                        </Text>
+                        <Hint>{option.help}</Hint>
+                      </View>
                     </Pressable>
                   );
                 })}
               </View>
-            )}
-          </>
-        ) : (
-          <Text className="font-body text-body text-ink-muted">
-            {describeSchedule(draft.schedule)}. No se puede cambiar: archiva el hábito y crea uno
-            nuevo si hace falta otra frecuencia.
-          </Text>
-        )}
-      </View>
 
-      <View className="gap-2">
-        <View className="flex-row items-center gap-3">
-          <Text className="font-body-bold text-caption text-ink-muted flex-1">
-            Con cantidad (vasos, páginas…)
-          </Text>
-          {isNew && (
-            <Toggle
-              accessibilityLabel="Con cantidad"
-              value={draft.hasTarget}
-              onChange={(hasTarget) => update('hasTarget', hasTarget)}
+              {draft.schedule.type === 'days_of_week' && (
+                <View className="gap-1">
+                  <WeekdayPicker
+                    days={WEEKDAY_OPTIONS.map((day) => day.isoWeekday)}
+                    selected={draft.schedule.daysOfWeek}
+                    onToggle={toggleWeekday}
+                  />
+                  {(hasTriedSubmit || touched.schedule) && errors.schedule && (
+                    <FieldError>{errors.schedule}</FieldError>
+                  )}
+                </View>
+              )}
+
+              {draft.schedule.type === 'times_per_week' && (
+                <View accessibilityRole="radiogroup" className="flex-row flex-wrap gap-2">
+                  {Array.from(
+                    { length: TIMES_PER_WEEK_MAX - TIMES_PER_WEEK_MIN + 1 },
+                    (_, index) => TIMES_PER_WEEK_MIN + index,
+                  ).map((n) => {
+                    const isSelected =
+                      draft.schedule.type === 'times_per_week' && draft.schedule.timesPerWeek === n;
+                    return (
+                      <Pressable
+                        key={n}
+                        accessibilityRole="radio"
+                        accessibilityState={{ checked: isSelected }}
+                        onPress={() =>
+                          update('schedule', { type: 'times_per_week', timesPerWeek: n })
+                        }
+                        className={`h-11 w-11 items-center justify-center rounded-full border-2 ${choiceContainer(isSelected)}`}
+                      >
+                        <Text
+                          className={`font-body-extrabold text-button ${choiceLabel(isSelected)}`}
+                        >
+                          {n}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              )}
+            </>
+          ) : (
+            <FixedValue
+              value={describeSchedule(draft.schedule)}
+              note="No se puede cambiar: archiva el hábito y crea uno nuevo si hace falta otra frecuencia."
             />
           )}
         </View>
-        {isNew
-          ? draft.hasTarget && (
+
+        {isNew ? (
+          <View className="gap-2">
+            <View className="min-h-11 flex-row items-center gap-3">
+              <View className="flex-1 gap-0.5">
+                <FieldLabel>Con cantidad</FieldLabel>
+                <Hint>Para contar vasos, páginas, minutos…</Hint>
+              </View>
+              <Toggle
+                accessibilityLabel="Con cantidad"
+                value={draft.hasTarget}
+                onChange={(hasTarget) => update('hasTarget', hasTarget)}
+              />
+            </View>
+            {draft.hasTarget && (
               <View className="flex-row gap-2">
                 <View className="w-24">
                   <TextField
@@ -400,17 +448,29 @@ export function HabitForm({ habits, habit, onSubmit }: HabitFormProps) {
                   />
                 </View>
               </View>
-            )
-          : draft.hasTarget && (
-              <Text className="font-body text-body text-ink-muted">
-                Meta fija: {draft.targetAmount} {draft.targetUnit} al día.
-              </Text>
             )}
-      </View>
+          </View>
+        ) : (
+          <View className="gap-2">
+            <FieldLabel>Cantidad</FieldLabel>
+            <FixedValue
+              value={
+                draft.hasTarget
+                  ? `${draft.targetAmount} ${draft.targetUnit} al día`
+                  : 'Sin cantidad: se marca hecho o no'
+              }
+              note="Tampoco se puede cambiar después de crearlo."
+            />
+          </View>
+        )}
+      </FormSection>
 
-      <View className="gap-2">
-        <View className="flex-row items-center gap-3">
-          <Text className="font-body-bold text-caption text-ink-muted flex-1">Recordarme</Text>
+      <FormSection title="Recordatorio">
+        <View className="min-h-11 flex-row items-center gap-3">
+          <View className="flex-1 gap-0.5">
+            <FieldLabel>Recordarme</FieldLabel>
+            <Hint>{reminderHelp(draft.schedule)}</Hint>
+          </View>
           <Toggle
             accessibilityLabel="Recordarme"
             value={draft.hasReminder}
@@ -418,85 +478,96 @@ export function HabitForm({ habits, habit, onSubmit }: HabitFormProps) {
           />
         </View>
         {draft.hasReminder && (
-          <View className="gap-2">
-            <TimeField
-              label="Hora"
-              value={draft.reminderTime}
-              onChange={(value) => update('reminderTime', value)}
-            />
-            <WeekdayPicker
-              days={reminderDaysFor(draft.schedule)}
-              selected={draft.reminderDays}
-              onToggle={toggleReminderDay}
-            />
-            <Text className="font-body-semibold text-caption text-ink-muted">
-              {reminderHelp(draft.schedule)}
-            </Text>
-            {visibleError('reminderDays') && (
-              <Text
-                accessibilityLiveRegion="polite"
-                className="font-body-bold text-caption text-error"
-              >
-                {visibleError('reminderDays')}
-              </Text>
-            )}
-          </View>
+          <>
+            <View className="border-border -my-2 border-t">
+              <TimeField
+                label="Hora"
+                value={draft.reminderTime}
+                onChange={(value) => update('reminderTime', value)}
+              />
+            </View>
+            <View className="gap-2">
+              <FieldLabel>Qué días</FieldLabel>
+              <WeekdayPicker
+                days={reminderDaysFor(draft.schedule)}
+                selected={draft.reminderDays}
+                onToggle={toggleReminderDay}
+              />
+              {reminderDaysError && <FieldError>{reminderDaysError}</FieldError>}
+            </View>
+          </>
         )}
-      </View>
+      </FormSection>
 
-      <View className="gap-2">
-        <Text className="font-body-bold text-caption text-ink-muted">Categoría</Text>
-        <View accessibilityRole="radiogroup" className="flex-row flex-wrap gap-2">
-          {HABIT_CATEGORIES.map((option) => {
-            const isSelected = option.id === draft.category;
-            return (
-              <Pressable
-                key={option.id}
-                accessibilityRole="radio"
-                accessibilityState={{ checked: isSelected }}
-                onPress={() => selectCategory(option.id)}
-                className={`min-h-11 flex-row items-center gap-2 rounded-full border-2 px-3 ${isSelected ? 'border-ink bg-surface-300' : 'border-border bg-surface-200 active:opacity-85'}`}
-              >
-                <View className="h-3 w-3 rounded-full" style={{ backgroundColor: option.color }} />
-                <Text
-                  className={`font-body-extrabold text-button ${isSelected ? 'text-ink' : 'text-ink-muted'}`}
-                >
-                  {option.label}
-                </Text>
-              </Pressable>
-            );
-          })}
+      <FormSection title="Aspecto">
+        {/* Vista previa: la casilla de Hoy con el color elegido. */}
+        <View className="bg-surface-100 min-h-14 flex-row items-center gap-3 rounded-md px-3">
+          <Checkbox isDone size={28} color={draft.color} />
+          <Text numberOfLines={1} className="font-heading text-heading-sm text-ink flex-1">
+            {draft.name.trim() || 'Tu hábito'}
+          </Text>
+          <Text className="font-body-semibold text-caption text-ink-faint">Así se verá</Text>
         </View>
-      </View>
 
-      <View className="gap-2">
-        <Text className="font-body-bold text-caption text-ink-muted">Color</Text>
-        {/* Cuatro por fila: los ocho colores caben en dos filas parejas a 360 px. */}
-        <View accessibilityRole="radiogroup" className="flex-row flex-wrap">
-          {HABIT_COLORS.map((color) => {
-            const isSelected = color === draft.color;
-            return (
-              <Pressable
-                key={color}
-                accessibilityRole="radio"
-                accessibilityLabel={`Color ${color}`}
-                accessibilityState={{ checked: isSelected }}
-                onPress={() => update('color', color)}
-                className="h-12 w-1/4 items-center justify-center active:opacity-85"
-              >
-                <View
-                  className={`h-10 w-10 items-center justify-center rounded-full border-2 ${isSelected ? 'border-ink' : 'border-transparent'}`}
+        <View className="gap-2">
+          <FieldLabel>Categoría</FieldLabel>
+          <View accessibilityRole="radiogroup" className="flex-row flex-wrap gap-2">
+            {HABIT_CATEGORIES.map((option) => {
+              const isSelected = option.id === draft.category;
+              return (
+                <Pressable
+                  key={option.id}
+                  accessibilityRole="radio"
+                  accessibilityState={{ checked: isSelected }}
+                  onPress={() => selectCategory(option.id)}
+                  className={`min-h-11 flex-row items-center gap-2 rounded-full border-2 px-3 ${choiceContainer(isSelected)}`}
                 >
-                  <View className="h-7 w-7 rounded-full" style={{ backgroundColor: color }} />
-                </View>
-              </Pressable>
-            );
-          })}
+                  <View
+                    className="h-3 w-3 rounded-full"
+                    style={{ backgroundColor: option.color }}
+                  />
+                  <Text className={`font-body-extrabold text-button ${choiceLabel(isSelected)}`}>
+                    {option.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
         </View>
-        <Text className="font-body-semibold text-caption text-ink-muted">
-          Lo propone la categoría. Cámbialo si quieres.
-        </Text>
-      </View>
+
+        <View className="gap-2">
+          <FieldLabel>Color</FieldLabel>
+          {/* Cuatro por fila: los ocho colores caben en dos filas parejas a 360 px. */}
+          <View accessibilityRole="radiogroup" className="flex-row flex-wrap">
+            {HABIT_COLORS.map((color) => {
+              const isSelected = color === draft.color;
+              return (
+                <Pressable
+                  key={color}
+                  accessibilityRole="radio"
+                  accessibilityLabel={`Color ${color}`}
+                  accessibilityState={{ checked: isSelected }}
+                  onPress={() => update('color', color)}
+                  className="h-12 w-1/4 items-center justify-center active:opacity-85"
+                >
+                  {/* El elegido lleva un check del tono oscuro de su color, no solo un aro. */}
+                  <View
+                    className="h-10 w-10 items-center justify-center rounded-full"
+                    style={{
+                      backgroundColor: color,
+                      borderWidth: isSelected ? 2 : 0,
+                      borderColor: strongHabitColor(color),
+                    }}
+                  >
+                    {isSelected && <CheckIcon size={18} color={strongHabitColor(color)} />}
+                  </View>
+                </Pressable>
+              );
+            })}
+          </View>
+          <Hint>Lo propone la categoría. Cámbialo si quieres.</Hint>
+        </View>
+      </FormSection>
 
       <View className="gap-2">
         {hasTriedSubmit && hasErrors(errors) && (

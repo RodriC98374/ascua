@@ -1,6 +1,19 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { checkInStatusText, formatCheckInAverage } from './check-in-text';
+import { checkInLevelLabel, checkInStatusText, formatCheckInAverage } from './check-in-text';
+
+describe('checkInLevelLabel', () => {
+  it('names each level of a scale in words', () => {
+    expect(checkInLevelLabel('mood', 1)).toBe('Muy mal');
+    expect(checkInLevelLabel('mood', 4)).toBe('Bien');
+    expect(checkInLevelLabel('energy', 5)).toBe('A tope');
+    expect(checkInLevelLabel('motivation', 3)).toBe('Algo');
+  });
+
+  it('asks for an answer when the scale is empty', () => {
+    expect(checkInLevelLabel('energy', null)).toBe('Sin responder');
+  });
+});
 
 describe('formatCheckInAverage', () => {
   it('shows one decimal with a comma, as in Spanish', () => {

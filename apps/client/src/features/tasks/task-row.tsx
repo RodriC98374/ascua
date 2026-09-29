@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import { Checkbox, FloatingPoints, useCheckToggle } from '@/features/today/check-parts';
-import { SECONDARY_ROW_RADIUS } from '@/features/today/habit-check';
+import { ROW_RADIUS } from '@/features/today/habit-check';
 import { SwipeToCheckRow } from '@/features/today/swipe-to-check-row';
 
 import { taskDueLabel } from './task-text';
@@ -36,11 +36,11 @@ export function TaskRow({ task, today, pointsOnComplete, onToggle, trailing }: T
       isDone={isDone}
       color={TASK_COLOR}
       isDisabled={false}
-      borderRadius={SECONDARY_ROW_RADIUS}
+      borderRadius={ROW_RADIUS}
       onSwipeStart={check.onSwipeStart}
       onCommit={check.toggle}
     >
-      <View className="bg-surface-200 min-h-12 flex-row items-center gap-1">
+      <View className="bg-surface-200 min-h-14 flex-row items-center gap-1">
         <Pressable
           accessibilityRole="checkbox"
           accessibilityState={{ checked: isDone }}
@@ -50,7 +50,7 @@ export function TaskRow({ task, today, pointsOnComplete, onToggle, trailing }: T
           className="min-h-11 flex-1 flex-row items-center gap-3 py-2 active:opacity-85"
         >
           <View>
-            <Checkbox isDone={isDone} size={24} color={TASK_COLOR} />
+            <Checkbox isDone={isDone} size={28} color={TASK_COLOR} />
             {pointsOnComplete > 0 && (
               <FloatingPoints burst={check.pointsBurst} amount={pointsOnComplete} />
             )}
