@@ -1,10 +1,16 @@
 import {
+  addDays,
+  bestWeekdays,
   buildRangeStats,
+  completionRateOf,
+  completionTrend,
   formatShortWeekday,
+  mostConsistentHabit,
   toMonthKey,
   type DailyLog,
   type DateKey,
   type HabitRecord,
+  type MonthlySummary,
   type Period,
   type TaskRecord,
 } from '@ascua/shared';
@@ -22,6 +28,7 @@ import { DayDetail } from './day-detail';
 import { HabitBars } from './habit-bars';
 import { HabitDonut } from './habit-donut';
 import { HabitGrid } from './habit-grid';
+import { InsightsCard, type TrendInsight } from './insights-card';
 import { PeriodSummary } from './period-summary';
 import { StateLegend } from './state-legend';
 import { StreakChart } from './streak-chart';
@@ -54,10 +61,14 @@ export function WeekView(props: RangeViewProps) {
   );
 }
 
-/** Un mes: sus registros diarios (≤ 31) y su resumen mensual, del que salen los gastos. */
+/**
+ * Un mes: sus registros diarios (≤ 31), su resumen mensual (de ahí salen los gastos) y el del mes
+ * anterior, para la tendencia.
+ */
 export function MonthView(props: RangeViewProps) {
   const logs = useDailyLogsInRange(props.uid, props.period.startDateKey, props.period.endDateKey);
   const summary = useMonthlySummary(props.uid, toMonthKey(props.period.startDateKey));
+  const previous = useMonthlySummary(props.uid, toMonthKey(addDays(props.period.startDateKey, -1)));
   return (
     <RangeContent
       {...props}
@@ -65,8 +76,26 @@ export function MonthView(props: RangeViewProps) {
       logs={logs.data}
       isLoading={logs.isLoading}
       pointsSpent={summary.data?.pointsSpent ?? 0}
+      previousSummary={previous.data ?? null}
     />
   );
+}
+
+/** El % de este mes contra el anterior; null si alguno no tiene días cerrados. */
+function monthTrend(
+  monthKey: string,
+  currentRate: number | null,
+  previous: MonthlySummary | null,
+): TrendInsight | null {
+  const previousRate = previous ? completionRateOf(previous.habitStats) : null;
+  if (!previous || currentRate === null || previousRate === null) return null;
+  return {
+    points: completionTrend(currentRate, previousRate) ?? 0,
+    monthKey,
+    previousMonthKey: previous.monthKey,
+    currentRate,
+    previousRate,
+  };
 }
 
 function RangeContent({
@@ -78,6 +107,7 @@ function RangeContent({
   tasks,
   isLoading,
   pointsSpent,
+  previousSummary = null,
 }: RangeViewProps & {
   kind: 'week' | 'month';
   logs: readonly DailyLog[];
@@ -85,6 +115,8 @@ function RangeContent({
   tasks?: readonly TaskRecord[];
   isLoading: boolean;
   pointsSpent: number | null;
+  /** Solo el mes: el resumen del mes anterior, para la tendencia. */
+  previousSummary?: MonthlySummary | null;
 }) {
   const colors = useThemeColors();
   const [selectedDateKey, setSelectedDateKey] = useState<DateKey | null>(null);
@@ -173,6 +205,15 @@ function RangeContent({
             days={stats.days}
             selectedDateKey={selectedDateKey}
             onSelectDay={toggleDay}
+          />
+          <InsightsCard
+            bestWeekdays={bestWeekdays(stats.days)}
+            mostConsistent={mostConsistentHabit(stats.habits)}
+            trend={monthTrend(
+              toMonthKey(period.startDateKey),
+              stats.completionRate,
+              previousSummary,
+            )}
           />
         </>
       )}

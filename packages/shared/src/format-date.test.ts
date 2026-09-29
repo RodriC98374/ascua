@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest';
 
 import {
   formatDateRange,
+  formatIsoWeekday,
   formatLongDate,
   formatMonthAbbrev,
+  formatMonthName,
   formatMonthYear,
   formatShortDate,
   formatShortWeekday,
@@ -73,5 +75,20 @@ describe('formatShortWeekday', () => {
     expect(formatShortWeekday('2026-09-21')).toBe('Lun 21');
     expect(formatShortWeekday('2026-09-23')).toBe('Mié 23');
     expect(formatShortWeekday('2026-10-04')).toBe('Dom 4');
+  });
+});
+
+describe('formatIsoWeekday', () => {
+  it('names the ISO weekday, Monday first', () => {
+    expect(formatIsoWeekday(1)).toBe('Lunes');
+    expect(formatIsoWeekday(3)).toBe('Miércoles');
+    expect(formatIsoWeekday(7)).toBe('Domingo');
+  });
+});
+
+describe('formatMonthName', () => {
+  it('names the month alone', () => {
+    expect(formatMonthName('2026-08')).toBe('Agosto');
+    expect(formatMonthName('2027-01')).toBe('Enero');
   });
 });

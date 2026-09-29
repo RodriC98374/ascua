@@ -126,6 +126,10 @@ interface Habit {
     | { type: 'days_of_week'; daysOfWeek: number[] }   // 1 = lunes … 7 = domingo; de 1 a 6 días
     | { type: 'times_per_week'; timesPerWeek: number }; // 1..6, semana de lunes a domingo
   target?: { amount: number; unit: string } | null;   // con cantidad; fija al crear. Sin el campo = sin cantidad
+  reminder?: {                         // fase 17 (D23): opcional y editable. Sin el campo o null = sin recordatorio
+    time: string;                      // 'HH:mm' hora Bolivia
+    daysOfWeek: number[];              // 1 = lunes … 7 = domingo, sin repetir; en días fijos, solo entre sus días
+  } | null;
   status: EntityStatus;
   sortOrder: number;
   startDateKey: DateKey;               // primer día en que cuenta
@@ -138,6 +142,7 @@ interface Habit {
 - **Nunca se borra**, solo se archiva. **Un hábito archivado no se reactiva** (se crea uno nuevo) y un hábito nuevo empieza hoy o después: ambas cosas cambiarían el resultado de días pasados todavía sin cerrar.
 - **Máximo 3 principales:** se valida en la UI (sección 10, deudas aceptadas).
 - **Frecuencia (fase 16):** un hábito de días fijos solo cuenta esos días; uno de N veces por semana no entra en la meta de racha ni en el día perfecto y suma sus puntos hasta N marcas por semana. Con todos los semanales cumplidos, la semana queda potenciada (la llama se ve morada); se deriva de las marcas, no se guarda. Con cantidad, se cumple al llegar a `target.amount` en el día.
+- **Recordatorio propio (fase 17):** hora y días elegidos; se agrega, cambia o quita cuando sea. No suena si el hábito ya está cumplido hoy ni, en un semanal que llegó a su N, el resto de la semana. Un hábito archivado no avisa.
 
 ### `users/{userId}/dailyLogs/{dateKey}` — DailyLog
 Un documento por día. El ID es la fecha (`'2026-09-21'`).
@@ -481,6 +486,7 @@ No hay servidor: estas operaciones las ejecuta la app como **transacciones de Fi
 - Son **notificaciones locales**: las programa la propia app en el celular, como una alarma (`expo-notifications`). No hay servidor ni push, funcionan sin internet y llegan a la hora exacta configurada.
 - **Recordatorio diario:** se repite todos los días a `dailyReminderTime`.
 - **Racha en riesgo:** se programa para `streakRiskReminderTime`. Al cumplirse la meta del día en el celular, se cancela la de hoy y queda programada la de mañana.
+- **Por hábito (fase 17):** `planHabitReminders` programa el `reminder` de cada hábito activo para los próximos `HABIT_REMINDER_PLAN_DAYS` (7) días, en los días elegidos, salvo lo ya cumplido. El interruptor general también los apaga. Ventana corta porque Android limita las alarmas por app (~500).
 - Los horarios se editan en Ajustes desde cualquier dispositivo; el celular los aplica la próxima vez que se abre la app.
 - **Cómo se programan:** `planReminders` (`packages/shared`) calcula los instantes exactos en hora de Bolivia para los próximos `REMINDER_PLAN_DAYS` días y la app los programa como avisos de fecha fija (no con el trigger diario del sistema, que usa la hora local del celular). Cada vez que se abre la app se reprograma la ventana completa.
 - En la web no hay notificaciones (decisión del usuario).
@@ -496,6 +502,8 @@ Calcular en el cliente **no** hace lenta la app: el cuello de botella no es el c
 | Tareas en Hoy y en la semana | las pendientes (de cualquier fecha) + las cumplidas hoy o en la semana; sin índice compuesto | pocas decenas |
 | Mes (grilla, % por día, % por hábito) | `dailyLogs` del mes | ≤ 31 |
 | Año (tendencia, % por hábito) | `monthlySummaries` del año | ≤ 12 |
+| Año: mapa de calor y mejor día (fase 17, D23) | `dailyLogs` del año; solo existen los días usados | ≤ 365 |
+| Mes: tendencia contra el anterior (fase 17) | `monthlySummaries` del mes anterior | 1 |
 | Totales históricos (saldo, racha más larga) | `meta/gamification` | 1 |
 
 - El cálculo más pesado (un mes: ~31 días × ~10 hábitos ≈ 300 operaciones) toma menos de un milisegundo.
@@ -510,7 +518,7 @@ Sin servidor, las reglas son la única barrera: validan que cada operación de l
 - **Acceso:** todo bajo `users/{userId}` requiere `request.auth.uid == userId` y que el `uid` esté en la lista de permitidos.
 - **Registro cerrado:** la cuenta del usuario se creó a mano en la consola y el registro está desactivado (*Authentication → Settings → User actions*). La app no tiene pantalla de registro. La lista de permitidos es la segunda barrera.
 - **Clave de API restringida** (Google Cloud → Credenciales → "Browser key (auto created by Firebase)"): sin restricción de aplicación (Android con el SDK JS no envía los datos que esa restricción verifica) y **solo** Identity Toolkit API, Token Service API y Cloud Firestore API. La clave es pública por diseño; si se agrega otro servicio de Firebase, sumarlo a esa lista o fallará con un error 403.
-- **Libre, con forma validada** (tipos, enums, longitudes): `users/{userId}` (solo `displayName` y `reminderSettings` después de crearlo), `habits`, `rewards`. Hábitos y recompensas no se pueden borrar.
+- **Libre, con forma validada** (tipos, enums, longitudes): `users/{userId}` (solo `displayName` y `reminderSettings` después de crearlo), `habits`, `rewards`. Hábitos y recompensas no se pueden borrar. En `habits`, `schedule` y `target` no cambian después de crear; `reminder` sí (hora 'HH:mm', días 1–7 sin repetir y, en días fijos, solo los del hábito).
 - **`dailyLogs/{D}.entries` y `checkIn`:** solo si `D` es hoy en Bolivia según `request.time`. Al crear el documento, `status == 'open'` y `summary == null`. `checkIn` solo acepta `mood`, `energy` y `motivation` con enteros de 1 a 5; el cierre no lo cambia y un día cerrado sin actividad se crea sin él.
 - **Cierre de un día** (`status`/`summary` de `dailyLogs/{D}`, movimientos de cierre, `meta/gamification`, `monthlySummaries`):
   - `D` es estrictamente anterior a hoy (según `request.time`).

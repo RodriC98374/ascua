@@ -32,6 +32,7 @@ import {
   type GamificationState,
   type HabitEntry,
   type HabitRecord,
+  type HabitReminder,
   type HabitSchedule,
   type HabitTarget,
   type HabitTier,
@@ -290,6 +291,15 @@ function buildDemoData(uid: string, options: DemoOptions): DemoData {
       { amount: 8, unit: 'vasos' },
     ),
   ];
+  // D23: recordatorios propios de ejemplo; en la web se ven y editan en el formulario del hábito.
+  const reminders: Record<string, HabitReminder> = {
+    leer: { time: '21:00', daysOfWeek: [1, 2, 3, 4, 5] },
+    yoga: { time: '07:00', daysOfWeek: [2, 4] },
+    natacion: { time: '18:30', daysOfWeek: [1, 3, 5] },
+  };
+  for (const habitRecord of habits) {
+    habitRecord.reminder = reminders[habitRecord.id] ?? null;
+  }
   const chance: Record<string, number> = {
     leer: 0.97,
     ejercicio: 0.94,

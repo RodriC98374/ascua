@@ -25,12 +25,17 @@ function day(dateKey: string, status: DayStatsStatus, completionRate: number | n
   };
 }
 
-function row(id: string, scheduledDays: number, completedDays: number): HabitPeriodStats {
+function row(
+  id: string,
+  scheduledDays: number,
+  completedDays: number,
+  schedule: Habit['schedule'] = { type: 'daily' },
+): HabitPeriodStats {
   const habit: Habit = {
     id,
     name: id,
     tier: 'primary',
-    schedule: { type: 'daily' },
+    schedule,
     status: 'active',
     startDateKey: '2026-01-01',
     archivedDateKey: null,
@@ -39,7 +44,7 @@ function row(id: string, scheduledDays: number, completedDays: number): HabitPer
     habit,
     scheduledDays,
     completedDays,
-    completionRate: scheduledDays > 0 ? completedDays / scheduledDays : null,
+    completionRate: scheduledDays > 0 ? Math.min(1, completedDays / scheduledDays) : null,
   };
 }
 
@@ -151,6 +156,18 @@ describe('mostConsistentHabit', () => {
     expect(mostConsistentHabit(rows)?.habit.id).toBe('b');
   });
 
+  it('leaves out weekly habits, whose marks can go past what the week asks', () => {
+    const weekly = row('swim', 12, 20, { type: 'times_per_week', timesPerWeek: 3 });
+    const rows = [weekly, row('a', 10, 8), row('b', 10, 9)];
+    expect(mostConsistentHabit(rows)?.habit.id).toBe('b');
+    expect(mostConsistentHabit([weekly, row('a', 10, 8)])).toBeNull();
+  });
+
+  it('counts fixed-days habits', () => {
+    const gym = row('gym', 8, 8, { type: 'days_of_week', daysOfWeek: [1, 3] });
+    expect(mostConsistentHabit([gym, row('a', 10, 8)])?.habit.id).toBe('gym');
+  });
+
   it('needs at least two habits to compare', () => {
     expect(mostConsistentHabit([row('a', 10, 8), row('new', 2, 2)])).toBeNull();
     expect(mostConsistentHabit([])).toBeNull();
@@ -162,6 +179,11 @@ describe('completionTrend', () => {
     expect(completionTrend(0.8, 0.65)).toBe(15);
     expect(completionTrend(0.5, 0.726)).toBe(-23);
     expect(completionTrend(0.7, 0.7)).toBe(0);
+  });
+
+  it('matches the rounded percentages shown next to it', () => {
+    // 77 % contra 78 %: un punto, aunque la diferencia exacta sea 1,95.
+    expect(completionTrend(0.7654, 0.7849)).toBe(-1);
   });
 
   it('has no trend without both rates', () => {

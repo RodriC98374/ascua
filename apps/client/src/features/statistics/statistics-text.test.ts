@@ -2,6 +2,7 @@ import { EMPTY_MONTHLY_COUNTERS, type DayStats, type Habit } from '@ascua/shared
 import { describe, expect, it } from '@jest/globals';
 
 import {
+  bestWeekdaysLine,
   describeDay,
   formatPercent,
   habitCaption,
@@ -10,6 +11,7 @@ import {
   percentValue,
   pointsLine,
   summaryTiles,
+  trendLine,
 } from './statistics-text';
 
 function day(overrides: Partial<DayStats>): DayStats {
@@ -160,5 +162,22 @@ describe('pointsLine', () => {
     expect(pointsLine(320, 150)).toBe('+320 pts ganados · 150 gastados');
     expect(pointsLine(320, 0)).toBe('+320 pts ganados');
     expect(pointsLine(320, null)).toBe('+320 pts ganados');
+  });
+});
+
+describe('bestWeekdaysLine', () => {
+  it('names one or several weekdays in lower case after the first', () => {
+    expect(bestWeekdaysLine([2])).toBe('Martes');
+    expect(bestWeekdaysLine([2, 4])).toBe('Martes y jueves');
+    expect(bestWeekdaysLine([1, 3, 7])).toBe('Lunes, miércoles y domingo');
+  });
+});
+
+describe('trendLine', () => {
+  it('compares against the previous month in points', () => {
+    expect(trendLine(12, '2026-08')).toBe('12 puntos más que en agosto');
+    expect(trendLine(1, '2026-08')).toBe('1 punto más que en agosto');
+    expect(trendLine(-5, '2026-08')).toBe('5 puntos menos que en agosto');
+    expect(trendLine(0, '2026-08')).toBe('Igual que en agosto');
   });
 });

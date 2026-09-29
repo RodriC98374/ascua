@@ -1,7 +1,10 @@
 import {
+  bestWeekdays,
+  buildRangeStats,
   buildYearStats,
   formatMonthYear,
   monthHabitStats,
+  mostConsistentHabit,
   strongHabitColor,
   type DateKey,
   type HabitRecord,
@@ -15,7 +18,12 @@ import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { Card } from '@/components/ui/card';
 import { ChevronIcon } from '@/components/ui/icons';
 import { ProgressBar } from '@/components/ui/progress-bar';
-import { useDailyLog, useGamificationState, useMonthlySummaries } from '@/data/hooks';
+import {
+  useDailyLog,
+  useDailyLogsInRange,
+  useGamificationState,
+  useMonthlySummaries,
+} from '@/data/hooks';
 import { MilestonesCard } from '@/features/milestones/milestones-card';
 import { buildTodaySummary } from '@/features/today/today-summary';
 import { useActiveColorScheme, useThemeColors } from '@/theme/colors';
@@ -25,10 +33,15 @@ import { TouchLineChart } from './chart-parts';
 import { CategoryRadar } from './category-radar';
 import { CheckInSummary } from './check-in-summary';
 import { HabitBars } from './habit-bars';
+import { InsightsCard } from './insights-card';
 import { PeriodSummary } from './period-summary';
 import { formatPercent, habitCaption, monthCaption, percentValue, plural } from './statistics-text';
+import { YearHeatmap } from './year-heatmap';
 
-/** Un año desde los resúmenes mensuales (≤ 12 documentos). Tocar un mes lleva a su vista. */
+/**
+ * Un año desde los resúmenes mensuales (≤ 12 documentos). Tocar un mes lleva a su vista. El mapa de
+ * calor y el mejor día leen además los registros del año (D23): solo existen los días usados.
+ */
 export function YearView({
   uid,
   period,
@@ -48,6 +61,7 @@ export function YearView({
   const summaries = useMonthlySummaries(uid, year);
   const gamification = useGamificationState(uid);
   const todayLog = useDailyLog(uid, today);
+  const yearLogs = useDailyLogsInRange(uid, period.startDateKey, period.endDateKey);
   const [selectedMonthKey, setSelectedMonthKey] = useState<MonthKey | null>(null);
   const [selectedHabitId, setSelectedHabitId] = useState<string | null>(null);
 
@@ -56,6 +70,16 @@ export function YearView({
   }
 
   const stats = buildYearStats({ year, summaries: summaries.data, habits, today });
+  // Los días del año, calculados igual que en la grilla del mes.
+  const yearDays = yearLogs.isLoading
+    ? null
+    : buildRangeStats({
+        startDateKey: period.startDateKey,
+        endDateKey: period.endDateKey,
+        today,
+        habits,
+        logs: yearLogs.data,
+      }).days;
   // Elegir un hábito filtra la gráfica y los meses a ese hábito.
   const selectedHabit = stats.habits.find((row) => row.habit.id === selectedHabitId)?.habit;
   const habitFilter = selectedHabit ? { habit: selectedHabit, today } : null;
@@ -103,6 +127,18 @@ export function YearView({
       {/* Las insignias son de todos los tiempos: se muestran solo en el año actual. */}
       {streak && today.startsWith(year) && (
         <MilestonesCard longestStreak={streak.longestStreak} currentStreak={streak.streakDays} />
+      )}
+
+      {yearDays ? (
+        <>
+          <YearHeatmap days={yearDays} />
+          <InsightsCard
+            bestWeekdays={bestWeekdays(yearDays)}
+            mostConsistent={mostConsistentHabit(stats.habits)}
+          />
+        </>
+      ) : (
+        <ActivityIndicator color={colors.emberStrong} />
       )}
 
       <Card className="gap-2">

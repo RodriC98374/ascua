@@ -49,6 +49,11 @@ export function formatMonthYear(monthKey: MonthKey): string {
   return `${capitalize(monthName(monthKey))} ${monthKey.slice(0, 4)}`;
 }
 
+/** 'Agosto': el mes solo, para comparar con el anterior. */
+export function formatMonthName(monthKey: MonthKey): string {
+  return capitalize(monthName(monthKey));
+}
+
 /** 'Sep', para los ejes de las gráficas. */
 export function formatMonthAbbrev(monthKey: MonthKey): string {
   return capitalize(abbreviatedMonth(monthKey));
@@ -82,4 +87,9 @@ export function formatShortWeekday(dateKey: DateKey): string {
 /** 'L', 'M', 'X'… para las columnas de la semana. */
 export function formatWeekdayInitial(dateKey: DateKey): string {
   return `${WEEKDAY_INITIALS[toUtcDate(dateKey).getUTCDay()]}`;
+}
+
+/** 'Lunes' … 'Domingo' para un día de la semana ISO (1 = lunes … 7 = domingo). */
+export function formatIsoWeekday(isoWeekday: number): string {
+  return `${WEEKDAYS[isoWeekday % 7]}`;
 }

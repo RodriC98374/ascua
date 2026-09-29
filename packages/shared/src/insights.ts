@@ -70,14 +70,18 @@ export function bestWeekdays(days: readonly DayStats[]): BestWeekdays | null {
 
 /**
  * El hábito con mayor % entre los que tienen al menos `INSIGHT_MIN_HABIT_DAYS` días. Si empatan,
- * el de más días cumplidos y después el primero. Null si no hay al menos dos para comparar.
+ * el de más días cumplidos y después el primero. Null si no hay al menos dos para comparar. Los
+ * semanales quedan fuera: sus marcas pueden pasar lo que pide la semana y su % llega al tope sin
+ * hablar de constancia día a día.
  */
 export function mostConsistentHabit<T extends Habit>(
   rows: readonly HabitPeriodStats<T>[],
 ): HabitPeriodStats<T> | null {
   const candidates = rows.filter(
     (row): row is HabitPeriodStats<T> & { completionRate: number } =>
-      row.completionRate !== null && row.scheduledDays >= INSIGHT_MIN_HABIT_DAYS,
+      row.habit.schedule.type !== 'times_per_week' &&
+      row.completionRate !== null &&
+      row.scheduledDays >= INSIGHT_MIN_HABIT_DAYS,
   );
   if (candidates.length < 2) return null;
   return candidates.reduce((best, row) => {
@@ -89,8 +93,11 @@ export function mostConsistentHabit<T extends Habit>(
   });
 }
 
-/** Diferencia en puntos porcentuales (redondeada) contra el periodo anterior. */
+/**
+ * Diferencia en puntos porcentuales contra el periodo anterior, entre los % ya redondeados: así
+ * cuadra con los que se muestran al lado (77 % contra 78 % es un punto).
+ */
 export function completionTrend(current: number | null, previous: number | null): number | null {
   if (current === null || previous === null) return null;
-  return Math.round((current - previous) * 100);
+  return Math.round(current * 100) - Math.round(previous * 100);
 }

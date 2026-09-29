@@ -1,5 +1,13 @@
 // Textos de las vistas de progreso: cifras siempre con su contexto (guía de voz del diseño).
-import type { DayStats, DayStatsStatus, HabitPeriodStats, MonthlyCounters } from '@ascua/shared';
+import {
+  formatIsoWeekday,
+  formatMonthName,
+  type DayStats,
+  type DayStatsStatus,
+  type HabitPeriodStats,
+  type MonthKey,
+  type MonthlyCounters,
+} from '@ascua/shared';
 
 export const DAY_STATUS_LABELS: Record<DayStatsStatus, string> = {
   completed: 'Cumplido',
@@ -109,4 +117,21 @@ export function monthCaption(counters: MonthlyCounters): string {
 export function pointsLine(earned: number, spent: number | null): string {
   const gained = `+${earned} pts ganados`;
   return spent ? `${gained} · ${spent} gastados` : gained;
+}
+
+/** 'Martes', 'Martes y jueves' o 'Lunes, miércoles y domingo'. */
+export function bestWeekdaysLine(weekdays: readonly number[]): string {
+  const names = weekdays.map((weekday, index) =>
+    index === 0 ? formatIsoWeekday(weekday) : formatIsoWeekday(weekday).toLowerCase(),
+  );
+  const last = names.pop();
+  return names.length === 0 ? `${last}` : `${names.join(', ')} y ${last}`;
+}
+
+/** '12 puntos más que en agosto': el % de hábitos cumplidos contra el mes anterior. */
+export function trendLine(points: number, previousMonthKey: MonthKey): string {
+  const month = formatMonthName(previousMonthKey).toLowerCase();
+  if (points === 0) return `Igual que en ${month}`;
+  const amount = plural(Math.abs(points), 'punto', 'puntos');
+  return `${amount} ${points > 0 ? 'más' : 'menos'} que en ${month}`;
 }

@@ -41,25 +41,27 @@ interface Habit {
   por % de hábitos cumplidos del día; perfecto en brasa, protegido en azul, hoy con anillo. Tocar
   un día muestra su fecha y su %. En el celular se desplaza de lado y abre en la semana actual.
 - **Destacados** (Mes y Año): mejor día de la semana (promedio del % de los días cerrados, con un
-  mínimo de días por día de la semana), hábito más constante (mayor %, con un mínimo de días) y,
-  solo en Mes, la diferencia contra el mes anterior en puntos porcentuales.
+  mínimo de días por día de la semana), hábito más constante (mayor %, con un mínimo de días; sin
+  los semanales, cuyas marcas pueden pasar lo que pide la semana) y, solo en Mes, la diferencia
+  contra el mes anterior en puntos porcentuales (entre los % redondeados que se muestran).
+- Día perfecto en brasa, protegido en azul, 0 % en rojo suave y sin datos en gris.
 
 ## Tareas
 
 **Núcleo (`shared`, TDD)**
-- [ ] Tipos y constantes; validación del recordatorio de un hábito.
-- [ ] `planHabitReminders`: días elegidos, hábito activo, cumplido hoy, semanal cumplido.
-- [ ] Nivel del mapa de calor, mejor día de la semana, hábito más constante y tendencia.
+- [x] Tipos y constantes; validación del recordatorio de un hábito.
+- [x] `planHabitReminders`: días elegidos, hábito activo, cumplido hoy, semanal cumplido.
+- [x] Nivel del mapa de calor, mejor día de la semana, hábito más constante y tendencia.
 
 **Reglas y operaciones (emulador)**
-- [ ] `reminder` en `habits`, con tests y mutaciones.
-- [ ] `createHabit`/`updateHabit` guardan el recordatorio; converter que lee los hábitos de antes.
+- [x] `reminder` en `habits`, con tests y mutaciones.
+- [x] `createHabit`/`updateHabit` guardan el recordatorio; converter que lee los hábitos de antes.
 
 **App**
-- [ ] Formulario de hábito: "Recordarme" con hora y días.
-- [ ] Programar los recordatorios por hábito junto a los generales.
-- [ ] Mapa de calor y Destacados en Año; Destacados en Mes.
-- [ ] Demo con recordatorios de ejemplo.
+- [x] Formulario de hábito: "Recordarme" con hora y días.
+- [x] Programar los recordatorios por hábito junto a los generales.
+- [x] Mapa de calor y Destacados en Año; Destacados en Mes.
+- [x] Demo con recordatorios de ejemplo.
 
 **Cierre**
 - [ ] Revisión en web, typecheck, lint y tests; `data-model.md` al día; revisión del usuario.
