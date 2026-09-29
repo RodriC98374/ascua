@@ -1,6 +1,15 @@
 // Mantiene al día los recordatorios del celular: los reprograma al abrir la app, al cambiar los
-// horarios y al marcar o desmarcar hábitos (data-model §8). En la web solo informa que no aplica.
-import { planReminders, type DateKey, type ReminderSettings } from '@ascua/shared';
+// horarios o los hábitos y al marcar o desmarcar (data-model §8). En la web solo informa que no
+// aplica.
+import {
+  planHabitReminders,
+  planReminders,
+  startOfWeek,
+  type DailyLog,
+  type DateKey,
+  type HabitRecord,
+  type ReminderSettings,
+} from '@ascua/shared';
 import { router, type Href } from 'expo-router';
 import {
   createContext,
@@ -13,7 +22,7 @@ import {
 } from 'react';
 import { AppState, Linking } from 'react-native';
 
-import { useDailyLog, useGamificationState, useHabits, useUserProfile } from '@/data/hooks';
+import { useDailyLogsInRange, useGamificationState, useHabits, useUserProfile } from '@/data/hooks';
 import { buildTodaySummary } from '@/features/today/today-summary';
 import { useToday } from '@/features/today/use-today';
 
@@ -26,7 +35,7 @@ import {
   useReminderTap,
   type NotificationPermission,
 } from './device-notifications';
-import { buildReminderRequests } from './reminder-requests';
+import { buildHabitReminderRequests, buildReminderRequests } from './reminder-requests';
 
 interface RemindersContextValue {
   /** null mientras se consulta al sistema. */
@@ -98,16 +107,17 @@ function ReminderScheduler({ uid }: { uid: string }) {
   const today = useToday();
   const profile = useUserProfile(uid);
   const habits = useHabits(uid);
-  const log = useDailyLog(uid, today);
+  // La semana, hoy incluido: dice qué hábitos ya se cumplieron (hoy y los semanales).
+  const weekLogs = useDailyLogsInRange(uid, startOfWeek(today), today);
   const gamification = useGamificationState(uid);
 
   const settings = profile.data?.reminderSettings;
-  if (habits.isLoading || log.isLoading || !gamification.data || !settings) return null;
+  if (habits.isLoading || weekLogs.isLoading || !gamification.data || !settings) return null;
 
   const summary = buildTodaySummary({
     today,
     habits: habits.data,
-    entries: log.data?.entries ?? {},
+    entries: weekLogs.data.find((log) => log.dateKey === today)?.entries ?? {},
     state: gamification.data,
   });
   return (
@@ -116,6 +126,8 @@ function ReminderScheduler({ uid }: { uid: string }) {
       settings={settings}
       isTodayGoalMet={summary.isGoalMet}
       hasHabitsToday={summary.hasHabits}
+      habits={habits.data}
+      weekLogs={weekLogs.data}
     />
   );
 }
@@ -125,6 +137,8 @@ interface ReminderPlannerProps {
   settings: ReminderSettings;
   isTodayGoalMet: boolean;
   hasHabitsToday: boolean;
+  habits: readonly HabitRecord[];
+  weekLogs: readonly DailyLog[];
 }
 
 /** Reprograma solo cuando cambia algo que altera el plan (no en cada render). */
@@ -133,18 +147,33 @@ function ReminderPlanner({
   settings: { enabled, dailyReminderTime, streakRiskReminderTime },
   isTodayGoalMet,
   hasHabitsToday,
+  habits,
+  weekLogs,
 }: ReminderPlannerProps) {
   useEffect(() => {
+    const now = new Date();
     const plan = planReminders({
       settings: { enabled, dailyReminderTime, streakRiskReminderTime },
-      now: new Date(),
+      now,
       isTodayGoalMet,
       hasHabitsToday,
     });
-    scheduleReminders(buildReminderRequests(plan)).catch((error: unknown) =>
-      console.error('No se pudieron programar los avisos', error),
-    );
-  }, [today, enabled, dailyReminderTime, streakRiskReminderTime, isTodayGoalMet, hasHabitsToday]);
+    const habitPlan = planHabitReminders({ habits, now, enabled, weekLogs });
+    // Si el plan no cambió (misma firma), `scheduleReminders` no toca nada.
+    scheduleReminders([
+      ...buildReminderRequests(plan),
+      ...buildHabitReminderRequests(habitPlan),
+    ]).catch((error: unknown) => console.error('No se pudieron programar los avisos', error));
+  }, [
+    today,
+    enabled,
+    dailyReminderTime,
+    streakRiskReminderTime,
+    isTodayGoalMet,
+    hasHabitsToday,
+    habits,
+    weekLogs,
+  ]);
 
   return null;
 }

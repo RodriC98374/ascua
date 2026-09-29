@@ -133,6 +133,61 @@ describe('habit frequency and target (fase 16)', () => {
   });
 });
 
+describe('habit reminder (fase 17)', () => {
+  const reminder = (time: unknown, daysOfWeek: unknown) => ({ reminder: { time, daysOfWeek } });
+  const fixedDays = (daysOfWeek: number[]) => ({ schedule: { type: 'days_of_week', daysOfWeek } });
+
+  it('accepts a reminder with a time and chosen days, or none', async () => {
+    await assertSucceeds(setDoc(habit('a'), habitDoc(reminder('07:30', [1, 3, 5]))));
+    await assertSucceeds(setDoc(habit('b'), habitDoc(reminder('23:59', [1, 2, 3, 4, 5, 6, 7]))));
+    await assertSucceeds(setDoc(habit('c'), habitDoc({ reminder: null })));
+  });
+
+  it('rejects a malformed time', async () => {
+    await assertFails(setDoc(habit(), habitDoc(reminder('7:30', [1]))));
+    await assertFails(setDoc(habit(), habitDoc(reminder('24:00', [1]))));
+    await assertFails(setDoc(habit(), habitDoc(reminder(730, [1]))));
+  });
+
+  it('rejects empty, repeated or unknown days', async () => {
+    await assertFails(setDoc(habit(), habitDoc(reminder('08:00', []))));
+    await assertFails(setDoc(habit(), habitDoc(reminder('08:00', [2, 2]))));
+    await assertFails(setDoc(habit(), habitDoc(reminder('08:00', [0]))));
+    await assertFails(setDoc(habit(), habitDoc(reminder('08:00', [8]))));
+    await assertFails(setDoc(habit(), habitDoc(reminder('08:00', 'lunes'))));
+  });
+
+  it('rejects extra or missing fields', async () => {
+    await assertFails(setDoc(habit(), habitDoc({ reminder: { time: '08:00' } })));
+    await assertFails(
+      setDoc(habit(), habitDoc({ reminder: { time: '08:00', daysOfWeek: [1], sound: true } })),
+    );
+  });
+
+  it('only allows the days of a days-of-week habit', async () => {
+    await assertSucceeds(
+      setDoc(habit('a'), habitDoc({ ...fixedDays([1, 3]), ...reminder('08:00', [3]) })),
+    );
+    await assertFails(
+      setDoc(habit('b'), habitDoc({ ...fixedDays([1, 3]), ...reminder('08:00', [2]) })),
+    );
+  });
+
+  it('can be added, changed and removed after creating the habit', async () => {
+    await seedDocs({ [paths.habit('reading')]: habitDoc({ startDateKey: '2026-01-01' }) });
+    await assertSucceeds(
+      updateDoc(habit(), { ...reminder('20:00', [1, 2]), updatedAt: serverTimestamp() }),
+    );
+    await assertSucceeds(
+      updateDoc(habit(), { ...reminder('21:15', [7]), updatedAt: serverTimestamp() }),
+    );
+    await assertSucceeds(updateDoc(habit(), { reminder: null, updatedAt: serverTimestamp() }));
+    await assertFails(
+      updateDoc(habit(), { ...reminder('25:00', [1]), updatedAt: serverTimestamp() }),
+    );
+  });
+});
+
 describe('habits update', () => {
   beforeEach(async () => {
     await seedDocs({ [paths.habit('reading')]: habitDoc({ startDateKey: '2026-01-01' }) });

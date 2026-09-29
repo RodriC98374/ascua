@@ -6,6 +6,7 @@ import {
   type HabitCategory,
   type HabitColor,
   type HabitRecord,
+  type HabitReminder,
   type HabitSchedule,
   type HabitTarget,
   type HabitTier,
@@ -30,6 +31,8 @@ export interface HabitInput {
   tier: HabitTier;
   category: HabitCategory;
   color: HabitColor;
+  /** Se puede agregar, cambiar o quitar cuando sea (D23). */
+  reminder: HabitReminder | null;
 }
 
 /** Frecuencia y meta: se eligen al crear el hábito y después no cambian (D20). */
@@ -38,9 +41,19 @@ export interface NewHabitInput extends HabitInput {
   target: HabitTarget | null;
 }
 
-function clean({ name, description, tier, category, color }: HabitInput): HabitInput {
+function clean({ name, description, tier, category, color, reminder }: HabitInput): HabitInput {
   const trimmedDescription = description?.trim() ?? '';
-  return { name: name.trim(), description: trimmedDescription || null, tier, category, color };
+  return {
+    name: name.trim(),
+    description: trimmedDescription || null,
+    tier,
+    category,
+    color,
+    reminder: reminder && {
+      time: reminder.time,
+      daysOfWeek: [...reminder.daysOfWeek].sort((a, b) => a - b),
+    },
+  };
 }
 
 /** Crea un hábito que cuenta desde hoy. Devuelve su ID al instante y la escritura en curso. */

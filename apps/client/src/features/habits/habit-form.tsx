@@ -6,6 +6,7 @@ import {
   HABIT_DESCRIPTION_MAX_LENGTH,
   HABIT_NAME_MAX_LENGTH,
   MAX_PRIMARY_HABITS,
+  reminderDaysFor,
   TARGET_UNIT_MAX_LENGTH,
   TIMES_PER_WEEK_MAX,
   TIMES_PER_WEEK_MIN,
@@ -19,8 +20,14 @@ import { Pressable, Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/button';
 import { TextField } from '@/components/ui/text-field';
+import { TimeField } from '@/components/ui/time-field';
 import { Toggle } from '@/components/ui/toggle';
-import { hasErrors, validateHabit, type HabitDraft } from '@/features/habits/habit-validation';
+import {
+  draftReminder,
+  hasErrors,
+  validateHabit,
+  type HabitDraft,
+} from '@/features/habits/habit-validation';
 import type { NewHabitInput } from '@/operations/habits';
 
 interface HabitFormProps {
@@ -58,6 +65,50 @@ const WEEKDAY_OPTIONS = [
 
 const MAX_FIXED_DAYS = 6;
 
+/** Hora propuesta al activar un recordatorio nuevo. */
+const DEFAULT_REMINDER_TIME = '20:00';
+
+function reminderHelp(schedule: HabitDraft['schedule']): string {
+  if (schedule.type === 'times_per_week') {
+    return 'Llega a tu celular esos días si todavía no lo marcaste. La semana que llegas a tu meta deja de sonar.';
+  }
+  return 'Llega a tu celular esos días si todavía no lo marcaste.';
+}
+
+/** Círculos de L a D; marca los elegidos. Sirve para los días fijos y para el recordatorio. */
+function WeekdayPicker({
+  days,
+  selected,
+  onToggle,
+}: {
+  days: readonly number[];
+  selected: readonly number[];
+  onToggle: (isoWeekday: number) => void;
+}) {
+  return (
+    <View className="flex-row flex-wrap gap-2">
+      {WEEKDAY_OPTIONS.filter((day) => days.includes(day.isoWeekday)).map((day) => {
+        const isSelected = selected.includes(day.isoWeekday);
+        return (
+          <Pressable
+            key={day.isoWeekday}
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: isSelected }}
+            onPress={() => onToggle(day.isoWeekday)}
+            className={`h-11 w-11 items-center justify-center rounded-full border-2 ${isSelected ? 'border-ink bg-surface-300' : 'border-border bg-surface-200 active:opacity-85'}`}
+          >
+            <Text
+              className={`font-body-extrabold text-button ${isSelected ? 'text-ink' : 'text-ink-muted'}`}
+            >
+              {day.label}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
 function describeSchedule(schedule: HabitDraft['schedule']): string {
   if (schedule.type === 'daily') return 'Todos los días';
   if (schedule.type === 'days_of_week') {
@@ -83,6 +134,9 @@ export function HabitForm({ habits, habit, onSubmit }: HabitFormProps) {
     hasTarget: Boolean(habit?.target),
     targetAmount: habit?.target ? String(habit.target.amount) : '',
     targetUnit: habit?.target?.unit ?? '',
+    hasReminder: Boolean(habit?.reminder),
+    reminderTime: habit?.reminder?.time ?? DEFAULT_REMINDER_TIME,
+    reminderDays: habit?.reminder?.daysOfWeek ?? WEEKDAY_OPTIONS.map((day) => day.isoWeekday),
   });
   // Los errores de un campo se muestran después de salir de él o de intentar guardar.
   const [touched, setTouched] = useState<Partial<Record<keyof HabitDraft, boolean>>>({});
@@ -126,6 +180,16 @@ export function HabitForm({ habits, habit, onSubmit }: HabitFormProps) {
     });
   }
 
+  function toggleReminderDay(isoWeekday: number) {
+    setTouched((current) => ({ ...current, reminderDays: true }));
+    setDraft((current) => ({
+      ...current,
+      reminderDays: current.reminderDays.includes(isoWeekday)
+        ? current.reminderDays.filter((day) => day !== isoWeekday)
+        : [...current.reminderDays, isoWeekday],
+    }));
+  }
+
   function handleSubmit() {
     setHasTriedSubmit(true);
     if (hasErrors(errors)) return;
@@ -139,6 +203,7 @@ export function HabitForm({ habits, habit, onSubmit }: HabitFormProps) {
       target: draft.hasTarget
         ? { amount: Number(draft.targetAmount), unit: draft.targetUnit.trim() }
         : null,
+      reminder: draftReminder(draft),
     });
   }
 
@@ -242,28 +307,11 @@ export function HabitForm({ habits, habit, onSubmit }: HabitFormProps) {
 
             {draft.schedule.type === 'days_of_week' && (
               <View className="gap-1">
-                <View accessibilityRole="radiogroup" className="flex-row flex-wrap gap-2">
-                  {WEEKDAY_OPTIONS.map((day) => {
-                    const isSelected =
-                      draft.schedule.type === 'days_of_week' &&
-                      draft.schedule.daysOfWeek.includes(day.isoWeekday);
-                    return (
-                      <Pressable
-                        key={day.isoWeekday}
-                        accessibilityRole="checkbox"
-                        accessibilityState={{ checked: isSelected }}
-                        onPress={() => toggleWeekday(day.isoWeekday)}
-                        className={`h-11 w-11 items-center justify-center rounded-full border-2 ${isSelected ? 'border-ink bg-surface-300' : 'border-border bg-surface-200 active:opacity-85'}`}
-                      >
-                        <Text
-                          className={`font-body-extrabold text-button ${isSelected ? 'text-ink' : 'text-ink-muted'}`}
-                        >
-                          {day.label}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
+                <WeekdayPicker
+                  days={WEEKDAY_OPTIONS.map((day) => day.isoWeekday)}
+                  selected={draft.schedule.daysOfWeek}
+                  onToggle={toggleWeekday}
+                />
                 {(hasTriedSubmit || touched.schedule) && errors.schedule && (
                   <Text
                     accessibilityLiveRegion="polite"
@@ -358,6 +406,42 @@ export function HabitForm({ habits, habit, onSubmit }: HabitFormProps) {
                 Meta fija: {draft.targetAmount} {draft.targetUnit} al día.
               </Text>
             )}
+      </View>
+
+      <View className="gap-2">
+        <View className="flex-row items-center gap-3">
+          <Text className="font-body-bold text-caption text-ink-muted flex-1">Recordarme</Text>
+          <Toggle
+            accessibilityLabel="Recordarme"
+            value={draft.hasReminder}
+            onChange={(hasReminder) => update('hasReminder', hasReminder)}
+          />
+        </View>
+        {draft.hasReminder && (
+          <View className="gap-2">
+            <TimeField
+              label="Hora"
+              value={draft.reminderTime}
+              onChange={(value) => update('reminderTime', value)}
+            />
+            <WeekdayPicker
+              days={reminderDaysFor(draft.schedule)}
+              selected={draft.reminderDays}
+              onToggle={toggleReminderDay}
+            />
+            <Text className="font-body-semibold text-caption text-ink-muted">
+              {reminderHelp(draft.schedule)}
+            </Text>
+            {visibleError('reminderDays') && (
+              <Text
+                accessibilityLiveRegion="polite"
+                className="font-body-bold text-caption text-error"
+              >
+                {visibleError('reminderDays')}
+              </Text>
+            )}
+          </View>
+        )}
       </View>
 
       <View className="gap-2">

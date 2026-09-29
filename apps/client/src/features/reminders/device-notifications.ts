@@ -36,7 +36,7 @@ let channelReady: Promise<unknown> | null = null;
 function ensureChannel(): Promise<unknown> {
   channelReady ??= Notifications.setNotificationChannelAsync(REMINDER_CHANNEL_ID, {
     name: 'Recordatorios',
-    description: 'Avisos diarios y de racha en riesgo, a la hora que elijas en Ajustes.',
+    description: 'Avisos diarios, de racha en riesgo y de cada hábito, a la hora que elijas.',
     importance: Notifications.AndroidImportance.HIGH,
     // Luz de aviso del celular: la brasa, sin depender del tema.
     lightColor: lightColors.ember,

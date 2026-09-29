@@ -52,6 +52,19 @@ export const TASK_TITLE_MAX_LENGTH = 80;
  */
 export const REMINDER_PLAN_DAYS = 30;
 
+/**
+ * Días hacia adelante de los recordatorios por hábito (D23): menos que los generales, porque
+ * Android limita las alarmas por app (~500) y cada hábito suma una por día.
+ */
+export const HABIT_REMINDER_PLAN_DAYS = 7;
+
+/**
+ * Mínimos de los destacados de Mes y Año (fase 17): días cerrados de un día de la semana para
+ * compararlo, y días de un hábito para elegirlo como el más constante.
+ */
+export const INSIGHT_MIN_WEEKDAY_DAYS = 2;
+export const INSIGHT_MIN_HABIT_DAYS = 5;
+
 /** Límites de una recompensa; los mismos que validan las reglas. */
 export const REWARD_NAME_MIN_LENGTH = 2;
 export const REWARD_NAME_MAX_LENGTH = 60;

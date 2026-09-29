@@ -54,6 +54,14 @@ export interface HabitTarget {
   unit: string;
 }
 
+/** Recordatorio propio de un hábito (fase 17, D23). Se puede cambiar o quitar cuando sea. */
+export interface HabitReminder {
+  /** 'HH:mm' de Bolivia. */
+  time: string;
+  /** 1 = lunes … 7 = domingo. En un hábito de días fijos, solo entre sus días. */
+  daysOfWeek: number[];
+}
+
 /** Lo que la lógica necesita de un hábito. */
 export interface Habit {
   id: string;
@@ -62,6 +70,8 @@ export interface Habit {
   schedule: HabitSchedule;
   /** Sin cantidad si falta o es null (los hábitos de antes de la fase 16 no lo traen). */
   target?: HabitTarget | null;
+  /** Sin recordatorio si falta o es null (los hábitos de antes de la fase 17 no lo traen). */
+  reminder?: HabitReminder | null;
   status: EntityStatus;
   /** Primer día en que cuenta. */
   startDateKey: DateKey;

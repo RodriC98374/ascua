@@ -1,5 +1,5 @@
 // Del plan de recordatorios de @ascua/shared a las notificaciones que se programan en el celular.
-import type { PlannedReminder, ReminderKind } from '@ascua/shared';
+import type { Habit, PlannedHabitReminder, PlannedReminder, ReminderKind } from '@ascua/shared';
 
 /** Canal de Android de los recordatorios. Una vez creado, Android solo deja cambiar su nombre. */
 export const REMINDER_CHANNEL_ID = 'reminders';
@@ -29,7 +29,23 @@ export function buildReminderRequests(plan: readonly PlannedReminder[]): Reminde
   return plan.map(({ id, kind, fireAt }) => ({ identifier: id, ...CONTENT[kind], fireAt }));
 }
 
-/** Resume un plan para no reprogramar todo cuando no cambió nada. */
+/** Recordatorio propio de un hábito (D23): el título es su nombre. */
+export function buildHabitReminderRequests(
+  plan: readonly PlannedHabitReminder<Habit>[],
+): ReminderRequest[] {
+  return plan.map(({ id, habit, fireAt }) => ({
+    identifier: id,
+    title: habit.name,
+    body: habit.target
+      ? `Tu meta de hoy: ${habit.target.amount} ${habit.target.unit}. Súmalos en Hoy.`
+      : 'Es tu hora. Márcalo en Hoy cuando lo hagas.',
+    fireAt,
+  }));
+}
+
+/** Resume un plan para no reprogramar todo cuando no cambió nada (el título, por si se renombra). */
 export function reminderPlanSignature(requests: readonly ReminderRequest[]): string {
-  return requests.map((request) => `${request.identifier}@${request.fireAt.getTime()}`).join('|');
+  return requests
+    .map((request) => `${request.identifier}@${request.fireAt.getTime()}#${request.title}`)
+    .join('|');
 }

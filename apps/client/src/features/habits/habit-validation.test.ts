@@ -1,7 +1,7 @@
 import type { HabitRecord } from '@ascua/shared';
 import { describe, expect, it } from '@jest/globals';
 
-import { hasErrors, validateHabit } from './habit-validation';
+import { draftReminder, hasErrors, validateHabit } from './habit-validation';
 
 function habit(id: string, overrides: Partial<HabitRecord> = {}) {
   return {
@@ -31,6 +31,9 @@ const valid = {
   hasTarget: false,
   targetAmount: '',
   targetUnit: '',
+  hasReminder: false,
+  reminderTime: '20:00',
+  reminderDays: [1, 2, 3, 4, 5, 6, 7],
 };
 
 describe('validateHabit', () => {
@@ -151,5 +154,50 @@ describe('validateHabit', () => {
       };
       expect(validateHabit(draft, { habits: [], isNew: false })).toEqual({});
     });
+  });
+});
+
+describe('habit reminder (fase 17)', () => {
+  const withReminder = { ...valid, hasReminder: true };
+
+  it('has no reminder when it is off', () => {
+    expect(draftReminder(valid)).toBeNull();
+  });
+
+  it('builds the reminder with its days in order', () => {
+    expect(draftReminder({ ...withReminder, reminderDays: [5, 1] })).toEqual({
+      time: '20:00',
+      daysOfWeek: [1, 5],
+    });
+  });
+
+  it('keeps only the days a days-of-week habit has', () => {
+    const draft = {
+      ...withReminder,
+      schedule: { type: 'days_of_week' as const, daysOfWeek: [2, 4] },
+      reminderDays: [1, 2, 3, 4],
+    };
+    expect(draftReminder(draft)).toEqual({ time: '20:00', daysOfWeek: [2, 4] });
+  });
+
+  it('asks for at least one day, also when editing', () => {
+    const message = 'Elige al menos un día para el recordatorio.';
+    expect(
+      validateHabit({ ...withReminder, reminderDays: [] }, { habits: [], isNew: true })
+        .reminderDays,
+    ).toBe(message);
+    expect(
+      validateHabit(
+        {
+          ...withReminder,
+          schedule: { type: 'days_of_week', daysOfWeek: [2] },
+          reminderDays: [1],
+        },
+        { habits: [], isNew: false },
+      ).reminderDays,
+    ).toBe(message);
+    expect(
+      validateHabit({ ...valid, reminderDays: [] }, { habits: [], isNew: true }).reminderDays,
+    ).toBeUndefined();
   });
 });

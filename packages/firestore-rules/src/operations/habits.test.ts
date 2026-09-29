@@ -34,6 +34,7 @@ const reading: NewHabitInput = {
   color: '#A3C4D9',
   schedule: { type: 'daily' },
   target: null,
+  reminder: null,
 };
 
 describe('habit operations', () => {
@@ -111,6 +112,60 @@ describe('habit operations', () => {
     });
   });
 
+  it('creates a habit with its reminder, with the days in order', async () => {
+    const db = ownerDb();
+    const { habitId, write } = createHabit(
+      db,
+      OWNER,
+      { ...reading, reminder: { time: '19:30', daysOfWeek: [5, 1, 3] } },
+      0,
+      TODAY,
+    );
+    await write;
+    expect(await loadHabit(habitId)).toMatchObject({
+      reminder: { time: '19:30', daysOfWeek: [1, 3, 5] },
+    });
+  });
+
+  it('adds, changes and removes the reminder when editing', async () => {
+    const db = ownerDb();
+    const { habitId, write } = createHabit(db, OWNER, reading, 0, TODAY);
+    await write;
+    expect(await loadHabit(habitId)).toMatchObject({ reminder: null });
+
+    await updateHabit(db, OWNER, habitId, {
+      ...reading,
+      reminder: { time: '07:00', daysOfWeek: [7] },
+    });
+    expect(await loadHabit(habitId)).toMatchObject({
+      reminder: { time: '07:00', daysOfWeek: [7] },
+    });
+    await updateHabit(db, OWNER, habitId, {
+      ...reading,
+      reminder: { time: '21:05', daysOfWeek: [2, 4] },
+    });
+    expect(await loadHabit(habitId)).toMatchObject({
+      reminder: { time: '21:05', daysOfWeek: [2, 4] },
+    });
+    await updateHabit(db, OWNER, habitId, { ...reading, reminder: null });
+    expect(await loadHabit(habitId)).toMatchObject({ reminder: null });
+  });
+
+  it('is rejected when the reminder uses a day the habit does not have', async () => {
+    const { write } = createHabit(
+      ownerDb(),
+      OWNER,
+      {
+        ...reading,
+        schedule: { type: 'days_of_week', daysOfWeek: [1, 3] },
+        reminder: { time: '08:00', daysOfWeek: [2] },
+      },
+      0,
+      TODAY,
+    );
+    await assertFails(write);
+  });
+
   it('edits name, description, tier, category and color', async () => {
     const db = ownerDb();
     const { habitId, write } = createHabit(db, OWNER, reading, 0, TODAY);
@@ -121,6 +176,7 @@ describe('habit operations', () => {
       tier: 'secondary',
       category: 'mental',
       color: '#C4B2DE',
+      reminder: null,
     });
 
     const habit = await getDoc(habitRef(db, OWNER, habitId));
@@ -195,7 +251,7 @@ describe('habit operations', () => {
     it('reads them without a target and edits them without adding one', async () => {
       await seedDocs({ [paths.habit('old')]: legacyHabit('old', 0) });
       const db = ownerDb();
-      expect(await loadHabit('old')).toMatchObject({ target: null });
+      expect(await loadHabit('old')).toMatchObject({ target: null, reminder: null });
       await updateHabit(db, OWNER, 'old', { ...reading, name: 'Leer' });
       expect(await loadHabit('old')).toMatchObject({ name: 'Leer', target: null });
     });

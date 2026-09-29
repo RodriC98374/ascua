@@ -6,12 +6,14 @@ import {
   HABIT_NAME_MAX_LENGTH,
   HABIT_NAME_MIN_LENGTH,
   MAX_PRIMARY_HABITS,
+  reminderDaysFor,
   TARGET_AMOUNT_MAX,
   TARGET_AMOUNT_MIN,
   TARGET_UNIT_MAX_LENGTH,
   type HabitCategory,
   type HabitColor,
   type HabitRecord,
+  type HabitReminder,
   type HabitSchedule,
   type HabitTier,
 } from '@ascua/shared';
@@ -29,6 +31,12 @@ export interface HabitDraft {
   /** Texto tal como se escribe; se valida y convierte a número al guardar. */
   targetAmount: string;
   targetUnit: string;
+  /** Recordatorio propio (D23): se puede cambiar al editar. */
+  hasReminder: boolean;
+  /** 'HH:mm'; lo elige el selector de hora, siempre válido. */
+  reminderTime: string;
+  /** Días marcados; al guardar solo quedan los que la frecuencia permite. */
+  reminderDays: number[];
 }
 
 export type HabitErrors = Partial<
@@ -44,6 +52,16 @@ interface ValidationContext {
 }
 
 const normalize = (name: string) => name.trim().toLocaleLowerCase('es');
+
+/** El recordatorio que se guarda: los días elegidos que la frecuencia permite, en orden. */
+export function draftReminder(draft: HabitDraft): HabitReminder | null {
+  if (!draft.hasReminder) return null;
+  const allowed = reminderDaysFor(draft.schedule);
+  return {
+    time: draft.reminderTime,
+    daysOfWeek: allowed.filter((day) => draft.reminderDays.includes(day)),
+  };
+}
 
 export function validateHabit(
   draft: HabitDraft,
@@ -72,6 +90,9 @@ export function validateHabit(
 
   if (draft.tier === 'primary' && !canBePrimary(habits, habitId))
     errors.tier = `Ya tienes ${MAX_PRIMARY_HABITS} hábitos principales. Elige secundario.`;
+
+  if (draftReminder(draft)?.daysOfWeek.length === 0)
+    errors.reminderDays = 'Elige al menos un día para el recordatorio.';
 
   if (isNew) {
     if (draft.schedule.type === 'days_of_week' && draft.schedule.daysOfWeek.length === 0)

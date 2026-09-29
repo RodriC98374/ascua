@@ -207,17 +207,17 @@ service cloud.firestore {
           && incoming().archivedDateKey == null
           && incoming().startDateKey >= todayKey();
         allow update: if isOwner(userId)
-          && onlyChanges(['name', 'description', 'icon', 'color', 'category', 'tier', 'sortOrder', 'status', 'archivedDateKey', 'updatedAt'])
+          && onlyChanges(['name', 'description', 'icon', 'color', 'category', 'tier', 'reminder', 'sortOrder', 'status', 'archivedDateKey', 'updatedAt'])
           && isValidHabit(incoming())
           && isTouchedNow()
           && isValidHabitStatusChange(existing(), incoming());
       }
 
-      // `target` es opcional: los hábitos de antes de la fase 16 no lo traen.
+      // `target` y `reminder` son opcionales: los hábitos de antes de las fases 16 y 17 no los traen.
       function isValidHabit(habit) {
         let fields = ['name', 'description', 'icon', 'color', 'category', 'tier', 'schedule', 'status', 'sortOrder', 'startDateKey', 'archivedDateKey', 'createdAt', 'updatedAt', 'schemaVersion'];
         return habit.keys().hasAll(fields)
-          && habit.keys().hasOnly(fields.concat(['target']))
+          && habit.keys().hasOnly(fields.concat(['target', 'reminder']))
           && isText(habit.name, 1, 60)
           && isOptionalText(habit.description, 200)
           && isText(habit.icon, 1, 40)
@@ -227,6 +227,7 @@ service cloud.firestore {
           && habit.tier in ['primary', 'secondary']
           && isValidSchedule(habit.schedule)
           && (!('target' in habit) || habit.target == null || isValidTarget(habit.target))
+          && (!('reminder' in habit) || habit.reminder == null || isValidHabitReminder(habit.reminder, habit.schedule))
           && habit.status in ['active', 'archived']
           && habit.sortOrder is int
           && isDateKey(habit.startDateKey)
@@ -258,6 +259,18 @@ service cloud.firestore {
           && target.amount >= 2
           && target.amount <= 999
           && isText(target.unit, 1, 20);
+      }
+
+      // Recordatorio propio (fase 17): hora y días elegidos, sin repetir. En un hábito de días fijos,
+      // solo entre sus días. A diferencia de la frecuencia, se cambia o se quita cuando sea.
+      function isValidHabitReminder(reminder, schedule) {
+        let allowedDays = schedule.type == 'days_of_week' ? schedule.daysOfWeek : [1, 2, 3, 4, 5, 6, 7];
+        return hasExactly(reminder, ['time', 'daysOfWeek'])
+          && isReminderTime(reminder.time)
+          // Solo una lista tiene hasOnly y toSet: con otro tipo la regla falla y niega.
+          && reminder.daysOfWeek.size() >= 1
+          && reminder.daysOfWeek.hasOnly(allowedDays)
+          && reminder.daysOfWeek.toSet().size() == reminder.daysOfWeek.size();
       }
 
       // Archivar deja hoy como último día en que cuenta. Un hábito archivado no se reactiva:

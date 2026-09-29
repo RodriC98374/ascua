@@ -65,8 +65,8 @@ export const userProfileConverter = domainConverter<UserProfile>();
 export const gamificationConverter = domainConverter<GamificationState>();
 
 // El ID del documento es el ID del hábito. Los hábitos creados antes de que existieran las
-// categorías no traen `category` ni un `color` de la paleta, y los de antes de la fase 16 no traen
-// `target`: se les completa al leerlos.
+// categorías no traen `category` ni un `color` de la paleta, y los de antes de las fases 16 y 17 no
+// traen `target` ni `reminder`: se les completa al leerlos.
 const baseHabitConverter = withIdConverter<HabitRecord>();
 export const habitConverter: FirestoreDataConverter<HabitRecord, DocumentData> = {
   toFirestore: (data) => data as DocumentData,
@@ -76,6 +76,7 @@ export const habitConverter: FirestoreDataConverter<HabitRecord, DocumentData> =
     return {
       ...habit,
       target: habit.target ?? null,
+      reminder: habit.reminder ?? null,
       category: category.id,
       color: isHabitColor(habit.color) ? habit.color : category.color,
     };
