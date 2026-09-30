@@ -58,8 +58,8 @@ archivo en Android; en la web funciona sin build.
 - [x] La app abre sin conexión: la puerta de la cuenta ya no exige red (`isAccountCached`).
 - [x] Revisión del usuario (30-09-2026): instaló la web en su Edge y restauró un respaldo editado
       en la demo. Aprobada.
-- [ ] Al publicar: que las cabeceras de `sw.js` y del manifiesto lleguen (el emulador de Hosting
-      no aplica cabeceras).
+- [x] Publicada el 30-09-2026: las cabeceras de `sw.js` y del manifiesto llegan (el emulador de
+      Hosting no las aplica).
 
 ## Lo que salió al revisar
 
