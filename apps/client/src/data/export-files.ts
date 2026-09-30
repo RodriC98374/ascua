@@ -36,6 +36,8 @@ const USER_COLLECTIONS = [
   'rewards',
   'rewardRedemptions',
   'tasks',
+  'goals',
+  'weeklyReflections',
 ] as const;
 
 /** Documentos tal como están en Firestore, sin converter: el respaldo no pierde ningún campo. */
@@ -64,9 +66,10 @@ async function rawCollections(
 }
 
 async function backupContent(db: Firestore, uid: string, now: Date): Promise<string> {
-  const [profile, gamification, collections] = await Promise.all([
+  const [profile, gamification, savings, collections] = await Promise.all([
     rawDocument(db, ['users', uid]),
     rawDocument(db, ['users', uid, 'meta', 'gamification']),
+    rawDocument(db, ['users', uid, 'meta', 'savings']),
     rawCollections(db, uid),
   ]);
   const backup = buildBackup({
@@ -74,6 +77,7 @@ async function backupContent(db: Firestore, uid: string, now: Date): Promise<str
     exportedAt: now,
     profile,
     gamification,
+    savings,
     ...collections,
   });
   return JSON.stringify(backup, null, 2);

@@ -557,6 +557,145 @@ function buildDemoData(uid: string, options: DemoOptions): DemoData {
   addTask(addDays(today, 1), null, 'large');
   addTask(addDays(today, 4), null, 'small');
 
+  // Fase 18 (D25): dos metas en curso con tareas propias y una lograda.
+  const goalTask = (
+    id: string,
+    title: string,
+    size: TaskSize,
+    dueDateKey: DateKey,
+    completedDateKey: DateKey | null,
+  ) => {
+    documents.set(`${user}/tasks/${id}`, {
+      title,
+      size,
+      dueDateKey,
+      completedDateKey,
+      completedAt: completedDateKey ? at(completedDateKey, '17:00:00') : null,
+      ...meta(at(addDays(dueDateKey, -3), '10:00:00')),
+    });
+    return id;
+  };
+  const goals = [
+    {
+      id: 'calculo',
+      title: 'Aprobar Cálculo II',
+      description: 'Sacar al menos 70 en el final para no arrastrarla.',
+      startDateKey: addDays(today, -20),
+      targetDateKey: addDays(today, 45),
+      habitIds: ['leer', 'meditar'],
+      taskIds: [
+        goalTask(
+          'goal-calc-1',
+          'Repasar límites y derivadas',
+          'medium',
+          addDays(today, -12),
+          addDays(today, -11),
+        ),
+        goalTask(
+          'goal-calc-2',
+          'Resolver la práctica 3',
+          'large',
+          addDays(today, -5),
+          addDays(today, -4),
+        ),
+        goalTask(
+          'goal-calc-3',
+          'Pedir los ejercicios del parcial',
+          'small',
+          addDays(today, 1),
+          null,
+        ),
+        goalTask('goal-calc-4', 'Simulacro del examen', 'large', addDays(today, 6), null),
+      ],
+      status: 'active',
+      achievedDateKey: null,
+      sortOrder: 0,
+    },
+    {
+      id: 'correr',
+      title: 'Correr 10 km',
+      description: null,
+      startDateKey: addDays(today, -35),
+      targetDateKey: null,
+      habitIds: ['ejercicio', 'natacion'],
+      taskIds: [
+        goalTask(
+          'goal-run-1',
+          'Comprar zapatillas para correr',
+          'medium',
+          addDays(today, -30),
+          addDays(today, -29),
+        ),
+        goalTask(
+          'goal-run-2',
+          'Inscribirme en la carrera de 10K',
+          'small',
+          addDays(today, 3),
+          null,
+        ),
+      ],
+      status: 'active',
+      achievedDateKey: null,
+      sortOrder: 1,
+    },
+    {
+      id: 'ingles-a2',
+      title: 'Terminar el curso de inglés A2',
+      description: null,
+      startDateKey: addDays(today, -70),
+      targetDateKey: addDays(today, -20),
+      habitIds: ['ingles'],
+      taskIds: [],
+      status: 'achieved',
+      achievedDateKey: addDays(today, -25),
+      sortOrder: 2,
+    },
+  ];
+  for (const { id, ...fields } of goals) {
+    documents.set(`${user}/goals/${id}`, {
+      ...fields,
+      ...meta(at(fields.startDateKey, '09:00:00')),
+    });
+  }
+
+  // Reflexiones de tres semanas pasadas. La última que ya se puede escribir queda sin escribir,
+  // para ver la invitación (en Hoy los domingos y lunes, y siempre en Metas).
+  const latestWeek = isoWeekday(today) === 7 ? weekStart : addDays(weekStart, -7);
+  const reflections = [
+    [
+      'Cumplí la lectura todos los días.',
+      'El jueves se me juntaron las entregas.',
+      'Dejar el celular a las 22:30.',
+    ],
+    [
+      'Volví a meditar después de semanas.',
+      'Dormir antes de las 23:00.',
+      'Preparar la ropa de ejercicio la noche antes.',
+    ],
+    ['Una semana perfecta el fin de semana.', '', 'Mantener el ritmo con Cálculo.'],
+  ] as const;
+  reflections.forEach(([wentWell, wasHard, nextFocus], index) => {
+    const week = addDays(latestWeek, -7 * (index + 1));
+    documents.set(`${user}/weeklyReflections/${week}`, {
+      weekStartDateKey: week,
+      wentWell,
+      wasHard,
+      nextFocus,
+      ...meta(at(addDays(week, 6), '21:00:00')),
+    });
+  });
+
+  // Alcancía para el cine: una parte del saldo apartada hace unos días.
+  const saved = Math.min(250, Math.floor(state.pointsBalance * 0.6));
+  if (saved > 0) {
+    documents.set(`${user}/meta/savings`, {
+      rewardId: 'cine',
+      points: saved,
+      startedDateKey: addDays(today, -6),
+      ...meta(at(addDays(today, -6), '09:30:00')),
+    });
+  }
+
   return { documents, state };
 }
 

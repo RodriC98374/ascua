@@ -52,6 +52,10 @@ export const paths = {
   transaction: (id: string, uid = OWNER) => `users/${uid}/pointTransactions/${id}`,
   redemption: (id: string, uid = OWNER) => `users/${uid}/rewardRedemptions/${id}`,
   task: (id: string, uid = OWNER) => `users/${uid}/tasks/${id}`,
+  goal: (id: string, uid = OWNER) => `users/${uid}/goals/${id}`,
+  reflection: (weekStartDateKey: string, uid = OWNER) =>
+    `users/${uid}/weeklyReflections/${weekStartDateKey}`,
+  savings: (uid = OWNER) => `users/${uid}/meta/savings`,
 };
 
 /** Campos comunes de todo documento nuevo. */
@@ -124,6 +128,43 @@ export function taskDoc(overrides: DocumentData = {}): DocumentData {
     ...created(),
     ...overrides,
   };
+}
+
+/** Meta activa creada hoy, tal como la crea la app (fase 18). */
+export function goalDoc(overrides: DocumentData = {}): DocumentData {
+  return {
+    title: 'Aprobar Cálculo',
+    description: null,
+    targetDateKey: null,
+    habitIds: [],
+    taskIds: [],
+    status: 'active',
+    startDateKey: TODAY,
+    achievedDateKey: null,
+    sortOrder: 0,
+    ...created(),
+    ...overrides,
+  };
+}
+
+/** Reflexión de la semana que empieza el lunes `weekStartDateKey` (fase 18). */
+export function reflectionDoc(
+  weekStartDateKey: string,
+  overrides: DocumentData = {},
+): DocumentData {
+  return {
+    weekStartDateKey,
+    wentWell: 'Cumplí casi todos los días',
+    wasHard: '',
+    nextFocus: 'Dormir antes de las 23:00',
+    ...created(),
+    ...overrides,
+  };
+}
+
+/** Alcancía (`meta/savings`, fase 18). Sin argumentos, vacía. */
+export function savingsDoc(overrides: DocumentData = {}): DocumentData {
+  return { rewardId: null, points: 0, startedDateKey: null, ...created(), ...overrides };
 }
 
 export function testTask(id: string, size: TaskSize, completedDateKey: string | null): Task {

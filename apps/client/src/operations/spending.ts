@@ -4,11 +4,15 @@
 //
 // Idempotencia: el `requestId` se genera una vez por intento y se reutiliza si hay reintento. El ID
 // del movimiento sale de él, así que repetir la operación nunca cobra dos veces.
+//
+// Alcancía (fase 18): lo apartado no se gasta en otra cosa. Canjear la recompensa de la alcancía la
+// vacía en la misma transacción.
 import {
   addMonthlySpending,
   canPurchaseFreeze,
   canRedeemReward,
   EMPTY_MONTHLY_COUNTERS,
+  EMPTY_SAVINGS,
   planFreezePurchase,
   planRewardRedemption,
   todayDateKey,
@@ -34,6 +38,7 @@ import {
   pointTransactionRef,
   redemptionRef,
   rewardRef,
+  savingsRef,
 } from '../data/documents';
 
 export type SpendResult = 'done' | 'already_done';
@@ -59,8 +64,9 @@ export function purchaseStreakFreeze(
   const transactionId = transactionIds.freezePurchase(requestId);
   return runSpend(db, uid, transactionId, async (transaction) => {
     const state = await readState(transaction, db, uid);
+    const savings = await readSavings(transaction, db, uid);
     const month = await readMonth(transaction, db, uid, today);
-    assertAllowed(canPurchaseFreeze(state));
+    assertAllowed(canPurchaseFreeze(state, savings));
     writeSpend(transaction, db, uid, planFreezePurchase(state, requestId, today), month, today);
   });
 }
@@ -81,9 +87,16 @@ export function redeemReward(
   return runSpend(db, uid, transactionId, async (transaction) => {
     const state = await readState(transaction, db, uid);
     const reward = (await transaction.get(rewardRef(db, uid, rewardId))).data();
+    const savings = await readSavings(transaction, db, uid);
     const month = await readMonth(transaction, db, uid, today);
     if (!reward) throw new Error(`No existe la recompensa ${rewardId}.`);
-    assertAllowed(canRedeemReward(state, reward));
+    assertAllowed(canRedeemReward(state, reward, savings));
+    if (savings?.rewardId === rewardId) {
+      transaction.update(savingsRef(db, uid).withConverter(null), {
+        ...EMPTY_SAVINGS,
+        updatedAt: serverTimestamp(),
+      });
+    }
 
     const plan = planRewardRedemption(state, reward, requestId, today);
     writeSpend(transaction, db, uid, plan, month, today);
@@ -131,6 +144,11 @@ async function readState(transaction: Transaction, db: Firestore, uid: string) {
   const state = (await transaction.get(gamificationRef(db, uid))).data();
   if (!state) throw new Error('La cuenta no tiene estado de puntos.');
   return state;
+}
+
+/** La alcancía, si alguna vez se usó. */
+async function readSavings(transaction: Transaction, db: Firestore, uid: string) {
+  return (await transaction.get(savingsRef(db, uid))).data() ?? null;
 }
 
 function readMonth(transaction: Transaction, db: Firestore, uid: string, today: DateKey) {

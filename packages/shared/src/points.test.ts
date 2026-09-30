@@ -61,6 +61,16 @@ describe('canPurchaseFreeze', () => {
       reason: 'max_freezes_reached',
     });
   });
+
+  it('leaves the points of the jar out', () => {
+    const jar = { rewardId: 'cinema', points: 100, startedDateKey: DAY };
+    expect(canPurchaseFreeze(state(), jar)).toEqual({
+      ok: false,
+      reason: 'insufficient_points',
+      missingPoints: 50,
+    });
+    expect(canPurchaseFreeze(state(), { ...jar, points: 50 })).toEqual({ ok: true });
+  });
 });
 
 describe('planFreezePurchase', () => {
@@ -108,6 +118,26 @@ describe('canRedeemReward', () => {
     expect(canRedeemReward(state(), { ...ANIME, status: 'archived' })).toEqual({
       ok: false,
       reason: 'reward_archived',
+    });
+  });
+
+  it('leaves the points of the jar out for another reward', () => {
+    const jar = { rewardId: 'cinema', points: 180, startedDateKey: DAY };
+    expect(canRedeemReward(state(), ANIME, jar)).toEqual({
+      ok: false,
+      reason: 'insufficient_points',
+      missingPoints: 40,
+    });
+  });
+
+  it('counts the jar for its own reward, which empties it', () => {
+    const jar = { rewardId: 'cinema', points: 200, startedDateKey: DAY };
+    const rich = state({ pointsBalance: 600 });
+    expect(canRedeemReward(rich, CINEMA, jar)).toEqual({ ok: true });
+    expect(canRedeemReward(state(), CINEMA, jar)).toEqual({
+      ok: false,
+      reason: 'insufficient_points',
+      missingPoints: 400,
     });
   });
 });

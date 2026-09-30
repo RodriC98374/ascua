@@ -100,6 +100,26 @@ export function addDays(dateKey: DateKey, days: number): DateKey {
   return fromUtcMs(toUtcMs(dateKey) + days * MS_PER_DAY);
 }
 
+/** Días del mes (`month` de 1 a 12). */
+export function daysInMonth(year: number, month: number): number {
+  return new Date(Date.UTC(year, month, 0)).getUTCDate();
+}
+
+/**
+ * Mismo día del mes, `months` meses después (o antes). Si ese mes es más corto, el último día:
+ * del 31 de enero, un mes después es el 28 (o 29) de febrero.
+ */
+export function addMonths(dateKey: DateKey, months: number): DateKey {
+  const year = Number(dateKey.slice(0, 4));
+  const month = Number(dateKey.slice(5, 7));
+  const day = Number(dateKey.slice(8, 10));
+  const target = new Date(Date.UTC(year, month - 1 + months, 1));
+  const targetYear = target.getUTCFullYear();
+  const targetMonth = target.getUTCMonth() + 1;
+  const targetDay = Math.min(day, daysInMonth(targetYear, targetMonth));
+  return fromUtcMs(Date.UTC(targetYear, targetMonth - 1, targetDay));
+}
+
 /** Días de calendario desde `from` hasta `to` (negativo si `to` es anterior). */
 export function daysBetween(from: DateKey, to: DateKey): number {
   return Math.round((toUtcMs(to) - toUtcMs(from)) / MS_PER_DAY);

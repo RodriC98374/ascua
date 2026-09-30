@@ -6,6 +6,7 @@ import type {
   DailyLog,
   DateKey,
   GamificationState,
+  Goal,
   HabitEntry,
   HabitRecord,
   MonthKey,
@@ -13,9 +14,11 @@ import type {
   PointTransaction,
   RewardRecord,
   RewardRedemption,
+  SavingsJar,
   TaskRecord,
   TaskSize,
   UserProfile,
+  WeeklyReflection,
 } from '@ascua/shared';
 import {
   collection,
@@ -246,4 +249,41 @@ export function redemptionRef(
   requestId: string,
 ): DocumentReference<RewardRedemption> {
   return doc(redemptionsCollection(db, uid), requestId);
+}
+
+// ---------- Fase 18: metas, reflexión semanal y alcancía ----------
+
+export const goalConverter = withIdConverter<Goal>();
+
+export function goalsCollection(db: Firestore, uid: string): CollectionReference<Goal> {
+  return collection(db, 'users', uid, 'goals').withConverter(goalConverter);
+}
+
+export function goalRef(db: Firestore, uid: string, goalId: string): DocumentReference<Goal> {
+  return doc(goalsCollection(db, uid), goalId);
+}
+
+export const weeklyReflectionConverter = domainConverter<WeeklyReflection>();
+
+export function weeklyReflectionsCollection(
+  db: Firestore,
+  uid: string,
+): CollectionReference<WeeklyReflection> {
+  return collection(db, 'users', uid, 'weeklyReflections').withConverter(weeklyReflectionConverter);
+}
+
+/** El ID es el lunes de la semana. */
+export function weeklyReflectionRef(
+  db: Firestore,
+  uid: string,
+  weekStartDateKey: DateKey,
+): DocumentReference<WeeklyReflection> {
+  return doc(weeklyReflectionsCollection(db, uid), weekStartDateKey);
+}
+
+export const savingsConverter = domainConverter<SavingsJar>();
+
+/** La alcancía: un documento único, como el estado de gamificación. */
+export function savingsRef(db: Firestore, uid: string): DocumentReference<SavingsJar> {
+  return doc(db, 'users', uid, 'meta', 'savings').withConverter(savingsConverter);
 }

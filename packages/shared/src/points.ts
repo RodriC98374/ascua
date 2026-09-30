@@ -1,8 +1,9 @@
 // Gasto de puntos: compra de protectores y canje de recompensas. Funciones puras; las operaciones
 // de la app las usan dentro de una transacción de Firestore y las reglas validan el resultado.
 import { MAX_STREAK_FREEZES, STREAK_FREEZE_COST } from './constants';
+import { spendablePoints } from './savings';
 import { transactionIds } from './transaction-ids';
-import type { DateKey, GamificationState, PointTransaction, Reward } from './types';
+import type { DateKey, GamificationState, PointTransaction, Reward, SavingsJar } from './types';
 
 export type SpendCheck =
   | { ok: true }
@@ -14,22 +15,38 @@ export interface SpendPlan {
   nextState: GamificationState;
 }
 
-function checkBalance(state: GamificationState, cost: number): SpendCheck {
-  return state.pointsBalance >= cost
+function checkBalance(available: number, cost: number): SpendCheck {
+  return available >= cost
     ? { ok: true }
-    : { ok: false, reason: 'insufficient_points', missingPoints: cost - state.pointsBalance };
+    : { ok: false, reason: 'insufficient_points', missingPoints: cost - available };
 }
 
-export function canPurchaseFreeze(state: GamificationState): SpendCheck {
+/** Lo apartado en la alcancía (fase 18) no se puede gastar en un protector. */
+export function canPurchaseFreeze(
+  state: GamificationState,
+  savings: SavingsJar | null = null,
+): SpendCheck {
   if (state.streakFreezesAvailable >= MAX_STREAK_FREEZES) {
     return { ok: false, reason: 'max_freezes_reached' };
   }
-  return checkBalance(state, STREAK_FREEZE_COST);
+  return checkBalance(spendablePoints(state.pointsBalance, savings), STREAK_FREEZE_COST);
 }
 
-export function canRedeemReward(state: GamificationState, reward: Reward): SpendCheck {
+/**
+ * Lo apartado en la alcancía solo sirve para su propia recompensa: al canjearla, la alcancía se
+ * vacía en la misma transacción y alcanza con el saldo entero.
+ */
+export function canRedeemReward(
+  state: GamificationState,
+  reward: Reward,
+  savings: SavingsJar | null = null,
+): SpendCheck {
   if (reward.status !== 'active') return { ok: false, reason: 'reward_archived' };
-  return checkBalance(state, reward.cost);
+  const available =
+    savings?.rewardId === reward.id
+      ? state.pointsBalance
+      : spendablePoints(state.pointsBalance, savings);
+  return checkBalance(available, reward.cost);
 }
 
 function spend(

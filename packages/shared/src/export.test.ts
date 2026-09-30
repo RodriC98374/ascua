@@ -192,7 +192,20 @@ describe('buildHabitDaysCsv', () => {
         today: '2026-09-22',
       }),
     );
-    expect(rows.at(-1)).toEqual(['2026-09-22', 'En curso', '50', '', '', '', '', '', '0', '', '1', '']);
+    expect(rows.at(-1)).toEqual([
+      '2026-09-22',
+      'En curso',
+      '50',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '0',
+      '',
+      '1',
+      '',
+    ]);
   });
 
   it('marks archived habits in the header and leaves them empty after archiving', () => {
@@ -342,6 +355,9 @@ describe('buildBackup', () => {
         { id: 't2', data: { title: 'Pagar luz', completedAt: instant('2026-09-22T15:00:00Z') } },
         { id: 't1', data: { title: 'Llamar', completedAt: null } },
       ],
+      goals: [{ id: 'g1', data: { title: 'Aprobar Cálculo', taskIds: ['t1'] } }],
+      weeklyReflections: [{ id: '2026-09-14', data: { wentWell: 'Dormí bien' } }],
+      savings: { id: 'savings', data: { rewardId: 'trip', points: 120 } },
     });
 
     expect(backup).toEqual({
@@ -365,6 +381,9 @@ describe('buildBackup', () => {
         { id: 't1', title: 'Llamar', completedAt: null },
         { id: 't2', title: 'Pagar luz', completedAt: '2026-09-22T11:00:00.000-04:00' },
       ],
+      goals: [{ id: 'g1', title: 'Aprobar Cálculo', taskIds: ['t1'] }],
+      weeklyReflections: [{ id: '2026-09-14', wentWell: 'Dormí bien' }],
+      savings: { rewardId: 'trip', points: 120 },
     });
   });
 
@@ -381,8 +400,12 @@ describe('buildBackup', () => {
       rewards: [],
       rewardRedemptions: [],
       tasks: [],
+      goals: [],
+      weeklyReflections: [],
+      savings: null,
     });
     expect(backup.profile).toBeNull();
+    expect(backup.savings).toBeNull();
     expect(JSON.parse(JSON.stringify(backup))).toEqual(backup);
   });
 });

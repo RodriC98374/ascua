@@ -170,6 +170,9 @@ export interface BackupInput {
   rewards: readonly ExportDocument[];
   rewardRedemptions: readonly ExportDocument[];
   tasks: readonly ExportDocument[];
+  goals: readonly ExportDocument[];
+  weeklyReflections: readonly ExportDocument[];
+  savings: ExportDocument | null;
 }
 
 type BackupRecord = Record<string, unknown>;
@@ -190,6 +193,11 @@ export interface Backup {
   rewardRedemptions: BackupRecord[];
   /** Desde la fase 14. Un respaldo anterior no la trae: al restaurar, se toma como vacía. */
   tasks: BackupRecord[];
+  /** Desde la fase 18, como las dos de abajo. Un respaldo anterior no las trae. */
+  goals: BackupRecord[];
+  weeklyReflections: BackupRecord[];
+  /** La alcancía (`meta/savings`); null si nunca se usó. */
+  savings: BackupRecord | null;
 }
 
 /** Un `Timestamp` de Firestore (o cualquier valor con `toDate`), sin importar Firebase. */
@@ -235,6 +243,9 @@ export function buildBackup(input: BackupInput): Backup {
     rewards: serializeCollection(input.rewards),
     rewardRedemptions: serializeCollection(input.rewardRedemptions),
     tasks: serializeCollection(input.tasks),
+    goals: serializeCollection(input.goals),
+    weeklyReflections: serializeCollection(input.weeklyReflections),
+    savings: input.savings && serializeData(input.savings),
   };
 }
 

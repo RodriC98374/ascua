@@ -90,3 +90,15 @@ export const TIMES_PER_WEEK_MAX = 6;
 export const TARGET_AMOUNT_MIN = 2;
 export const TARGET_AMOUNT_MAX = 999;
 export const TARGET_UNIT_MAX_LENGTH = 20;
+
+/** Metas (fase 18, D25). Los mismos límites que validan las reglas. */
+export const GOAL_TITLE_MIN_LENGTH = 2;
+export const GOAL_TITLE_MAX_LENGTH = 60;
+export const GOAL_DESCRIPTION_MAX_LENGTH = 200;
+export const MAX_GOAL_HABITS = 10;
+export const MAX_GOAL_TASKS = 50;
+/** La constancia de los hábitos de una meta mira como mucho un año atrás (lecturas acotadas). */
+export const GOAL_HABIT_LOOKBACK_DAYS = 365;
+
+/** Largo máximo de cada respuesta de la reflexión semanal (fase 18). */
+export const REFLECTION_ANSWER_MAX_LENGTH = 500;

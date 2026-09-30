@@ -2,8 +2,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
   addDays,
+  addMonths,
   dateKeyRange,
   daysBetween,
+  daysInMonth,
   isoWeekday,
   isValidDateKey,
   msUntilNextDay,
@@ -62,6 +64,29 @@ describe('todayDateKey', () => {
 describe('toMonthKey', () => {
   it('extracts the month of a date key', () => {
     expect(toMonthKey('2026-09-21')).toBe('2026-09');
+  });
+});
+
+describe('addMonths', () => {
+  it('keeps the day of the month', () => {
+    expect(addMonths('2026-09-29', 1)).toBe('2026-10-29');
+    expect(addMonths('2026-09-29', 4)).toBe('2027-01-29');
+    expect(addMonths('2026-09-29', -9)).toBe('2025-12-29');
+  });
+
+  it('falls back to the last day of a shorter month', () => {
+    expect(addMonths('2026-01-31', 1)).toBe('2026-02-28');
+    expect(addMonths('2028-01-31', 1)).toBe('2028-02-29');
+    expect(addMonths('2026-08-31', 1)).toBe('2026-09-30');
+  });
+});
+
+describe('daysInMonth', () => {
+  it('knows short months and leap years', () => {
+    expect(daysInMonth(2026, 9)).toBe(30);
+    expect(daysInMonth(2026, 2)).toBe(28);
+    expect(daysInMonth(2028, 2)).toBe(29);
+    expect(daysInMonth(2026, 12)).toBe(31);
   });
 });
 

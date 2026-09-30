@@ -1,18 +1,23 @@
 import type { DateKey, MonthKey, TaskRecord } from '@ascua/shared';
-import { limit, orderBy, query, where } from 'firebase/firestore';
+import { documentId, limit, onSnapshot, orderBy, query, where } from 'firebase/firestore';
+import { useEffect, useState } from 'react';
 
 import {
   dailyLogRef,
   dailyLogsCollection,
   gamificationRef,
+  goalsCollection,
   habitsCollection,
   monthlySummariesCollection,
   monthlySummaryRef,
   pointTransactionsCollection,
   redemptionsCollection,
   rewardsCollection,
+  savingsRef,
   tasksCollection,
   userProfileRef,
+  weeklyReflectionRef,
+  weeklyReflectionsCollection,
 } from '@/data/documents';
 import { db } from '@/lib/firebase';
 
@@ -141,4 +146,84 @@ export function useRedemptions(uid: string) {
     query(redemptionsCollection(db, uid), orderBy('createdAt', 'desc'), limit(HISTORY_LIMIT)),
     `rewardRedemptions/${uid}`,
   );
+}
+
+// ---------- Fase 18: metas, reflexión semanal y alcancía ----------
+
+/** Todas las metas (activas, logradas y archivadas), en el orden elegido. */
+export function useGoals(uid: string) {
+  return useQuery(query(goalsCollection(db, uid), orderBy('sortOrder')), `goals/${uid}`);
+}
+
+/** Firestore acepta hasta 30 valores en un `in`. */
+const IN_QUERY_LIMIT = 30;
+
+/**
+ * Tareas por ID (las de las metas), en consultas de a 30. No usa `useQuery` porque la cantidad de
+ * consultas cambia con la lista.
+ */
+export function useTasksByIds(uid: string, taskIds: readonly string[]): QueryState<TaskRecord> {
+  const ids = [...new Set(taskIds)].sort();
+  const key = `tasks/${uid}/ids/${ids.join(',')}`;
+  const [state, setState] = useState<QueryState<TaskRecord> & { key: string }>({
+    key,
+    data: [],
+    isLoading: true,
+    hasPendingWrites: false,
+  });
+
+  useEffect(() => {
+    if (ids.length === 0) return undefined;
+    const chunks: string[][] = [];
+    for (let start = 0; start < ids.length; start += IN_QUERY_LIMIT) {
+      chunks.push(ids.slice(start, start + IN_QUERY_LIMIT));
+    }
+    const results = new Map<number, { tasks: TaskRecord[]; hasPendingWrites: boolean }>();
+    const unsubscribes = chunks.map((chunk, index) =>
+      onSnapshot(
+        query(tasksCollection(db, uid), where(documentId(), 'in', chunk)),
+        { includeMetadataChanges: true },
+        (snapshot) => {
+          results.set(index, {
+            tasks: snapshot.docs.map((document) => document.data()),
+            hasPendingWrites: snapshot.metadata.hasPendingWrites,
+          });
+          const all = [...results.values()];
+          setState({
+            key,
+            data: all.flatMap((result) => result.tasks),
+            isLoading: results.size < chunks.length,
+            hasPendingWrites: all.some((result) => result.hasPendingWrites),
+          });
+        },
+        (error) => console.error(`Suscripción a ${key} falló`, error),
+      ),
+    );
+    return () => unsubscribes.forEach((unsubscribe) => unsubscribe());
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `key` identifica la lista.
+  }, [key]);
+
+  if (ids.length === 0) return { data: [], isLoading: false, hasPendingWrites: false };
+  if (state.key !== key) return { data: [], isLoading: true, hasPendingWrites: false };
+  return state;
+}
+
+/** Todas las reflexiones, de la semana más reciente a la más antigua. */
+export function useWeeklyReflections(uid: string) {
+  return useQuery(
+    query(weeklyReflectionsCollection(db, uid), orderBy('weekStartDateKey', 'desc')),
+    `weeklyReflections/${uid}`,
+  );
+}
+
+export function useWeeklyReflection(uid: string, weekStartDateKey: DateKey) {
+  return useDocument(
+    weeklyReflectionRef(db, uid, weekStartDateKey),
+    `weeklyReflections/${uid}/${weekStartDateKey}`,
+  );
+}
+
+/** La alcancía; sin documento, no hay alcancía. */
+export function useSavings(uid: string) {
+  return useDocument(savingsRef(db, uid), `savings/${uid}`);
 }

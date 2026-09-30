@@ -247,3 +247,50 @@ export interface RewardRedemption {
   dateKey: DateKey;
   note: string | null;
 }
+
+/** Estado de una meta (fase 18, D25). Las metas no se borran: se logran o se archivan. */
+export type GoalStatus = 'active' | 'achieved' | 'archived';
+
+/**
+ * Meta a largo plazo (documento `goals/{goalId}`): agrupa tareas y hábitos. El avance son sus
+ * tareas cumplidas; los hábitos muestran su constancia desde que empezó. No da puntos.
+ */
+export interface Goal {
+  id: string;
+  title: string;
+  description: string | null;
+  /** Fecha límite opcional. */
+  targetDateKey: DateKey | null;
+  habitIds: string[];
+  /** Tareas creadas desde la meta. Una tarea borrada puede seguir listada: se ignora. */
+  taskIds: string[];
+  status: GoalStatus;
+  /** Día en que se creó; desde ahí se mide la constancia de sus hábitos. */
+  startDateKey: DateKey;
+  /** El día que se dio por lograda; null si no lo está. */
+  achievedDateKey: DateKey | null;
+  sortOrder: number;
+}
+
+/** Las tres preguntas de la reflexión semanal. */
+export type ReflectionQuestion = 'wentWell' | 'wasHard' | 'nextFocus';
+
+/**
+ * Reflexión de una semana (documento `weeklyReflections/{weekStartDateKey}`), de lunes a domingo.
+ * Se escribe desde el domingo de esa semana en adelante.
+ */
+export interface WeeklyReflection extends Record<ReflectionQuestion, string> {
+  /** Lunes de la semana; igual al ID. */
+  weekStartDateKey: DateKey;
+}
+
+/**
+ * Alcancía (documento `meta/savings`): puntos reservados para una recompensa. Siguen en el saldo,
+ * pero no se pueden gastar en otra cosa. Una sola a la vez.
+ */
+export interface SavingsJar {
+  /** null = sin alcancía. */
+  rewardId: string | null;
+  points: number;
+  startedDateKey: DateKey | null;
+}

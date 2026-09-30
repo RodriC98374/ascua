@@ -151,6 +151,10 @@ service cloud.firestore {
       return /databases/$(database)/documents/users/$(userId)/rewardRedemptions/$(redemptionId);
     }
 
+    function savingsPath(userId) {
+      return /databases/$(database)/documents/users/$(userId)/meta/savings;
+    }
+
     function stateBefore(userId) {
       return get(gamificationPath(userId)).data;
     }
@@ -163,6 +167,11 @@ service cloud.firestore {
     function isClosingDay(userId, dateKey) {
       return stateBefore(userId).lastClosedDateKey != stateAfter(userId).lastClosedDateKey
         && stateAfter(userId).lastClosedDateKey == dateKey;
+    }
+
+    // Puntos apartados en la alcancía después de esta escritura; 0 sin alcancía (fase 18).
+    function savedPointsAfter(userId) {
+      return existsAfter(savingsPath(userId)) ? getAfter(savingsPath(userId)).data.points : 0;
     }
 
     // En esta misma escritura se registra el gasto transactionId.
@@ -347,6 +356,81 @@ service cloud.firestore {
         return (after.completedDateKey == before.completedDateKey && after.completedAt == before.completedAt)
           || (before.completedDateKey == null && after.completedDateKey == todayKey() && after.completedAt == request.time)
           || (before.completedDateKey == todayKey() && after.completedDateKey == null && after.completedAt == null);
+      }
+
+      // --- Metas (fase 18, D25): agrupan tareas y hábitos; libres con forma validada, sin puntos
+      // y nunca se borran ---
+
+      match /goals/{goalId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId)
+          && isValidGoal(incoming())
+          && isCreatedNow()
+          && incoming().status == 'active'
+          && incoming().startDateKey == todayKey();
+        allow update: if isOwner(userId)
+          && onlyChanges(['title', 'description', 'targetDateKey', 'habitIds', 'taskIds', 'status', 'achievedDateKey', 'sortOrder', 'updatedAt'])
+          && isValidGoal(incoming())
+          && isTouchedNow()
+          && isValidGoalAchievement(existing(), incoming());
+      }
+
+      function isValidGoal(goal) {
+        return hasExactly(goal, ['title', 'description', 'targetDateKey', 'habitIds', 'taskIds', 'status', 'startDateKey', 'achievedDateKey', 'sortOrder', 'createdAt', 'updatedAt', 'schemaVersion'])
+          && isText(goal.title, 2, 60)
+          && isOptionalText(goal.description, 200)
+          && isDateKey(goal.startDateKey)
+          && (goal.targetDateKey == null
+            || (isDateKey(goal.targetDateKey) && goal.targetDateKey >= goal.startDateKey))
+          && isIdList(goal.habitIds, 10)
+          && isIdList(goal.taskIds, 50)
+          && goal.status in ['active', 'achieved', 'archived']
+          // Lograda si y solo si tiene el día en que se logró.
+          && (goal.status == 'achieved') == (goal.achievedDateKey != null)
+          && (goal.achievedDateKey == null || isDateKey(goal.achievedDateKey))
+          && goal.sortOrder is int;
+      }
+
+      // IDs sin repetir. Las reglas no recorren listas: que sean textos lo garantiza la app.
+      function isIdList(ids, maxSize) {
+        return ids is list && ids.size() <= maxSize && ids.toSet().size() == ids.size();
+      }
+
+      // Se da por lograda hoy; mientras siga lograda, ese día no cambia.
+      function isValidGoalAchievement(before, after) {
+        return after.status != 'achieved'
+          || (before.status == 'achieved'
+            ? after.achievedDateKey == before.achievedDateKey
+            : after.achievedDateKey == todayKey());
+      }
+
+      // --- Reflexión semanal (fase 18, D25): la semana va de lunes a domingo y se escribe desde su
+      // domingo, cuando sea. Se edita, no se borra ---
+
+      match /weeklyReflections/{weekStartDateKey} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId)
+          && isValidReflection(weekStartDateKey, incoming())
+          && isCreatedNow();
+        allow update: if isOwner(userId)
+          && onlyChanges(['wentWell', 'wasHard', 'nextFocus', 'updatedAt'])
+          && isValidReflection(weekStartDateKey, incoming())
+          && isTouchedNow();
+      }
+
+      function isValidReflection(weekStartDateKey, reflection) {
+        return hasExactly(reflection, ['weekStartDateKey', 'wentWell', 'wasHard', 'nextFocus', 'createdAt', 'updatedAt', 'schemaVersion'])
+          && reflection.weekStartDateKey == weekStartDateKey
+          && isDateKey(weekStartDateKey)
+          // Lunes, y el domingo de esa semana ya llegó.
+          && parseDateKey(weekStartDateKey).dayOfWeek() == 1
+          && utcDateKey(parseDateKey(weekStartDateKey) + duration.value(6, 'd')) <= todayKey()
+          && isText(reflection.wentWell, 0, 500)
+          && isText(reflection.wasHard, 0, 500)
+          && isText(reflection.nextFocus, 0, 500)
+          && (reflection.wentWell.trim().size() > 0
+            || reflection.wasHard.trim().size() > 0
+            || reflection.nextFocus.trim().size() > 0);
       }
 
       // --- Registro diario: entries solo hoy; status y summary solo al cerrar ---
@@ -595,7 +679,8 @@ service cloud.firestore {
       }
 
       // Gasto (protector o canje): el saldo baja exactamente lo que dice un movimiento nuevo creado
-      // en esta misma escritura. Solo un protector suma protectores.
+      // en esta misma escritura, sin quedar por debajo de lo apartado en la alcancía. Solo un
+      // protector suma protectores.
       function isValidSpend(userId, before, after) {
         let transactionId = after.lastSpendTransactionId;
         let spent = after.lifetimePointsSpent - before.lifetimePointsSpent;
@@ -605,8 +690,52 @@ service cloud.firestore {
           && getAfter(transactionPath(userId, transactionId)).data.amount == -spent
           && spent > 0
           && after.pointsBalance == before.pointsBalance - spent
+          && after.pointsBalance >= savedPointsAfter(userId)
           && after.diff(before).affectedKeys().hasOnly(['pointsBalance', 'lifetimePointsSpent', 'streakFreezesAvailable', 'lastSpendTransactionId', 'updatedAt'])
           && after.streakFreezesAvailable == before.streakFreezesAvailable + (transactionId.matches('freeze_.+') ? 1 : 0);
+      }
+
+      // --- Alcancía (fase 18, D25): puntos reservados para una recompensa. Siguen en el saldo y
+      // las reglas de gasto no dejan tocarlos (ver isValidSpend) ---
+
+      match /meta/savings {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId)
+          && isValidSavings(incoming())
+          && isCreatedNow()
+          && isValidSavingsChange(userId, {'rewardId': null, 'points': 0}, incoming());
+        allow update: if isOwner(userId)
+          && isValidSavings(incoming())
+          && isTouchedNow()
+          && isValidSavingsChange(userId, existing(), incoming());
+      }
+
+      // Sin recompensa, vacía; con recompensa, con el día en que empezó.
+      function isValidSavings(savings) {
+        return hasExactly(savings, ['rewardId', 'points', 'startedDateKey', 'createdAt', 'updatedAt', 'schemaVersion'])
+          && isCount(savings.points)
+          && (savings.rewardId == null
+            ? savings.points == 0 && savings.startedDateKey == null
+            : savings.rewardId is string && isDateKey(savings.startedDateKey));
+      }
+
+      // Vaciarla se puede siempre (cancelar o canjear). Si no: empieza hoy o sigue con la misma
+      // recompensa, los puntos solo suben y no pasan del costo ni del saldo.
+      function isValidSavingsChange(userId, before, after) {
+        return after.rewardId == null
+          || (isSavingsWithinLimits(userId, after)
+            && (before.rewardId == null
+              ? after.startedDateKey == todayKey()
+              : after.rewardId == before.rewardId
+                && after.startedDateKey == before.startedDateKey
+                && after.points >= before.points));
+      }
+
+      function isSavingsWithinLimits(userId, savings) {
+        let reward = get(rewardPath(userId, savings.rewardId)).data;
+        return reward.status == 'active'
+          && savings.points <= reward.cost
+          && savings.points <= stateAfter(userId).pointsBalance;
       }
 
       // --- Movimientos de puntos: solo crear, nunca editar ni borrar ---
