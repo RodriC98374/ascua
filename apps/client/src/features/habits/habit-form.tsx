@@ -20,6 +20,7 @@ import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/button';
+import { ScreenFooter } from '@/components/ui/screen';
 import { choiceContainer, choiceLabel } from '@/components/ui/choice-styles';
 import { FieldError, FieldLabel, FormSection, Hint } from '@/components/ui/form-parts';
 import { CheckIcon } from '@/components/ui/icons';
@@ -520,14 +521,16 @@ export function HabitForm({ habits, habit, onSubmit }: HabitFormProps) {
         </View>
       </FormSection>
 
-      <View className="gap-2">
-        {hasTriedSubmit && hasErrors(errors) && (
-          <Text accessibilityRole="alert" className="font-body-bold text-caption text-error">
-            Revisa los campos marcados antes de guardar.
-          </Text>
-        )}
-        <Button label="Guardar" onPress={handleSubmit} />
-      </View>
+      <ScreenFooter>
+        <View className="gap-2">
+          {hasTriedSubmit && hasErrors(errors) && (
+            <Text accessibilityRole="alert" className="font-body-bold text-caption text-error">
+              Revisa los campos marcados antes de guardar.
+            </Text>
+          )}
+          <Button label="Guardar" onPress={handleSubmit} />
+        </View>
+      </ScreenFooter>
     </View>
   );
 }

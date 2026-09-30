@@ -8,6 +8,7 @@ import { useState } from 'react';
 import { Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/button';
+import { ScreenFooter } from '@/components/ui/screen';
 import { TextField } from '@/components/ui/text-field';
 import type { ReflectionAnswers } from '@/operations/reflections';
 
@@ -65,14 +66,16 @@ export function ReflectionForm({
           hint={`${answers[question.key].trim().length}/${REFLECTION_ANSWER_MAX_LENGTH}`}
         />
       ))}
-      <View className="gap-2">
-        {hasTriedSubmit && !isAnswered && (
-          <Text accessibilityRole="alert" className="font-body-bold text-caption text-error">
-            Contesta al menos una pregunta para guardarla.
-          </Text>
-        )}
-        <Button label="Guardar reflexión" onPress={handleSubmit} />
-      </View>
+      <ScreenFooter>
+        <View className="gap-2">
+          {hasTriedSubmit && !isAnswered && (
+            <Text accessibilityRole="alert" className="font-body-bold text-caption text-error">
+              Contesta al menos una pregunta para guardarla.
+            </Text>
+          )}
+          <Button label="Guardar reflexión" onPress={handleSubmit} />
+        </View>
+      </ScreenFooter>
     </View>
   );
 }

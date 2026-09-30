@@ -41,10 +41,10 @@ Lo que más pesaba:
 | Check-in | Píldoras 1–5 grises | **Barra de nivel** que se llena hasta el valor, y el valor en palabras junto al nombre ("Bien", "A tope", "Bastante") |
 | Formulario de hábito | Una columna | Cuatro tarjetas: **Lo básico, Cómo cuenta, Recordatorio, Aspecto**; frecuencia con círculo de opción; lo que no se puede cambiar al editar, en una caja gris con el porqué; **vista previa** de la casilla con el color elegido; días en una sola fila |
 | Ajustes | Cuenta arriba | Cuenta al final |
+| Formularios (30-09-2026) | "Guardar" al final del scroll | **Barra fija al pie** con "Guardar" y el aviso de campos por revisar, siempre a la vista (`ScreenFooter` de `components/ui/screen.tsx`). En los cinco formularios: hábito, tarea, meta, recompensa y reflexión |
 
 ## Siguientes candidatos (sin hacer)
 
-- Barra inferior fija con "Guardar" en los formularios largos.
 - Cerrar la hoja deslizándola hacia abajo.
 - Texto de cuerpo a 15–16 px.
 - La grilla "Hábito por hábito" de Mes (nombres cortados).

@@ -10,6 +10,7 @@ import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/button';
+import { ScreenFooter } from '@/components/ui/screen';
 import { choiceContainer, choiceLabel } from '@/components/ui/choice-styles';
 import { DateField } from '@/components/ui/date-field';
 import { FieldError, FormSection, Hint } from '@/components/ui/form-parts';
@@ -140,14 +141,16 @@ export function GoalForm({ habits, goal, onSubmit }: GoalFormProps) {
         {visibleError('habitIds') && <FieldError>{visibleError('habitIds')}</FieldError>}
       </FormSection>
 
-      <View className="gap-2">
-        {hasTriedSubmit && hasGoalErrors(errors) && (
-          <Text accessibilityRole="alert" className="font-body-bold text-caption text-error">
-            Revisa los campos marcados antes de guardar.
-          </Text>
-        )}
-        <Button label="Guardar" onPress={handleSubmit} />
-      </View>
+      <ScreenFooter>
+        <View className="gap-2">
+          {hasTriedSubmit && hasGoalErrors(errors) && (
+            <Text accessibilityRole="alert" className="font-body-bold text-caption text-error">
+              Revisa los campos marcados antes de guardar.
+            </Text>
+          )}
+          <Button label="Guardar" onPress={handleSubmit} />
+        </View>
+      </ScreenFooter>
     </View>
   );
 }

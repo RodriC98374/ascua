@@ -9,6 +9,7 @@ import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/button';
+import { ScreenFooter } from '@/components/ui/screen';
 import { TextField } from '@/components/ui/text-field';
 import type { RewardInput } from '@/operations/rewards';
 
@@ -118,14 +119,16 @@ export function RewardForm({ rewards, reward, onSubmit }: RewardFormProps) {
         hint="El rango del nivel es una sugerencia"
       />
 
-      <View className="gap-2">
-        {hasTriedSubmit && hasErrors(errors) && (
-          <Text accessibilityRole="alert" className="font-body-bold text-caption text-error">
-            Revisa los campos marcados antes de guardar.
-          </Text>
-        )}
-        <Button label="Guardar" onPress={handleSubmit} />
-      </View>
+      <ScreenFooter>
+        <View className="gap-2">
+          {hasTriedSubmit && hasErrors(errors) && (
+            <Text accessibilityRole="alert" className="font-body-bold text-caption text-error">
+              Revisa los campos marcados antes de guardar.
+            </Text>
+          )}
+          <Button label="Guardar" onPress={handleSubmit} />
+        </View>
+      </ScreenFooter>
     </View>
   );
 }
