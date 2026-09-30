@@ -62,7 +62,8 @@ aprobó y manda sobre lo anterior en estos puntos:
 
 ## Pendientes de implementación
 
-1. ~~**Navegación**~~ Resuelto por D16: 4 pestañas, Hoy / Mes / Recompensas / Ajustes.
+1. ~~**Navegación**~~ Resuelto por D16: 4 pestañas, Hoy / Mes / Recompensas / Ajustes. Desde la
+   fase 18 (D25), 5: Metas entre Mes y Recompensas (ícono de diana).
 2. ~~**Modo oscuro**~~ Resuelto el 24-09-2026 (fase 10): NativeWind sí admite variables CSS por
    tema (`:root` y `.dark:root` con `darkMode: 'class'`), así que no se usan los pares `-dark`
    del README. Los valores de los dos temas viven en `apps/client/src/theme/palette.json`, fuente

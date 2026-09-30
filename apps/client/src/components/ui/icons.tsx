@@ -224,3 +224,29 @@ export function ClockIcon({ size = 16, color }: IconProps) {
     </Svg>
   );
 }
+
+/** Metas (fase 18): una diana. */
+export function TargetIcon({ size = 20, color }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <G {...stroke(color)}>
+        <Circle cx={12} cy={12} r={8.5} />
+        <Circle cx={12} cy={12} r={4.5} />
+        <Circle cx={12} cy={12} r={0.8} />
+      </G>
+    </Svg>
+  );
+}
+
+/** Alcancía (fase 18): un frasco con tapa y una moneda entrando. */
+export function JarIcon({ size = 20, color }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <G {...stroke(color)}>
+        <Path d="M8 6h8M7.5 8.5C5.9 9.6 5 11.4 5 13.5V17a3 3 0 003 3h8a3 3 0 003-3v-3.5c0-2.1-.9-3.9-2.5-5" />
+        <Path d="M8 4.5h8V8H8z" />
+        <Line x1={10} y1={14} x2={14} y2={14} />
+      </G>
+    </Svg>
+  );
+}

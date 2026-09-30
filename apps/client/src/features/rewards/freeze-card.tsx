@@ -1,8 +1,10 @@
 import {
   canPurchaseFreeze,
   MAX_STREAK_FREEZES,
+  spendablePoints,
   STREAK_FREEZE_COST,
   type GamificationState,
+  type SavingsJar,
 } from '@ascua/shared';
 import { useState } from 'react';
 import { Text, View } from 'react-native';
@@ -18,10 +20,17 @@ import { ProtectorIndicator } from './protector-indicator';
 import { freezeButtonLabel, spendErrorMessage } from './reward-catalog';
 import { newRequestId } from './request-id';
 
-/** Protectores disponibles y su compra, con confirmación. */
-export function FreezeCard({ state }: { state: GamificationState }) {
+/** Protectores disponibles y su compra, con confirmación. Lo apartado en la alcancía no cuenta. */
+export function FreezeCard({
+  state,
+  savings,
+}: {
+  state: GamificationState;
+  savings: SavingsJar | null;
+}) {
   const uid = useUid();
-  const check = canPurchaseFreeze(state);
+  const check = canPurchaseFreeze(state, savings);
+  const available = spendablePoints(state.pointsBalance, savings);
   // Un ID por intento: se crea al abrir la confirmación y se reutiliza si se reintenta.
   const [requestId, setRequestId] = useState<string | null>(null);
   const [isBuying, setIsBuying] = useState(false);
@@ -66,7 +75,7 @@ export function FreezeCard({ state }: { state: GamificationState }) {
       <ConfirmDialog
         isVisible={requestId !== null}
         title="¿Comprar un protector?"
-        message={`Cuesta ${STREAK_FREEZE_COST} pts: tu saldo pasa de ${state.pointsBalance} a ${state.pointsBalance - STREAK_FREEZE_COST} pts. Tendrás ${state.streakFreezesAvailable + 1} de ${MAX_STREAK_FREEZES}.`}
+        message={`Cuesta ${STREAK_FREEZE_COST} pts: tus puntos para gastar pasan de ${available} a ${available - STREAK_FREEZE_COST}. Tendrás ${state.streakFreezesAvailable + 1} de ${MAX_STREAK_FREEZES}.`}
         confirmLabel="Comprar"
         confirmVariant="primary"
         isConfirming={isBuying}

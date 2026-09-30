@@ -1,10 +1,10 @@
 // Navegación principal del diseño: barra inferior en el celular y columna izquierda desde 768 px.
-// Cuatro destinos (decisión D16): Hoy, Mes, Recompensas y Ajustes.
+// Cinco destinos: Hoy, Mes, Metas, Recompensas y Ajustes (D16; Metas desde la fase 18, D25).
 import { TabList, TabTrigger, type TabTriggerSlotProps } from 'expo-router/ui';
 import type { ComponentType } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
-import { CalendarIcon, GiftIcon, HomeIcon, SettingsIcon } from '@/components/ui/icons';
+import { CalendarIcon, GiftIcon, HomeIcon, SettingsIcon, TargetIcon } from '@/components/ui/icons';
 import { useThemeColors } from '@/theme/colors';
 
 type IconComponent = ComponentType<{ size?: number; color: string }>;
@@ -12,6 +12,7 @@ type IconComponent = ComponentType<{ size?: number; color: string }>;
 const NAV_ITEMS = [
   { name: 'hoy', href: '/', label: 'Hoy', Icon: HomeIcon },
   { name: 'mes', href: '/mes', label: 'Mes', Icon: CalendarIcon },
+  { name: 'metas', href: '/metas', label: 'Metas', Icon: TargetIcon },
   { name: 'recompensas', href: '/recompensas', label: 'Recompensas', Icon: GiftIcon },
   { name: 'ajustes', href: '/ajustes', label: 'Ajustes', Icon: SettingsIcon },
 ] as const satisfies readonly { name: string; href: string; label: string; Icon: IconComponent }[];

@@ -14,13 +14,13 @@ users/{userId}                             UserProfile         libre (campos per
 ├── dailyLogs/{dateKey}                    DailyLog            entries y checkIn: solo hoy · summary: solo al cerrar
 ├── monthlySummaries/{monthKey}            MonthlySummary      solo al cerrar, compra o canje
 ├── meta/gamification                      GamificationState   solo al cerrar, compra o canje
+├── meta/savings                           SavingsJar (f. 18)  apartar solo sube; vaciar siempre; gasto no baja de lo apartado
 ├── pointTransactions/{transactionId}      PointTransaction    solo crear; nunca editar ni borrar
 ├── rewards/{rewardId}                     Reward              libre (forma validada)
 ├── rewardRedemptions/{redemptionId}       RewardRedemption    solo crear, junto con su cobro
-└── tasks/{taskId}                         Task (fase 14)      libre; se marca solo hoy; lo cumplido en un día pasado queda fijo
-
-Futuro (sin tocar lo anterior):
-└── goals/{goalId}, journalEntries/{...}   crecimiento personal
+├── tasks/{taskId}                         Task (fase 14)      libre; se marca solo hoy; lo cumplido en un día pasado queda fijo
+├── goals/{goalId}                         Goal (fase 18)      libre (forma validada); empieza hoy; lograda hoy; no se borra
+└── weeklyReflections/{weekStartDateKey}   WeeklyReflection    desde el domingo de su semana, cuando sea; no se borra
 ```
 
 La columna derecha resume qué permiten las reglas de seguridad (sección 10). Las escrituras "sensibles" (saldo, racha, ledger) solo se aceptan dentro de las tres operaciones de la sección 7, y las reglas comprueban que cuadren.
@@ -83,6 +83,11 @@ const TIMES_PER_WEEK_MIN = 1, TIMES_PER_WEEK_MAX = 6;
 const TARGET_AMOUNT_MIN = 2, TARGET_AMOUNT_MAX = 999, TARGET_UNIT_MAX_LENGTH = 20;
 // Fase 15 (D22): cada escala del check-in, de 1 a 5.
 const CHECK_IN_MIN = 1, CHECK_IN_MAX = 5;
+// Fase 18 (D25): metas y reflexión semanal.
+const GOAL_TITLE_MIN_LENGTH = 2, GOAL_TITLE_MAX_LENGTH = 60, GOAL_DESCRIPTION_MAX_LENGTH = 200;
+const MAX_GOAL_HABITS = 10, MAX_GOAL_TASKS = 50;
+const GOAL_HABIT_LOOKBACK_DAYS = 365;  // la constancia de los hábitos de una meta mira como mucho un año
+const REFLECTION_ANSWER_MAX_LENGTH = 500;
 // Solo sugerencia para la UI; no se valida (ver sección 11).
 const REWARD_TIER_COST_RANGES: Record<RewardTier, { min: number; max: number }> = {
   small: { min: 50, max: 80 },
@@ -308,6 +313,56 @@ interface Task {
 - **Fija después de su día:** una tarea cumplida en un día pasado no se edita, no se desmarca y no se borra. Las demás se pueden borrar.
 - **En la semana** (Mes → Semana), cada tarea cuenta en un solo día: el que se cumplió o, si sigue pendiente, el que vence (`taskDays`). Un donut por día muestra la parte cumplida.
 
+### `users/{userId}/goals/{goalId}` — Goal (fase 18, D25)
+
+```ts
+interface Goal {
+  title: string;                       // 2..60
+  description: string | null;          // ..200
+  targetDateKey: DateKey | null;       // fecha límite opcional, desde startDateKey
+  habitIds: string[];                  // hasta 10, sin repetir
+  taskIds: string[];                   // hasta 50, sin repetir; tareas creadas desde la meta
+  status: 'active' | 'achieved' | 'archived';
+  startDateKey: DateKey;               // día en que se creó; fijo
+  achievedDateKey: DateKey | null;     // con valor si y solo si está lograda
+  sortOrder: number;
+}
+```
+
+- **Avance:** tareas cumplidas / tareas de la meta que existen (una borrada puede seguir en `taskIds`; se ignora). Cada hábito muestra su constancia en los días cerrados desde `startDateKey` (como mucho un año atrás) hasta hoy o hasta el día en que se logró, con las mismas cifras que las estadísticas.
+- **Sin puntos:** los dan sus tareas y hábitos. Lograrla es una celebración, no un movimiento.
+- **Tarea de una meta:** se crea con la misma forma que las de Hoy y, en el mismo lote, se suma a `taskIds` (`arrayUnion`). Quitarla de la meta no la borra.
+- **Nunca se borra:** se logra (hoy), se reabre o se archiva.
+
+### `users/{userId}/weeklyReflections/{weekStartDateKey}` — WeeklyReflection (fase 18, D25)
+
+```ts
+interface WeeklyReflection {
+  weekStartDateKey: DateKey;           // lunes; igual al ID
+  wentWell: string;                    // ¿Qué salió bien? ..500
+  wasHard: string;                     // ¿Qué te costó? ..500
+  nextFocus: string;                   // ¿En qué te enfocas la próxima semana? ..500
+}
+```
+
+- Se escribe y se edita **desde el domingo de esa semana, cuando sea**. Al menos una respuesta con texto. No se borra.
+- El resumen de la semana que se ve al lado no se guarda: sale de los `dailyLogs` y las tareas de esos días.
+- Hoy la invita el domingo (la semana que termina) y el lunes (la que acaba de terminar), si falta.
+
+### `users/{userId}/meta/savings` — SavingsJar (fase 18, D25)
+
+```ts
+interface SavingsJar {
+  rewardId: string | null;             // null = sin alcancía
+  points: number;                      // apartados; ≤ costo de la recompensa y ≤ saldo
+  startedDateKey: DateKey | null;
+}
+```
+
+- **Una alcancía a la vez.** Apartar **reserva** puntos: siguen en `pointsBalance`, pero ningún gasto (protector o canje) puede dejar el saldo por debajo de lo apartado. Los "puntos para gastar" que muestra la app son `pointsBalance − points`.
+- Apartar no genera movimientos en el historial: el único gasto real es el canje. Solo sube; cancelar la vacía (sin recompensa, 0 puntos).
+- Canjear la recompensa de la alcancía es un canje normal (`redeemReward`) que además la vacía en la misma transacción.
+
 ## 4. Relaciones
 
 | Desde | Campo | Hacia |
@@ -317,6 +372,8 @@ interface Task {
 | PointTransaction | `sourceType` + `sourceId` | Habit / DailyLog / RewardRedemption |
 | RewardRedemption | `rewardId` | Reward |
 | RewardRedemption | `pointTransactionId` | PointTransaction |
+| Goal | `habitIds` / `taskIds` | Habit / Task |
+| SavingsJar | `rewardId` | Reward |
 
 Las referencias se guardan como IDs `string`, no como `DocumentReference`: son más simples de serializar, exportar a JSON/CSV y tipar. Todas son relativas al mismo `users/{userId}`.
 
@@ -467,8 +524,9 @@ No hay servidor: estas operaciones las ejecuta la app como **transacciones de Fi
 |---|---|---|
 | `initializeAccount` | Primer inicio de sesión (idempotente) | Crea `users/{uid}` y `meta/gamification` con valores iniciales (`lastClosedDateKey` = ayer, todo en 0). |
 | `closePendingDays` | Al abrir la app, al volver a primer plano y al pasar la medianoche con la app abierta | Cierra cada día desde `lastClosedDateKey + 1` hasta ayer (ver abajo). |
-| `purchaseStreakFreeze` | El usuario compra un protector | Transacción: saldo ≥ `STREAK_FREEZE_COST` y protectores < `MAX_STREAK_FREEZES` → movimiento, estado (con `lastSpendTransactionId`) y `pointsSpent` del mes de hoy. |
-| `redeemReward` | El usuario canjea una recompensa | Transacción: recompensa activa y saldo ≥ costo → movimiento, canje con foto de la recompensa, estado (con `lastSpendTransactionId`) y `pointsSpent` del mes de hoy. |
+| `purchaseStreakFreeze` | El usuario compra un protector | Transacción: puntos para gastar (saldo sin lo apartado) ≥ `STREAK_FREEZE_COST` y protectores < `MAX_STREAK_FREEZES` → movimiento, estado (con `lastSpendTransactionId`) y `pointsSpent` del mes de hoy. |
+| `redeemReward` | El usuario canjea una recompensa | Transacción: recompensa activa y saldo ≥ costo → movimiento, canje con foto de la recompensa, estado (con `lastSpendTransactionId`) y `pointsSpent` del mes de hoy. Lo apartado en la alcancía no cuenta para otra recompensa; si es la de la alcancía, cuenta el saldo entero y la alcancía se vacía en la misma transacción (fase 18). |
+| `depositSavings` (fase 18) | El usuario aparta puntos | Transacción: recompensa activa, sin otra alcancía en curso y hasta `min(costo − apartado, saldo − apartado)` → empieza la alcancía hoy o le suma. Sin movimiento en el historial. |
 | `scheduleReminders` | Solo Android: al abrir la app, al cambiar los horarios y al marcar hábitos | Reprograma las notificaciones locales (sección 8). |
 
 **`closePendingDays`**: **una transacción por día**, en orden. Como `lastClosedDateKey` avanza en la misma transacción, ningún día se procesa dos veces, aunque la app esté abierta en el celular y en la PC al mismo tiempo: la segunda transacción ve el estado actualizado y no hace nada. Sin conexión no cierra; lo intenta la próxima vez. Por cada día `D`:
@@ -505,6 +563,9 @@ Calcular en el cliente **no** hace lenta la app: el cuello de botella no es el c
 | Año: mapa de calor y mejor día (fase 17, D23) | `dailyLogs` del año; solo existen los días usados | ≤ 365 |
 | Mes: tendencia contra el anterior (fase 17) | `monthlySummaries` del mes anterior | 1 |
 | Totales históricos (saldo, racha más larga) | `meta/gamification` | 1 |
+| Metas (fase 18): lista | `goals` + las tareas de las metas activas por ID (`in` de a 30) | pocas decenas |
+| Meta: constancia de sus hábitos | `dailyLogs` desde que empezó (como mucho un año) | ≤ 365 |
+| Reflexión: resumen de la semana | `dailyLogs` y tareas de la semana | ≤ 7 + pocas |
 
 - El cálculo más pesado (un mes: ~31 días × ~10 hábitos ≈ 300 operaciones) toma menos de un milisegundo.
 - **Web:** caché persistente de Firestore (`persistentLocalCache`); al volver a abrir, los datos salen del dispositivo.
@@ -528,6 +589,10 @@ Sin servidor, las reglas son la única barrera: validan que cada operación de l
 - **Compra de protector:** existe tras la transacción el movimiento `freeze_{requestId}` con −150; el saldo baja exactamente 150 y los protectores suben exactamente 1, sin pasar de 2.
 - **Canje:** existe tras la transacción el movimiento `redemption_{requestId}` con −`cost` de la recompensa (leída con `get()`); el saldo baja exactamente ese costo y el canje referencia a ese movimiento.
 - **`pointTransactions` y `rewardRedemptions`:** solo crear, nunca editar ni borrar.
+- **`goals` (fase 18):** forma validada; se crean activas y con `startDateKey` = hoy; `habitIds` hasta 10 y `taskIds` hasta 50, sin repetir; fecha límite desde el inicio; lograda ⇔ `achievedDateKey` con valor, que al lograrla es hoy y no cambia mientras siga lograda. No se borran.
+- **`weeklyReflections` (fase 18):** ID = lunes y el domingo de esa semana ya llegó; tres textos hasta 500, al menos uno con texto; solo cambian las respuestas; no se borran.
+- **`meta/savings` (fase 18):** vaciar (sin recompensa, 0 puntos) se puede siempre; empezar es hoy; con la misma recompensa los puntos solo suben; cambiar de recompensa sin vaciar, no; puntos ≤ costo de la recompensa activa y ≤ saldo.
+- **Gasto con alcancía:** en la compra de protector y el canje, el saldo después del gasto ≥ lo apartado después (`savedPointsAfter`).
 - **`tasks`:** forma validada; se crean pendientes y para hoy o después; `completedDateKey` solo pasa de `null` a hoy (con `completedAt` del servidor) o de hoy a `null`; la fecha nunca se mueve a un día pasado; lo cumplido en un día pasado no se edita ni se borra.
 
 **Deudas aceptadas** (conscientes, por ser una app de un solo usuario):
@@ -556,5 +621,6 @@ Sin servidor, las reglas son la única barrera: validan que cada operación de l
 - Una funcionalidad nueva = una subcolección nueva + nuevos valores en los enums (`PointTransactionType`, `sourceType`). Nada existente cambia de forma.
 - `schemaVersion` en cada documento permite migraciones graduales.
 - El task tracker (fase 14, sección 3) reutiliza `DateKey`, el ledger y `closePendingDays` para acreditar puntos.
+- Metas, reflexión semanal y alcancía (fase 18) son documentos nuevos: `goals`, `weeklyReflections` y `meta/savings`. La alcancía no cambia la forma del estado ni del historial: solo suma una condición a las reglas de gasto.
 - El check-in (fase 15) va dentro de `DailyLog` (misma granularidad diaria) y su suma por escala, en `MonthlySummary.checkInStats`. No da puntos ni toca la racha.
 - Si algún día se necesitara un servidor (por ejemplo, para varios usuarios reales), las operaciones de la sección 7 se mueven a Cloud Functions sin cambiar el modelo, porque la lógica ya vive en `packages/shared`.

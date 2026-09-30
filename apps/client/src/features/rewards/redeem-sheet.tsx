@@ -28,7 +28,11 @@ import { newRequestId } from './request-id';
 
 interface RedeemSheetProps {
   reward: RewardRecord;
-  pointsBalance: number;
+  /**
+   * Los puntos que puede usar este canje: lo libre o, para la recompensa de la alcancía, el saldo
+   * entero (la alcancía se vacía con el canje).
+   */
+  availablePoints: number;
   onClose: () => void;
 }
 
@@ -36,7 +40,7 @@ interface RedeemSheetProps {
  * Hoja de canje: el momento consciente de "me lo gané". Se monta al abrirse, así cada apertura
  * es un intento nuevo con su propio ID; los reintentos dentro de la hoja reutilizan ese ID.
  */
-export function RedeemSheet({ reward, pointsBalance, onClose }: RedeemSheetProps) {
+export function RedeemSheet({ reward, availablePoints, onClose }: RedeemSheetProps) {
   const colors = useThemeColors();
   const uid = useUid();
   const { bottom } = useSafeAreaInsets();
@@ -56,7 +60,7 @@ export function RedeemSheet({ reward, pointsBalance, onClose }: RedeemSheetProps
     setError(null);
     try {
       await redeemReward(db, uid, { requestId, rewardId: reward.id, note });
-      setNewBalance(pointsBalance - reward.cost);
+      setNewBalance(availablePoints - reward.cost);
       celebrationFeedback();
       playSound('chime');
       medal.set(0);
@@ -136,10 +140,10 @@ export function RedeemSheet({ reward, pointsBalance, onClose }: RedeemSheetProps
 
           <View className="bg-surface-300 flex-row items-center justify-between rounded-md px-4 py-3">
             <Text className="font-body text-body text-ink-muted">
-              −{reward.cost} pts · {isDone ? 'nuevo saldo' : 'te quedarán'}
+              −{reward.cost} pts · {isDone ? 'te quedan para gastar' : 'te quedarán para gastar'}
             </Text>
             <Text className="font-body-extrabold text-body text-ink">
-              {isDone ? newBalance : pointsBalance - reward.cost} pts
+              {isDone ? newBalance : availablePoints - reward.cost} pts
             </Text>
           </View>
 

@@ -16,12 +16,12 @@ import {
   type HabitScheduleType,
   type HabitTier,
 } from '@ascua/shared';
-import { useState, type ReactNode } from 'react';
+import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { choiceContainer, choiceLabel } from '@/components/ui/choice-styles';
+import { FieldError, FieldLabel, FormSection, Hint } from '@/components/ui/form-parts';
 import { CheckIcon } from '@/components/ui/icons';
 import { TextField } from '@/components/ui/text-field';
 import { TimeField } from '@/components/ui/time-field';
@@ -78,34 +78,6 @@ function reminderHelp(schedule: HabitDraft['schedule']): string {
     return 'Llega a tu celular esos días si todavía no lo marcaste. La semana que llegas a tu meta deja de sonar.';
   }
   return 'Llega a tu celular esos días si todavía no lo marcaste.';
-}
-
-/** Un grupo del formulario: título y una tarjeta con sus campos. */
-function FormSection({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <View className="gap-2">
-      <Text accessibilityRole="header" className="font-heading text-heading-md text-ink">
-        {title}
-      </Text>
-      <Card className="gap-5">{children}</Card>
-    </View>
-  );
-}
-
-function FieldLabel({ children }: { children: ReactNode }) {
-  return <Text className="font-body-bold text-body text-ink">{children}</Text>;
-}
-
-function Hint({ children }: { children: ReactNode }) {
-  return <Text className="font-body-semibold text-caption text-ink-muted">{children}</Text>;
-}
-
-function FieldError({ children }: { children: ReactNode }) {
-  return (
-    <Text accessibilityLiveRegion="polite" className="font-body-bold text-caption text-error">
-      {children}
-    </Text>
-  );
 }
 
 /** Lo que ya no se puede cambiar al editar, en gris y con el porqué. */

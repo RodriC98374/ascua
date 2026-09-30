@@ -3,12 +3,14 @@ import {
   formatLongDate,
   MAX_PRIMARY_HABITS,
   PERFECT_DAY_BONUS,
+  spendablePoints,
   startOfWeek,
   streakRiskAt,
   type CheckInDimension,
   type DateKey,
   type GamificationState,
   type HabitRecord,
+  type SavingsJar,
   type TaskRecord,
   type WeekLog,
   type WeeklyHabitProgress,
@@ -25,6 +27,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { CheckInCard } from '@/features/check-in/check-in-card';
+import { ReflectionInvite } from '@/features/reflections/reflection-invite';
 import { HabitActions } from '@/features/habits/habit-actions';
 import { HabitCheck } from '@/features/today/habit-check';
 import { NotTodayRow } from '@/features/today/not-today-row';
@@ -47,6 +50,7 @@ import {
   useDailyLogsInRange,
   useGamificationState,
   useHabits,
+  useSavings,
   useTodayTasks,
   useUserProfile,
 } from '@/data/hooks';
@@ -76,6 +80,8 @@ export default function TodayScreen() {
   const weekLogs = useDailyLogsInRange(uid, hasWeeklyHabits ? startOfWeek(today) : today, today);
   // El perfil no frena la pantalla: mientras llega se usa la hora por defecto.
   const profile = useUserProfile(uid);
+  // La alcancía tampoco: mientras llega, los puntos para gastar son el saldo entero.
+  const savings = useSavings(uid);
 
   // Las tareas también esperan: suman a los puntos de hoy, que no deben saltar al llegar.
   if (habits.isLoading || log.isLoading || tasks.isLoading || !gamification.data) {
@@ -95,6 +101,7 @@ export default function TodayScreen() {
       tasks={tasks}
       weekLogs={weekLogs.data}
       state={gamification.data}
+      savings={savings.data ?? null}
       riskTime={
         profile.data?.reminderSettings.streakRiskReminderTime ??
         DEFAULT_REMINDER_SETTINGS.streakRiskReminderTime
@@ -111,6 +118,8 @@ interface TodayContentProps {
   tasks: ReturnType<typeof useTodayTasks>;
   weekLogs: readonly WeekLog[];
   state: GamificationState;
+  /** Alcancía (fase 18): lo apartado no cuenta como puntos para gastar. */
+  savings: SavingsJar | null;
   /** 'HH:mm' desde la que Hoy avisa que la racha está en riesgo. */
   riskTime: string;
 }
@@ -131,6 +140,7 @@ function TodayContent({
   tasks,
   weekLogs,
   state,
+  savings,
   riskTime,
 }: TodayContentProps) {
   const [isReordering, setIsReordering] = useState(false);
@@ -305,7 +315,7 @@ function TodayContent({
             <>
               <TodayHero
                 summary={summary}
-                pointsBalance={state.pointsBalance}
+                pointsBalance={spendablePoints(state.pointsBalance, savings)}
                 streakFreezesAvailable={state.streakFreezesAvailable}
                 risk={risk}
               />
@@ -392,6 +402,7 @@ function TodayContent({
           ) : (
             <EmptyState />
           )}
+          <ReflectionInvite today={today} />
           <CheckInCard checkIn={log.data?.checkIn ?? {}} onAnswer={answerCheckIn} />
           <TasksSection
             tasks={tasks.data}

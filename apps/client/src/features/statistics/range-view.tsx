@@ -20,6 +20,7 @@ import { ActivityIndicator, Text, View } from 'react-native';
 import { Card } from '@/components/ui/card';
 import { useDailyLogsInRange, useMonthlySummary, useTasksInRange } from '@/data/hooks';
 import { TaskWeek } from '@/features/tasks/task-week';
+import { WeekReflectionCard } from '@/features/reflections/week-reflection-card';
 import { useThemeColors } from '@/theme/colors';
 
 import { rangeCheckInSlots } from './chart-data';
@@ -50,14 +51,17 @@ export function WeekView(props: RangeViewProps) {
   const logs = useDailyLogsInRange(props.uid, props.period.startDateKey, props.period.endDateKey);
   const tasks = useTasksInRange(props.uid, props.period.startDateKey, props.period.endDateKey);
   return (
-    <RangeContent
-      {...props}
-      kind="week"
-      logs={logs.data}
-      tasks={tasks.data}
-      isLoading={logs.isLoading || tasks.isLoading}
-      pointsSpent={null}
-    />
+    <View className="gap-6">
+      <RangeContent
+        {...props}
+        kind="week"
+        logs={logs.data}
+        tasks={tasks.data}
+        isLoading={logs.isLoading || tasks.isLoading}
+        pointsSpent={null}
+      />
+      <WeekReflectionCard weekStartDateKey={props.period.startDateKey} today={props.today} />
+    </View>
   );
 }
 
