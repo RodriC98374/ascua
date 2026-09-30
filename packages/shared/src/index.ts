@@ -18,6 +18,7 @@ export * from './points';
 export * from './primary-habits';
 export * from './reflections';
 export * from './reminders';
+export * from './restore';
 export * from './savings';
 export * from './statistics';
 export * from './streak-risk';
