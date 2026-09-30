@@ -364,10 +364,10 @@ describe('buildRangeStats with fixed days and times per week', () => {
       habits: [swim],
       logs: busy.logs,
     });
-    // 3 días cerrados: se esperaba una marca (2 × 3 / 7 ≈ 1) y hubo 3.
+    // 3 días cerrados: se esperaba una marca (2 × 3 / 7 ≈ 1) y hubo 3; las de más no suman.
     expect(stats.habits[0]).toMatchObject({
       scheduledDays: 1,
-      completedDays: 3,
+      completedDays: 1,
       completionRate: 1,
     });
   });
@@ -504,6 +504,23 @@ describe('buildYearStats', () => {
       });
       // Del 1 al 14: 2 × 14 / 7 = 4.
       expect(midMonth.habits[0]).toMatchObject({ scheduledDays: 4, completionRate: 1 });
+    });
+
+    it('does not count more marks than expected', () => {
+      const busy = summary('2026-09', {
+        closedDays: 30,
+        habitStats: { swim: { scheduledDays: 20, completedDays: 20 } },
+      });
+      const stats = buildYearStats({
+        year: '2026',
+        summaries: [busy],
+        habits: [swim],
+        today: '2026-10-01',
+      });
+      // Las marcas de más no suman: 9 de 9, no 20 de 9.
+      expect(stats.habits).toEqual([
+        { habit: swim, scheduledDays: 9, completedDays: 9, completionRate: 1 },
+      ]);
     });
 
     it('lists a weekly habit without marks from the day it started', () => {

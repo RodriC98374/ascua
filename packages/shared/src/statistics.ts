@@ -50,6 +50,7 @@ export interface HabitPeriodStats<T extends Habit = Habit> {
   habit: T;
   /** Días cerrados del periodo en que el hábito contaba. */
   scheduledDays: number;
+  /** En un semanal, marcas con tope en las esperadas (`scheduledDays`). */
   completedDays: number;
   /** 0..1; null si no contaba ningún día cerrado. */
   completionRate: number | null;
@@ -174,7 +175,8 @@ function openDayStats(
 
 /**
  * Cifras de un hábito en un periodo. Un semanal figura en `habitStats` solo los días que se marcó:
- * se mide contra las marcas esperadas en sus días activos ya cerrados, con tope de 100 %.
+ * se mide contra las marcas esperadas en sus días activos ya cerrados. Las marcas de más no suman
+ * (como sus puntos): la cifra y el % tienen tope en lo esperado.
  */
 function periodStats<T extends Habit>(
   habit: T,
@@ -185,12 +187,12 @@ function periodStats<T extends Habit>(
     return { habit, ...stats, completionRate: rate(stats.completedDays, stats.scheduledDays) };
   }
   const expected = expectedWeeklyMarks(habit.schedule.timesPerWeek, activeClosedDays);
-  const weeklyRate = rate(stats.completedDays, expected);
+  const completedDays = Math.min(stats.completedDays, expected);
   return {
     habit,
     scheduledDays: expected,
-    completedDays: stats.completedDays,
-    completionRate: weeklyRate === null ? null : Math.min(1, weeklyRate),
+    completedDays,
+    completionRate: rate(completedDays, expected),
   };
 }
 

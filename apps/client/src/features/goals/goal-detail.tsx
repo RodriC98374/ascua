@@ -276,14 +276,10 @@ export function GoalDetail({ goal, habits, today }: GoalDetailProps) {
   );
 }
 
-/**
- * "20 de 20 días" o, en un semanal, "15 de 15 marcas": las marcas de más en una semana no suman
- * constancia (el % ya tiene tope), así que la cifra tampoco pasa de lo pedido.
- */
+/** "20 de 20 días" o, en un semanal, "15 de 15 marcas" (las de más ya vienen con tope). */
 function habitCountText(row: HabitPeriodStats<HabitRecord>): string {
   const isWeekly = row.habit.schedule.type === 'times_per_week';
-  const done = isWeekly ? Math.min(row.completedDays, row.scheduledDays) : row.completedDays;
-  return `${done} de ${row.scheduledDays} ${isWeekly ? 'marcas' : 'días'} desde que empezó la meta`;
+  return `${row.completedDays} de ${row.scheduledDays} ${isWeekly ? 'marcas' : 'días'} desde que empezó la meta`;
 }
 
 /** Tarea cumplida en un día pasado: ya es parte de ese día y no se toca. */
