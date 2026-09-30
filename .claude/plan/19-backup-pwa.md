@@ -56,9 +56,10 @@ archivo en Android; en la web funciona sin build.
 - [x] Revisión en web (claro y oscuro): restaurar un respaldo de la demo en otra cuenta y en la
       misma (todo repetido); instalar y abrir sin conexión con la web exportada.
 - [x] La app abre sin conexión: la puerta de la cuenta ya no exige red (`isAccountCached`).
-- [ ] Revisión del usuario. Probar "Instalar" en su Edge (el headless no lo ofrece) y, al
-      publicar, que las cabeceras de `sw.js` y del manifiesto lleguen (el emulador de Hosting no
-      aplica cabeceras).
+- [x] Revisión del usuario (30-09-2026): instaló la web en su Edge y restauró un respaldo editado
+      en la demo. Aprobada.
+- [ ] Al publicar: que las cabeceras de `sw.js` y del manifiesto lleguen (el emulador de Hosting
+      no aplica cabeceras).
 
 ## Lo que salió al revisar
 
@@ -81,6 +82,15 @@ archivo en Android; en la web funciona sin build.
   Chrome muestran "Instalar" en Ajustes → "Ascua en esta PC" (y el ícono en la barra de
   direcciones). Para probar sin conexión: abrirla una vez con internet, esperar unos segundos a que
   guarde la app y cortar la red.
+- **Web instalable en local, con los datos de la demo:** `npm run emulators` ya sirve `dist` con
+  el emulador de Hosting en `:5000`. Exportar con los emuladores (desde `apps/client`:
+  `EXPO_PUBLIC_USE_EMULATORS=true npx expo export --platform web --dev && node
+  scripts/build-pwa.mjs`) y, en otra terminal, `npm run demo` (usa esos emuladores y siembra).
+  La exportación `--dev` no enlaza el manifiesto ni registra el service worker (solo producción):
+  en `localhost:5000`, pegar en la consola
+  `document.head.append(Object.assign(document.createElement('link'), { rel: 'manifest', href: '/manifest.webmanifest' })); navigator.serviceWorker.register('/sw.js')`
+  y ahí aparece "Instalar". El aviso "Banner not shown: preventDefault() called" es esperado (la
+  app guarda el evento para su botón).
 
 ## Definición de terminado
 
