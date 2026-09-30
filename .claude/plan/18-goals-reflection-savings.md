@@ -87,7 +87,7 @@ interface SavingsJar {                 // meta/savings
 
 **Cierre**
 - [x] Revisión en web (claro y oscuro), typecheck, lint y tests; `data-model.md` al día.
-- [ ] Revisión del usuario. **Toca reglas:** publicar reglas antes que la web.
+- [x] Revisión del usuario (aprobada el 30-09-2026). **Toca reglas:** publicar reglas antes que la web.
 
 ## Definición de terminado
 
