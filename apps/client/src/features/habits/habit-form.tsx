@@ -26,6 +26,7 @@ import { CheckIcon } from '@/components/ui/icons';
 import { TextField } from '@/components/ui/text-field';
 import { TimeField } from '@/components/ui/time-field';
 import { Toggle } from '@/components/ui/toggle';
+import { scheduleText, WEEKDAY_OPTIONS } from '@/features/habits/habit-text';
 import {
   draftReminder,
   hasErrors,
@@ -56,16 +57,6 @@ const SCHEDULE_OPTIONS: { type: HabitScheduleType; label: string; help: string }
     label: 'Veces por semana',
     help: 'No entra en la racha. Suma puntos hasta la meta de la semana (lunes a domingo).',
   },
-];
-
-const WEEKDAY_OPTIONS = [
-  { isoWeekday: 1, label: 'L' },
-  { isoWeekday: 2, label: 'M' },
-  { isoWeekday: 3, label: 'X' },
-  { isoWeekday: 4, label: 'J' },
-  { isoWeekday: 5, label: 'V' },
-  { isoWeekday: 6, label: 'S' },
-  { isoWeekday: 7, label: 'D' },
 ];
 
 const MAX_FIXED_DAYS = 6;
@@ -134,18 +125,6 @@ function WeekdayPicker({
       })}
     </View>
   );
-}
-
-function describeSchedule(schedule: HabitDraft['schedule']): string {
-  if (schedule.type === 'daily') return 'Todos los días';
-  if (schedule.type === 'days_of_week') {
-    const labels = WEEKDAY_OPTIONS.filter((day) =>
-      schedule.daysOfWeek.includes(day.isoWeekday),
-    ).map((day) => day.label);
-    return `Días fijos: ${labels.join(', ')}`;
-  }
-  const { timesPerWeek } = schedule;
-  return `${timesPerWeek} ${timesPerWeek === 1 ? 'vez' : 'veces'} por semana`;
 }
 
 export function HabitForm({ habits, habit, onSubmit }: HabitFormProps) {
@@ -375,7 +354,7 @@ export function HabitForm({ habits, habit, onSubmit }: HabitFormProps) {
             </>
           ) : (
             <FixedValue
-              value={describeSchedule(draft.schedule)}
+              value={scheduleText(draft.schedule)}
               note="No se puede cambiar: archiva el hábito y crea uno nuevo si hace falta otra frecuencia."
             />
           )}

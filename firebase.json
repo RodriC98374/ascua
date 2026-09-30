@@ -10,12 +10,30 @@
     "rewrites": [
       { "source": "/habits/*", "destination": "/habits/[habitId].html" },
       { "source": "/tasks/*", "destination": "/tasks/[taskId].html" },
-      { "source": "/recompensas/*", "destination": "/recompensas/[rewardId].html" }
+      { "source": "/recompensas/*", "destination": "/recompensas/[rewardId].html" },
+      {
+        "source": "/metas/reflexion/*",
+        "destination": "/metas/reflexion/[weekStartDateKey].html"
+      },
+      { "source": "/metas/*/edit", "destination": "/metas/[goalId]/edit.html" },
+      { "source": "/metas/*/task", "destination": "/metas/[goalId]/task.html" },
+      { "source": "/metas/*", "destination": "/metas/[goalId].html" }
     ],
     "headers": [
       {
         "source": "/_expo/static/**",
         "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
+      },
+      {
+        "source": "/sw.js",
+        "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
+      },
+      {
+        "source": "/manifest.webmanifest",
+        "headers": [
+          { "key": "Content-Type", "value": "application/manifest+json" },
+          { "key": "Cache-Control", "value": "no-cache" }
+        ]
       }
     ]
   },

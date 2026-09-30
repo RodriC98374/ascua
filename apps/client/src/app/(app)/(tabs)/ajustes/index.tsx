@@ -8,6 +8,7 @@ import { AppearanceSection } from '@/features/appearance/appearance-section';
 import { signOut, useSession, useUid } from '@/features/auth/session';
 import { useHabits } from '@/data/hooks';
 import { ExportSection } from '@/features/export/export-section';
+import { InstallSection } from '@/features/pwa/install-section';
 import { ReminderSettingsSection } from '@/features/reminders/reminder-settings';
 import { SoundsSection } from '@/features/sounds/sounds-section';
 
@@ -30,6 +31,9 @@ export default function SettingsScreen() {
         <SoundsSection />
 
         <ExportSection />
+
+        <InstallSection />
+
         {archived.length > 0 && (
           <View className="gap-3">
             <View className="gap-1">

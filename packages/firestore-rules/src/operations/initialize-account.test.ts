@@ -5,8 +5,13 @@ import { getDoc } from 'firebase/firestore';
 import { describe, expect, it } from 'vitest';
 
 import { gamificationRef, userProfileRef } from '../../../../apps/client/src/data/documents';
-import { initializeAccount } from '../../../../apps/client/src/operations/initialize-account';
 import {
+  initializeAccount,
+  isAccountCached,
+} from '../../../../apps/client/src/operations/initialize-account';
+import {
+  OTHER,
+  otherDb,
   OWNER,
   OWNER_EMAIL,
   ownerDb,
@@ -78,5 +83,18 @@ describe('initializeAccount', () => {
     await assertFails(
       initializeAccount(strangerDb(), { uid: STRANGER, email: 'stranger@example.com' }, TODAY),
     );
+  });
+});
+
+describe('isAccountCached', () => {
+  it('is false on a device without a local copy and true once the account was read', async () => {
+    const db = otherDb();
+    await expect(isAccountCached(db, OTHER)).resolves.toBe(false);
+
+    await initializeAccount(db, { uid: OTHER, email: 'other@example.com' }, TODAY);
+    await getDoc(userProfileRef(db, OTHER));
+    await getDoc(gamificationRef(db, OTHER));
+
+    await expect(isAccountCached(db, OTHER)).resolves.toBe(true);
   });
 });

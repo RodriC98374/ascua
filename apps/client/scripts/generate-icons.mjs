@@ -4,12 +4,13 @@
 //   ONLY=favicon.png node scripts/generate-icons.mjs
 // Edge no baja de cierto ancho de ventana: por eso el favicon es de 192 px y no de 48.
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const OUT = resolve(dirname(fileURLToPath(import.meta.url)), '../assets/images');
+const PWA_OUT = resolve(dirname(fileURLToPath(import.meta.url)), '../public/icons');
 const WORK = mkdtempSync(join(tmpdir(), 'ascua-icons-'));
 const EDGE = 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe';
 
@@ -87,8 +88,30 @@ const assets = [
     size: 192,
     body: (s) => darkBackground(s, 40) + flame({ size: s, heightRatio: 0.66, fill: 'url(#ember)' }),
   },
+  // Web instalada como app (fase 19): los del manifiesto. Van a `public/icons`, que la exportación
+  // copia tal cual a la raíz de la web.
+  {
+    name: 'icon-192.png',
+    out: PWA_OUT,
+    size: 192,
+    body: (s) => darkBackground(s, 40) + flame({ size: s, heightRatio: 0.6, fill: 'url(#ember)' }),
+  },
+  {
+    name: 'icon-512.png',
+    out: PWA_OUT,
+    size: 512,
+    body: (s) => darkBackground(s, 106) + flame({ size: s, heightRatio: 0.6, fill: 'url(#ember)' }),
+  },
+  // Maskable: el sistema lo recorta en círculo o squircle; la brasa queda dentro del 80 % central.
+  {
+    name: 'icon-maskable-512.png',
+    out: PWA_OUT,
+    size: 512,
+    body: (s) => darkBackground(s) + flame({ size: s, heightRatio: 0.44, fill: 'url(#ember)' }),
+  },
 ];
 
+mkdirSync(PWA_OUT, { recursive: true });
 for (const asset of assets.filter((a) => !process.env.ONLY || a.name === process.env.ONLY)) {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${asset.size}" height="${asset.size}" viewBox="0 0 ${asset.size} ${asset.size}">${gradientDefs}${asset.body(asset.size)}</svg>`;
   const html = join(WORK, asset.name.replace('.png', '.html'));
@@ -98,12 +121,14 @@ for (const asset of assets.filter((a) => !process.env.ONLY || a.name === process
   );
   execFileSync(EDGE, [
     '--headless=new',
+    // Perfil propio: no se cruza con un Edge que el usuario tenga abierto.
+    `--user-data-dir=${join(WORK, 'profile')}`,
     '--disable-gpu',
     '--hide-scrollbars',
     '--force-device-scale-factor=1',
     '--default-background-color=00000000',
     `--window-size=${asset.size},${asset.size}`,
-    `--screenshot=${resolve(OUT, asset.name)}`,
+    `--screenshot=${resolve(asset.out ?? OUT, asset.name)}`,
     'file:///' + html.replace(/\\/g, '/'),
   ]);
   console.log('ok', asset.name);

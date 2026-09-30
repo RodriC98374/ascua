@@ -10,11 +10,14 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { ThemeProvider, useThemePreference } from '@/features/appearance/theme-provider';
 import { SessionProvider, useSession } from '@/features/auth/session';
+import { startPwa } from '@/features/pwa/pwa';
 import { SoundsProvider } from '@/features/sounds/sounds-provider';
 import { appFonts } from '@/theme/fonts';
 
 // El splash queda visible hasta tener las fuentes, el tema y saber si hay una sesión guardada.
 SplashScreen.preventAutoHideAsync();
+// Web instalable: el aviso de instalación llega apenas carga la página, antes de abrir Ajustes.
+startPwa();
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts(appFonts);

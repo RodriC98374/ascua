@@ -7,7 +7,7 @@ import {
   todayDateKey,
   type DateKey,
 } from '@ascua/shared';
-import { runTransaction, type Firestore } from 'firebase/firestore';
+import { getDocFromCache, runTransaction, type Firestore } from 'firebase/firestore';
 
 import { gamificationRef, newDocumentFields, userProfileRef } from '../data/documents';
 
@@ -17,6 +17,24 @@ export interface AccountUser {
 }
 
 export type InitializeAccountResult = 'created' | 'already_initialized';
+
+/**
+ * La cuenta ya está lista en este dispositivo: el perfil y el estado de puntos están en la caché
+ * local (nunca se borran). Así la app abre sin conexión (fase 19), porque la transacción de
+ * `initializeAccount` necesita el servidor.
+ */
+export async function isAccountCached(db: Firestore, uid: string): Promise<boolean> {
+  try {
+    const [profile, state] = await Promise.all([
+      getDocFromCache(userProfileRef(db, uid)),
+      getDocFromCache(gamificationRef(db, uid)),
+    ]);
+    return profile.exists() && state.exists();
+  } catch {
+    // Sin copia local de alguno de los dos.
+    return false;
+  }
+}
 
 export function initializeAccount(
   db: Firestore,

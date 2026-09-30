@@ -40,6 +40,10 @@ export default function Root({ children }: PropsWithChildren) {
           media="(prefers-color-scheme: dark)"
           content={palette.dark['surface-200']}
         />
+        {/* Web instalable (fase 19): el manifiesto lo genera `scripts/build-pwa.mjs` al exportar. */}
+        {process.env.NODE_ENV === 'production' && (
+          <link rel="manifest" href="/manifest.webmanifest" />
+        )}
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <ScrollViewStyleReset />
         <style dangerouslySetInnerHTML={{ __html: backgroundStyle }} />

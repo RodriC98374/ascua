@@ -1,8 +1,10 @@
 import type { ExportKind } from '@ascua/shared';
+import { router } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 
 import { Card } from '@/components/ui/card';
+import { ChevronIcon } from '@/components/ui/icons';
 import { buildExportFile } from '@/data/export-files';
 import { useUid } from '@/features/auth/session';
 import { db } from '@/lib/firebase';
@@ -49,7 +51,8 @@ export function ExportSection() {
       <View className="gap-1">
         <Text className="font-heading text-heading-md text-ink">Tus datos</Text>
         <Text className="font-body text-body text-ink-muted">
-          Guarda una copia cuando quieras. Los CSV se abren en Excel o Google Sheets.
+          Guarda una copia cuando quieras y recupérala desde aquí. Los CSV se abren en Excel o
+          Google Sheets.
         </Text>
       </View>
       <Card className="py-1">
@@ -81,6 +84,19 @@ export function ExportSection() {
             </Pressable>
           );
         })}
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.push('/ajustes/restaurar')}
+          className="border-border min-h-12 flex-row items-center gap-3 border-t py-2 active:opacity-85"
+        >
+          <View className="flex-1 gap-0.5">
+            <Text className="font-body-bold text-body text-ink">Restaurar desde un respaldo</Text>
+            <Text className="font-body text-caption text-ink-muted">
+              Recupera hábitos, recompensas, tareas y metas de un archivo JSON
+            </Text>
+          </View>
+          <ChevronIcon direction="right" size={18} color={colors.inkMuted} />
+        </Pressable>
       </Card>
       {error && (
         <Text accessibilityRole="alert" className="font-body-bold text-caption text-error">

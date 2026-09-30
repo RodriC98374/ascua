@@ -63,10 +63,10 @@ Desde la raíz (en la oficina, con el Node portable antepuesto al PATH):
 | `npm run emulators` | Emuladores de Auth y Firestore (requiere Java 21+) |
 | `npm run demo` | Demo local en un comando: emuladores + datos de ejemplo + web en `:8082`. Ctrl+C lo borra todo. Opciones `-- --streak=6 --risk --powered`. Ver [08-statistics.md](.claude/plan/08-statistics.md#cómo-probarlo-con-datos) |
 | `npm run seed:demo` | Solo re-siembra los emuladores ya encendidos (unos 80 días cerrados; mismas opciones) |
-| `npm run build:web` | Exporta la web a `apps/client/dist` |
+| `npm run build:web` | Exporta la web a `apps/client/dist` y genera el manifiesto y el service worker de la web instalable (falla si una ruta dinámica no tiene reescritura en `firebase.json`) |
 | `npm run deploy:web` / `npm run deploy:rules` | Publica la web en Hosting / las reglas de Firestore |
 | `npm run build:apk` | APK con EAS Build (perfil `preview`) |
-| `node scripts/generate-icons.mjs` (desde `apps/client`) | Regenera ícono, splash, favicon e ícono de notificación con Edge headless |
+| `node scripts/generate-icons.mjs` (desde `apps/client`) | Regenera ícono, splash, favicon, ícono de notificación e íconos de la web instalable (`public/icons`) con Edge headless |
 | `node scripts/generate-sounds.mjs` (desde `apps/client`) | Regenera los sonidos de logro (WAV sintetizados, sin muestras de terceros) |
 
 Cobertura de `shared` (mínimo 95%, hoy 100%): `npm run test:coverage -w @ascua/shared`.

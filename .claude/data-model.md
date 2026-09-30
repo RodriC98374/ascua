@@ -522,7 +522,8 @@ No hay servidor: estas operaciones las ejecuta la app como **transacciones de Fi
 
 | Operación | Cuándo | Qué hace |
 |---|---|---|
-| `initializeAccount` | Primer inicio de sesión (idempotente) | Crea `users/{uid}` y `meta/gamification` con valores iniciales (`lastClosedDateKey` = ayer, todo en 0). |
+| `initializeAccount` | Primer inicio de sesión (idempotente) | Crea `users/{uid}` y `meta/gamification` con valores iniciales (`lastClosedDateKey` = ayer, todo en 0). Si los dos ya están en la caché local (`isAccountCached`), no se llama: así la web instalada abre sin conexión (fase 19). |
+| `restoreConfiguration` (fase 19, D26) | El usuario confirma la vista previa de un respaldo | Crea lo elegido con la misma forma que los formularios y **sin puertas especiales en las reglas**: hábitos y metas activos que empiezan hoy, recompensas activas, tareas pendientes (una vencida vence hoy) y reflexiones. Las metas apuntan a los IDs nuevos o a lo que ya estaba. En lotes de hasta 400; lo repetido se detecta por nombre y no se duplica. No toca historial, puntos ni racha. |
 | `closePendingDays` | Al abrir la app, al volver a primer plano y al pasar la medianoche con la app abierta | Cierra cada día desde `lastClosedDateKey + 1` hasta ayer (ver abajo). |
 | `purchaseStreakFreeze` | El usuario compra un protector | Transacción: puntos para gastar (saldo sin lo apartado) ≥ `STREAK_FREEZE_COST` y protectores < `MAX_STREAK_FREEZES` → movimiento, estado (con `lastSpendTransactionId`) y `pointsSpent` del mes de hoy. |
 | `redeemReward` | El usuario canjea una recompensa | Transacción: recompensa activa y saldo ≥ costo → movimiento, canje con foto de la recompensa, estado (con `lastSpendTransactionId`) y `pointsSpent` del mes de hoy. Lo apartado en la alcancía no cuenta para otra recompensa; si es la de la alcancía, cuenta el saldo entero y la alcancía se vacía en la misma transacción (fase 18). |
@@ -622,5 +623,6 @@ Sin servidor, las reglas son la única barrera: validan que cada operación de l
 - `schemaVersion` en cada documento permite migraciones graduales.
 - El task tracker (fase 14, sección 3) reutiliza `DateKey`, el ledger y `closePendingDays` para acreditar puntos.
 - Metas, reflexión semanal y alcancía (fase 18) son documentos nuevos: `goals`, `weeklyReflections` y `meta/savings`. La alcancía no cambia la forma del estado ni del historial: solo suma una condición a las reglas de gasto.
+- El respaldo JSON (`formatVersion` 1, fase 10) se restaura desde la fase 19 con `readBackup` y `planRestore` de `shared`: solo la configuración, nunca el historial. Si un día cambia la forma del respaldo, `formatVersion` sube y `readBackup` rechaza los archivos de una versión más nueva que la app.
 - El check-in (fase 15) va dentro de `DailyLog` (misma granularidad diaria) y su suma por escala, en `MonthlySummary.checkInStats`. No da puntos ni toca la racha.
 - Si algún día se necesitara un servidor (por ejemplo, para varios usuarios reales), las operaciones de la sección 7 se mueven a Cloud Functions sin cambiar el modelo, porque la lógica ya vive en `packages/shared`.

@@ -2,7 +2,7 @@ import type { User } from 'firebase/auth';
 import { useEffect, useState } from 'react';
 
 import { db } from '@/lib/firebase';
-import { initializeAccount } from '@/operations/initialize-account';
+import { initializeAccount, isAccountCached } from '@/operations/initialize-account';
 
 export type AccountStatus = 'initializing' | 'ready' | 'error';
 
@@ -13,13 +13,18 @@ export function useAccountInitialization(user: User) {
 
   useEffect(() => {
     let isCurrent = true;
-    initializeAccount(db, { uid: user.uid, email: user.email ?? '' }).then(
-      () => isCurrent && setStatus('ready'),
-      (error: unknown) => {
-        console.error('initializeAccount falló', error);
-        if (isCurrent) setStatus('error');
-      },
-    );
+    // Con la cuenta ya en la caché local no hace falta el servidor: abre también sin conexión.
+    isAccountCached(db, user.uid)
+      .then((isCached) =>
+        isCached ? undefined : initializeAccount(db, { uid: user.uid, email: user.email ?? '' }),
+      )
+      .then(
+        () => isCurrent && setStatus('ready'),
+        (error: unknown) => {
+          console.error('initializeAccount falló', error);
+          if (isCurrent) setStatus('error');
+        },
+      );
     return () => {
       isCurrent = false;
     };
