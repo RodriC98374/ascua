@@ -1,5 +1,6 @@
 // Navegación principal del diseño: barra inferior en el celular y columna izquierda desde 768 px.
-// Cinco destinos: Hoy, Mes, Metas, Recompensas y Ajustes (D16; Metas desde la fase 18, D25).
+// Cinco destinos: Hoy, Mes, Metas, Premios y Ajustes (D16; Metas desde la fase 18, D25; la pestaña
+// de recompensas se llama "Premios" desde la fase 21 para que entre en una línea en el celular).
 import { TabList, TabTrigger, type TabTriggerSlotProps } from 'expo-router/ui';
 import type { ComponentType } from 'react';
 import { Pressable, Text, View } from 'react-native';
@@ -13,7 +14,7 @@ const NAV_ITEMS = [
   { name: 'hoy', href: '/', label: 'Hoy', Icon: HomeIcon },
   { name: 'mes', href: '/mes', label: 'Mes', Icon: CalendarIcon },
   { name: 'metas', href: '/metas', label: 'Metas', Icon: TargetIcon },
-  { name: 'recompensas', href: '/recompensas', label: 'Recompensas', Icon: GiftIcon },
+  { name: 'recompensas', href: '/recompensas', label: 'Premios', Icon: GiftIcon },
   { name: 'ajustes', href: '/ajustes', label: 'Ajustes', Icon: SettingsIcon },
 ] as const satisfies readonly { name: string; href: string; label: string; Icon: IconComponent }[];
 

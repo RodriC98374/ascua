@@ -47,6 +47,10 @@ describe('HABIT_COLORS', () => {
   it('has no duplicates', () => {
     expect(new Set(HABIT_COLORS).size).toBe(HABIT_COLORS.length);
   });
+
+  it('offers twelve colors to choose from', () => {
+    expect(HABIT_COLORS).toHaveLength(12);
+  });
 });
 
 describe('TASK_COLOR', () => {
@@ -69,6 +73,21 @@ describe('strongHabitColor', () => {
       [1, 3, 5].reduce((sum, at) => sum + parseInt(hex.slice(at, at + 2), 16), 0);
     for (const color of HABIT_COLORS) {
       expect(luminance(strongHabitColor(color))).toBeLessThan(luminance(color));
+    }
+  });
+
+  it('keeps a contrast of at least 3:1 against white', () => {
+    const channel = (value: number) => {
+      const s = value / 255;
+      return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+    };
+    const relativeLuminance = (hex: string) =>
+      0.2126 * channel(parseInt(hex.slice(1, 3), 16)) +
+      0.7152 * channel(parseInt(hex.slice(3, 5), 16)) +
+      0.0722 * channel(parseInt(hex.slice(5, 7), 16));
+    for (const color of HABIT_COLORS) {
+      const contrast = 1.05 / (relativeLuminance(strongHabitColor(color)) + 0.05);
+      expect(contrast, color).toBeGreaterThanOrEqual(3);
     }
   });
 

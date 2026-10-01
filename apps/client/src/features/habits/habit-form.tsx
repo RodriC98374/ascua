@@ -489,7 +489,7 @@ export function HabitForm({ habits, habit, onSubmit }: HabitFormProps) {
 
         <View className="gap-2">
           <FieldLabel>Color</FieldLabel>
-          {/* Cuatro por fila: los ocho colores caben en dos filas parejas a 360 px. */}
+          {/* Cuatro por fila: los doce colores caben en tres filas parejas a 360 px. */}
           <View accessibilityRole="radiogroup" className="flex-row flex-wrap">
             {HABIT_COLORS.map((color) => {
               const isSelected = color === draft.color;

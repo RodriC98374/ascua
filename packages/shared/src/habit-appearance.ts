@@ -24,6 +24,11 @@ export const HABIT_COLORS = [
   '#AEBBE2',
   '#C4B2DE',
   '#E5AEC2',
+  // Desde la fase 21: lima, canela, pizarra y orquídea.
+  '#C6D88F',
+  '#D6B79C',
+  '#B7C0CE',
+  '#DDAEDC',
 ] as const;
 
 export type HabitColor = (typeof HABIT_COLORS)[number];
@@ -31,8 +36,12 @@ export type HabitColor = (typeof HABIT_COLORS)[number];
 /** Las tareas no eligen color: todas llevan este, cálido y distinto del de la brasa. */
 export const TASK_COLOR: HabitColor = '#E3CB8E';
 
-/** Versión oscura de cada pastel, para trazos finos y texto. Contraste ≥ 4:1 sobre blanco. */
+/** Versión oscura de cada pastel, para trazos finos y texto. Contraste ≥ 3:1 sobre blanco. */
 const STRONG_BY_COLOR: Record<HabitColor, string> = {
+  '#C6D88F': '#66822A',
+  '#D6B79C': '#9A6A3C',
+  '#B7C0CE': '#5C6B80',
+  '#DDAEDC': '#9A589A',
   '#EFA98A': '#C2603A',
   '#E3CB8E': '#A8873E',
   '#9FCBAC': '#4F8A5B',

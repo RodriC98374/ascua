@@ -48,7 +48,7 @@ export default function RewardsScreen() {
       <Screen edges={['top']}>
         <View className="gap-6">
           <View className="flex-row items-center justify-between gap-2">
-            <Text className="font-heading-extrabold text-display-md text-ink">Recompensas</Text>
+            <Text className="font-heading-extrabold text-display-md text-ink">Premios</Text>
             <Button
               label="Historial"
               variant="link"

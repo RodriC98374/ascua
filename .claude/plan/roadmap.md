@@ -27,6 +27,7 @@ antes.
 | 18 | **Metas, reflexión y ahorro** ([18-goals-reflection-savings.md](18-goals-reflection-savings.md), hecha en web) | Metas a largo plazo que agrupan hábitos y tareas con su progreso; reflexión guiada del domingo con el resumen de la semana; ahorro apartado hacia una recompensa grande | Sí: subcolecciones nuevas | No |
 | 19 | **Respaldo y PC** ([19-backup-pwa.md](19-backup-pwa.md), hecha en web) | Restaurar desde el JSON exportado (`formatVersion` ya existe; con vista previa y confirmación); instalar la web como app en la PC (manifiesto + service worker) | Escritura masiva validada por reglas | No |
 | 20 | **Asistente con Claude** (decisión D21; [detalle abajo](#fase-20--asistente-con-claude)) | Importar tareas desde un archivo JSON que genera Claude; exportación pensada para que Claude analice el historial; una skill que repite el flujo. Automatizar con un MCP remoto queda como paso ideal y opcional | Poco: crea tareas con la operación existente | Sí, si el selector de archivos es nativo (`expo-document-picker`) |
+| 21 | **Mejoras del uso real** ([21-real-use-improvements.md](21-real-use-improvements.md), en curso; D27) | Pestaña "Premios", doce colores e ícono por hábito, hábitos con pasos, premios conseguidos y calculadora de recompensas. Va **antes** de la 20 | Sí: pasos y premios conseguidos | No |
 
 ## Fase 20 — Asistente con Claude
 
