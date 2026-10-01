@@ -24,5 +24,7 @@
 - Conventional Commits: el prefijo en inglés (`feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`) y la descripción en español, en imperativo. Ejemplo: `feat: agrega el cálculo de racha al cierre del día`.
 - **Nunca escribir correos ni datos personales del usuario** en documentación, código ni comentarios (sí pueden figurar como autor de los commits). Para referirse a una cuenta, describirla ("la cuenta de Google dueña del proyecto").
 - **Sin atribución a Claude ni a ninguna IA** en commits, PRs, código o documentación: nada de `Co-Authored-By: Claude`, "Generated with Claude Code" ni similares. El autor es solo el usuario.
-- `main` siempre en verde. Trabajo por fase en ramas `feat/<fase>-<tema>`, por ejemplo `feat/02-shared-core`.
+- **`main` es producción:** lo que está publicado (web y APK). Siempre en verde. Solo recibe a `develop`, al publicar una versión.
+- **`develop` es la versión siguiente** (desde el 01-10-2026, D28): junta lo aprobado que todavía no se publica. Trabajo por fase en ramas `feat/<fase>-<tema>` que salen de `develop` y vuelven a `develop`, por ejemplo `feat/21-real-use-improvements`.
+- Publicar una versión = unir `develop` a `main` con fast-forward, deploy (reglas antes que la web) y **una** APK. No se construye una APK por cada cambio.
 - Nunca commitear `.env*`, cuentas de servicio ni `.claude/settings.local.json`.

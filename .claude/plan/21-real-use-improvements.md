@@ -1,6 +1,7 @@
 # Fase 21 — Mejoras del uso real
 
-Rama: `feat/21-real-use-improvements`. Decisión D27 (01-10-2026).
+Rama: `feat/21-real-use-improvements`, que vuelve a `develop` (D28): es la versión siguiente, no se
+publica ni se construye APK hasta tenerla completa. Decisión D27 (01-10-2026).
 
 El 30-09-2026 el usuario reinició su cuenta y empezó a usar la app en su día a día. Al cargar sus
 hábitos y recompensas salieron 13 observaciones. Se revisaron una por una en el chat y el usuario
@@ -24,12 +25,16 @@ todo lo de esta fase antes de construir la APK.
 
 Los tres cambian datos o reglas, y los invariantes piden el visto bueno del usuario.
 
-- **Pasos de un hábito (2).** Propuesta: campo opcional `steps` en el hábito (lista de textos
-  cortos, editable) y, en la marca del día, cuáles pasos están hechos. El hábito cuenta como
-  cumplido cuando están todos. Cambia las reglas de `habits` y de `dailyLogs.entries`.
-- **Premios conseguidos (5).** Propuesta: campo opcional `usedAt` en `rewardRedemptions` y una
-  operación nueva que solo puede pasarlo de vacío a una fecha. Hoy `rewardRedemptions` solo se
-  escribe dentro de `redeemReward`: hay que abrir ese invariante para esta única escritura.
+- **Pasos de un hábito (2). Confirmado por el usuario (01-10-2026):** son **opcionales**. Si el
+  hábito tiene pasos, **solo se cumple con todos marcados**, y el formulario lo advierte. En Hoy
+  se ven como subcasillas debajo del hábito; al marcar la última, el hábito queda cumplido.
+  Datos: campo opcional `steps` en el hábito (lista de textos cortos, editable) y, en la marca
+  del día, cuáles pasos están hechos. Cambia las reglas de `habits` y de `dailyLogs.entries`.
+- **Premios conseguidos (5). Confirmado por el usuario (01-10-2026):** es un historial propio,
+  aparte del de puntos, como **trofeos**: todo lo que se canjeó, de cualquier recompensa, para
+  recordar lo logrado. Los canjes ya se guardan en `rewardRedemptions`: la vista no pide datos
+  nuevos. Marcar un canje como "ya lo usé" es opcional y sí pide un campo `usedAt` y una
+  operación nueva (hoy `rewardRedemptions` solo se escribe dentro de `redeemReward`).
 - **Calculadora (3).** Propuesta inicial, sin aprobar:
   - Entradas: precio en Bs y presupuesto mensual para gustos (guardado en el dispositivo).
   - Tasa de cambio: los puntos de un **mes perfecto sin tareas** (calculados con los hábitos
