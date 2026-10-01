@@ -1,6 +1,7 @@
 import {
   canBePrimary,
   categoryOf,
+  habitIconOf,
   HABIT_CATEGORIES,
   HABIT_COLORS,
   HABIT_DESCRIPTION_MAX_LENGTH,
@@ -27,6 +28,8 @@ import { CheckIcon } from '@/components/ui/icons';
 import { TextField } from '@/components/ui/text-field';
 import { TimeField } from '@/components/ui/time-field';
 import { Toggle } from '@/components/ui/toggle';
+import { HabitIcon } from '@/features/habits/habit-icon';
+import { HabitIconPicker } from '@/features/habits/habit-icon-picker';
 import { scheduleText, WEEKDAY_OPTIONS } from '@/features/habits/habit-text';
 import {
   draftReminder,
@@ -136,6 +139,7 @@ export function HabitForm({ habits, habit, onSubmit }: HabitFormProps) {
     description: habit?.description ?? '',
     tier: habit?.tier ?? (isPrimaryAllowed ? 'primary' : 'secondary'),
     category: habit?.category ?? 'health',
+    icon: habitIconOf(habit?.icon),
     color: habit?.color ?? categoryOf('health').color,
     schedule: habit?.schedule ?? { type: 'daily' },
     hasTarget: Boolean(habit?.target),
@@ -205,6 +209,7 @@ export function HabitForm({ habits, habit, onSubmit }: HabitFormProps) {
       description: draft.description.trim() || null,
       tier: draft.tier,
       category: draft.category,
+      icon: draft.icon,
       color: draft.color,
       schedule: draft.schedule,
       target: draft.hasTarget
@@ -452,9 +457,10 @@ export function HabitForm({ habits, habit, onSubmit }: HabitFormProps) {
       </FormSection>
 
       <FormSection title="Aspecto">
-        {/* Vista previa: la casilla de Hoy con el color elegido. */}
+        {/* Vista previa: la casilla de Hoy con el color y el ícono elegidos. */}
         <View className="bg-surface-100 min-h-14 flex-row items-center gap-3 rounded-md px-3">
           <Checkbox isDone size={28} color={draft.color} />
+          <HabitIcon icon={draft.icon} size={18} color={strongHabitColor(draft.color)} />
           <Text numberOfLines={1} className="font-heading text-heading-sm text-ink flex-1">
             {draft.name.trim() || 'Tu hábito'}
           </Text>
@@ -519,6 +525,8 @@ export function HabitForm({ habits, habit, onSubmit }: HabitFormProps) {
           </View>
           <Hint>Lo propone la categoría. Cámbialo si quieres.</Hint>
         </View>
+
+        <HabitIconPicker value={draft.icon} onChange={(icon) => update('icon', icon)} />
       </FormSection>
 
       <ScreenFooter>

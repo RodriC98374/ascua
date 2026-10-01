@@ -8,6 +8,7 @@ export * from './format-date';
 export * from './goals';
 export * from './gamification-state';
 export * from './habit-appearance';
+export * from './habit-icons';
 export * from './habit-reminders';
 export * from './habit-schedule';
 export * from './insights';

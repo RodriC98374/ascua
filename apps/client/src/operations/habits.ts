@@ -1,10 +1,12 @@
 // Hábitos: escrituras libres, validadas en forma por las reglas. No usan transacciones para que
 // funcionen sin conexión: la escritura queda en cola y se sincroniza al volver la red.
 import {
+  DEFAULT_HABIT_ICON,
   todayDateKey,
   type DateKey,
   type HabitCategory,
   type HabitColor,
+  type HabitIcon,
   type HabitRecord,
   type HabitReminder,
   type HabitSchedule,
@@ -22,14 +24,13 @@ import {
 
 import { habitRef, habitsCollection, newDocumentFields } from '../data/documents';
 
-/** El ícono por hábito todavía no se elige en la interfaz: se guarda con un valor fijo. */
-export const DEFAULT_HABIT_ICON = 'check';
-
 export interface HabitInput {
   name: string;
   description: string | null;
   tier: HabitTier;
   category: HabitCategory;
+  /** Ícono del catálogo de `shared` (fase 21), o `null` si no lleva. Se puede cambiar cuando sea. */
+  icon: HabitIcon | null;
   color: HabitColor;
   /** Se puede agregar, cambiar o quitar cuando sea (D23). */
   reminder: HabitReminder | null;
@@ -41,13 +42,15 @@ export interface NewHabitInput extends HabitInput {
   target: HabitTarget | null;
 }
 
-function clean({ name, description, tier, category, color, reminder }: HabitInput): HabitInput {
+/** Lo que se guarda de un hábito editable. Sin ícono, el campo lleva el valor por defecto. */
+function clean({ name, description, tier, category, icon, color, reminder }: HabitInput) {
   const trimmedDescription = description?.trim() ?? '';
   return {
     name: name.trim(),
     description: trimmedDescription || null,
     tier,
     category,
+    icon: icon ?? DEFAULT_HABIT_ICON,
     color,
     reminder: reminder && {
       time: reminder.time,
@@ -67,7 +70,6 @@ export function createHabit(
   const ref = doc(habitsCollection(db, uid)).withConverter(null);
   const write = setDoc(ref, {
     ...clean(input),
-    icon: DEFAULT_HABIT_ICON,
     schedule: input.schedule,
     target: input.target && { amount: input.target.amount, unit: input.target.unit.trim() },
     status: 'active',

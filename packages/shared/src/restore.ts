@@ -35,6 +35,7 @@ import {
   type HabitCategory,
   type HabitColor,
 } from './habit-appearance';
+import { DEFAULT_HABIT_ICON, habitIconOf } from './habit-icons';
 import { isValidHabitReminder } from './habit-reminders';
 import { canWriteReflection, isReflectionAnswered } from './reflections';
 import type {
@@ -58,6 +59,8 @@ export interface RestoredHabit {
   description: string | null;
   tier: HabitTier;
   category: HabitCategory;
+  /** El ícono elegido, o el valor por defecto si no tenía o ya no está en el catálogo. */
+  icon: string;
   color: HabitColor;
   schedule: HabitSchedule;
   target: HabitTarget | null;
@@ -214,6 +217,7 @@ function parseHabit(doc: UnknownRecord): Parsed<RestoredHabit> {
       description,
       tier,
       category,
+      icon: habitIconOf(doc.icon) ?? DEFAULT_HABIT_ICON,
       color,
       schedule,
       target,

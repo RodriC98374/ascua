@@ -26,6 +26,7 @@ const valid = {
   description: '',
   tier: 'secondary' as const,
   category: 'health' as const,
+  icon: null,
   color: '#9FCBAC' as const,
   schedule: { type: 'daily' } as const,
   hasTarget: false,

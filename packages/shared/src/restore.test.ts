@@ -174,6 +174,7 @@ describe('readBackup', () => {
             name: '  Vasos de agua ',
             description: ' Con la comida ',
             tier: 'primary',
+            icon: 'glass-water',
             color: '#A3C4D9',
             schedule: { type: 'days_of_week', daysOfWeek: [1, 3, 5] },
             target: { amount: 8, unit: ' vasos ' },
@@ -189,6 +190,7 @@ describe('readBackup', () => {
             description: 'Con la comida',
             tier: 'primary',
             category: 'health',
+            icon: 'glass-water',
             color: '#A3C4D9',
             schedule: { type: 'days_of_week', daysOfWeek: [1, 3, 5] },
             target: { amount: 8, unit: 'vasos' },
@@ -226,6 +228,13 @@ describe('readBackup', () => {
         target: null,
         reminder: null,
       });
+    });
+
+    it('keeps "no icon" for a habit without one or with an icon outside the catalog', () => {
+      const habits = read({
+        habits: [habitDoc('a'), habitDoc('b', { icon: '🔥' }), habitDoc('c', { icon: undefined })],
+      }).habits;
+      expect(habits.map((habit) => habit.value.icon)).toEqual(['check', 'check', 'check']);
     });
 
     it('swaps a color that is no longer in the palette for the one of its category', () => {

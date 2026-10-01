@@ -1,6 +1,8 @@
-import { HABIT_POINTS, type HabitTier } from '@ascua/shared';
+import { HABIT_POINTS, strongHabitColor, type HabitTier } from '@ascua/shared';
 import type { ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
+
+import { HabitIcon } from '@/features/habits/habit-icon';
 
 import { Checkbox, FloatingPoints, useCheckToggle } from './check-parts';
 import { SwipeToCheckRow } from './swipe-to-check-row';
@@ -13,6 +15,8 @@ interface HabitCheckProps {
   tier: HabitTier;
   /** Color del hábito: pinta la casilla marcada. */
   color: string;
+  /** El campo `icon` del hábito: si eligió uno, va antes del nombre en el tono oscuro de su color. */
+  icon?: unknown;
   isDone: boolean;
   /** Archivado hoy: todavía cuenta, pero es su último día. */
   isArchived?: boolean;
@@ -34,6 +38,7 @@ export function HabitCheck({
   name,
   tier,
   color,
+  icon,
   isDone,
   isArchived = false,
   isToggleDisabled = false,
@@ -68,6 +73,7 @@ export function HabitCheck({
             <Checkbox isDone={isDone} size={28} color={color} />
             <FloatingPoints burst={check.pointsBurst} amount={HABIT_POINTS[tier]} />
           </View>
+          <HabitIcon icon={icon} size={18} color={strongHabitColor(color)} />
           <View className="flex-1">
             <Text
               className={`${isPrimary ? 'font-heading text-heading-sm' : 'font-body-semibold text-body'} ${isDone ? 'text-ink-muted' : 'text-ink'}`}

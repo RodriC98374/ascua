@@ -31,6 +31,7 @@ const reading: NewHabitInput = {
   description: '  ',
   tier: 'primary',
   category: 'academic',
+  icon: null,
   color: '#A3C4D9',
   schedule: { type: 'daily' },
   target: null,
@@ -93,6 +94,19 @@ describe('habit operations', () => {
       schedule: { type: 'daily' },
       target: { amount: 8, unit: 'vasos' },
     });
+  });
+
+  it('saves the chosen icon, lets it change and falls back to the default without one', async () => {
+    const db = ownerDb();
+    const { habitId, write } = createHabit(db, OWNER, { ...reading, icon: 'book-open' }, 0, TODAY);
+    await write;
+    expect(await loadHabit(habitId)).toMatchObject({ icon: 'book-open' });
+
+    await updateHabit(db, OWNER, habitId, { ...reading, icon: 'library' });
+    expect(await loadHabit(habitId)).toMatchObject({ icon: 'library' });
+
+    await updateHabit(db, OWNER, habitId, { ...reading, icon: null });
+    expect(await loadHabit(habitId)).toMatchObject({ icon: 'check' });
   });
 
   it('keeps the target when editing the rest of the habit', async () => {
@@ -175,6 +189,7 @@ describe('habit operations', () => {
       description: 'Antes de dormir',
       tier: 'secondary',
       category: 'mental',
+      icon: null,
       color: '#C4B2DE',
       reminder: null,
     });

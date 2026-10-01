@@ -12,6 +12,7 @@ import {
   TARGET_UNIT_MAX_LENGTH,
   type HabitCategory,
   type HabitColor,
+  type HabitIcon,
   type HabitRecord,
   type HabitReminder,
   type HabitSchedule,
@@ -24,6 +25,8 @@ export interface HabitDraft {
   description: string;
   tier: HabitTier;
   category: HabitCategory;
+  /** Ícono del catálogo, o `null` si no lleva (fase 21). */
+  icon: HabitIcon | null;
   color: HabitColor;
   /** Fija al crear (D20); al editar, la del hábito, sin picker que la cambie. */
   schedule: HabitSchedule;

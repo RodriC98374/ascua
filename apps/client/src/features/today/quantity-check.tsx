@@ -1,11 +1,12 @@
 // Fila de un hábito con cantidad (D20): en vez de una casilla, un contador hasta la meta del día.
 // Sin puntos parciales: los puntos llegan al tocar la meta, igual que un hábito normal.
-import { HABIT_POINTS, type HabitTier } from '@ascua/shared';
+import { HABIT_POINTS, strongHabitColor, type HabitTier } from '@ascua/shared';
 import type { ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import { MinusIcon, PlusIcon } from '@/components/ui/icons';
 import { selectionFeedback, tapFeedback } from '@/features/celebration/haptics';
+import { HabitIcon } from '@/features/habits/habit-icon';
 import { playSound } from '@/features/sounds/sounds';
 import { useThemeColors } from '@/theme/colors';
 
@@ -15,6 +16,8 @@ interface QuantityCheckProps {
   name: string;
   tier: HabitTier;
   color: string;
+  /** El campo `icon` del hábito: si eligió uno, va antes del nombre. */
+  icon?: unknown;
   amount: number;
   unit: string;
   count: number;
@@ -31,6 +34,7 @@ export function QuantityCheck({
   name,
   tier,
   color,
+  icon,
   amount,
   unit,
   count,
@@ -64,6 +68,7 @@ export function QuantityCheck({
     // Una fila más de la tarjeta de su sección, como las casillas.
     <View className="bg-surface-200 min-h-14 gap-2 py-3">
       <View className="flex-row items-center gap-3">
+        <HabitIcon icon={icon} size={18} color={strongHabitColor(color)} />
         <Text
           className={`flex-1 ${isPrimary ? 'font-heading text-heading-sm' : 'font-body-semibold text-body'} ${isDone ? 'text-ink-muted' : 'text-ink'}`}
         >

@@ -46,6 +46,7 @@ describe('restore texts', () => {
       description: null,
       tier: 'primary' as const,
       category: 'health' as const,
+      icon: 'check',
       color: '#9FCBAC' as const,
       schedule: { type: 'daily' as const },
       target: { amount: 8, unit: 'vasos' },

@@ -16,7 +16,7 @@ todo lo de esta fase antes de construir la APK.
 |---|---|---|---|
 | 1 | La pestaña y la pantalla de recompensas se llaman **"Premios"**: "Recompensas" se partía en dos líneas en el celular y desalineaba el ícono. Cada premio sigue siendo "una recompensa" en botones y formularios | No | Hecho |
 | 11 | **Doce colores** de hábito en lugar de ocho: se suman lima, canela, pizarra y orquídea, cada uno con su tono oscuro | No (las reglas aceptan cualquier hexadecimal) | Hecho |
-| 10 | **Ícono por hábito**: un selector en el formulario. El campo `icon` ya existe (hoy todos guardan `check`). Un emoji ya se puede escribir en el nombre | No (las reglas aceptan un texto de 1 a 40) | Pendiente |
+| 10 | **Ícono por hábito**: 96 íconos en seis grupos (catálogo en `shared/habit-icons.ts`), elegidos en una hoja inferior desde el formulario. Se ve antes del nombre en Hoy, en el tono oscuro del color del hábito. **Solo íconos, sin emojis** (un emoji puede ir en el nombre). El campo `icon` ya existía; "sin ícono" guarda `check`. La restauración conserva el ícono del respaldo | No (las reglas aceptan un texto de 1 a 40) | Hecho |
 | 2 | **Hábitos con pasos** (subtareas): un hábito como "Rutina de noche" lista sus pasos y se cumple al marcarlos todos | Sí: diseño por confirmar | Pendiente |
 | 5 | **Premios conseguidos**: dentro de Premios, los canjes hechos que todavía no se usaron, con un botón para marcarlos como usados | Sí: diseño por confirmar | Pendiente |
 | 3 | **Calculadora de recompensas**: sugiere el costo en puntos a partir del precio en dinero y estima cuánto se tarda en llegar | Por definir | Fórmula y flujo por definir con el usuario |
@@ -32,19 +32,23 @@ Los tres cambian datos o reglas, y los invariantes piden el visto bueno del usua
   del día, cuáles pasos están hechos. Cambia las reglas de `habits` y de `dailyLogs.entries`.
 - **Premios conseguidos (5). Confirmado por el usuario (01-10-2026):** es un historial propio,
   aparte del de puntos, como **trofeos**: todo lo que se canjeó, de cualquier recompensa, para
-  recordar lo logrado. Los canjes ya se guardan en `rewardRedemptions`: la vista no pide datos
-  nuevos. Marcar un canje como "ya lo usé" es opcional y sí pide un campo `usedAt` y una
-  operación nueva (hoy `rewardRedemptions` solo se escribe dentro de `redeemReward`).
-- **Calculadora (3).** Propuesta inicial, sin aprobar:
-  - Entradas: precio en Bs y presupuesto mensual para gustos (guardado en el dispositivo).
+  recordar lo logrado. Se ve como una **grilla de bloques con animación**; al tocar uno se abre
+  una **tarjeta modal** con el logro y un botón **"Utilizado"**, que al marcarse muestra una
+  animación de celebración. Los canjes ya se guardan en `rewardRedemptions`; marcar uno como
+  usado pide un campo `usedAt` y una operación nueva (hoy esa colección solo se escribe dentro de
+  `redeemReward`: se abre el invariante para esta única escritura, de vacío a una fecha).
+- **Calculadora (3). Confirmada por el usuario (01-10-2026):**
+  - Entradas: precio en Bs y **presupuesto mensual para gustos, que queda guardado** (no se
+    vuelve a pedir en cada cálculo).
   - Tasa de cambio: los puntos de un **mes perfecto sin tareas** (calculados con los hábitos
     activos) divididos entre el presupuesto mensual. Así un mes perfecto compra el presupuesto del
     mes, y agregar hábitos no abarata las recompensas (la tasa se recalcula).
   - Salidas: costo sugerido en puntos (precio × tasa) y dos plazos: cuándo alcanza el dinero y
     cuándo alcanzan los puntos al ritmo real de los últimos 30 días.
-  - Una recompensa sin precio no usa la calculadora. Cuánto debe costar algo gratis y cómo
-    repartir entre el corto y el largo plazo es subjetivo: la calculadora informa, no decide.
-  - Mejor después de la calibración de puntos (~21-10-2026), que cambia cuánto se gana.
+  - Una recompensa gratis no usa la calculadora: su costo lo pone el usuario.
+  - Un **(?)** explica que es solo una sugerencia: el costo final lo decide el usuario.
+  - Por decidir al implementarla: dónde se guarda el presupuesto (en el perfil, para que se vea
+    igual en el celular y en la PC, toca reglas; en el dispositivo, no).
 
 ## Ideas documentadas, sin implementar
 
@@ -64,7 +68,7 @@ como frecuencia).
 ## Definición de terminado
 
 - En un celular de 360 px, las cinco pestañas entran en una línea con sus íconos alineados.
-- El formulario de hábito ofrece doce colores y un ícono, y se ven en Hoy y en Mes.
+- El formulario de hábito ofrece doce colores y un ícono del catálogo, y se ven en Hoy.
 - Un hábito con pasos se marca paso a paso y cuenta como cumplido al completarlos; las reglas lo
   validan y un hábito sin pasos sigue igual.
 - Un canje aparece en "Premios conseguidos" hasta que se marca como usado.

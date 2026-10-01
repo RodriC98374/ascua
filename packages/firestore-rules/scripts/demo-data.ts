@@ -17,6 +17,7 @@ import {
   EMPTY_MONTHLY_COUNTERS,
   evaluateDay,
   initialGamificationState,
+  DEFAULT_HABIT_ICON,
   initialUserProfile,
   isHabitScheduledOn,
   isoWeekday,
@@ -31,6 +32,7 @@ import {
   type DateKey,
   type GamificationState,
   type HabitEntry,
+  type HabitIcon,
   type HabitRecord,
   type HabitReminder,
   type HabitSchedule,
@@ -51,7 +53,6 @@ import { initializeTestEnvironment } from '@firebase/rules-unit-testing';
 import { doc, Timestamp, writeBatch, type DocumentData, type Firestore } from 'firebase/firestore';
 
 import { SCHEMA_VERSION } from '../../../apps/client/src/data/documents';
-import { DEFAULT_HABIT_ICON } from '../../../apps/client/src/operations/habits';
 import { DEFAULT_REWARD_ICON } from '../../../apps/client/src/operations/rewards';
 
 export const HOST = '127.0.0.1';
@@ -299,6 +300,20 @@ function buildDemoData(uid: string, options: DemoOptions): DemoData {
   };
   for (const habitRecord of habits) {
     habitRecord.reminder = reminders[habitRecord.id] ?? null;
+  }
+  // Fase 21: íconos de ejemplo; "agua" queda sin ícono para ver las dos formas en Hoy.
+  const icons: Record<string, HabitIcon> = {
+    leer: 'book-open',
+    ejercicio: 'dumbbell',
+    meditar: 'brain',
+    dormir: 'moon',
+    ingles: 'languages',
+    yoga: 'stretch-horizontal',
+    natacion: 'waves-ladder',
+    vasos: 'glass-water',
+  };
+  for (const habitRecord of habits) {
+    habitRecord.icon = icons[habitRecord.id] ?? DEFAULT_HABIT_ICON;
   }
   const chance: Record<string, number> = {
     leer: 0.97,

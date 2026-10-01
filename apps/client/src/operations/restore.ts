@@ -25,7 +25,6 @@ import {
   tasksCollection,
   weeklyReflectionRef,
 } from '../data/documents';
-import { DEFAULT_HABIT_ICON } from './habits';
 import { DEFAULT_REWARD_ICON } from './rewards';
 
 /** Un lote de Firestore admite 500 escrituras; se deja margen. */
@@ -92,7 +91,6 @@ export async function restoreConfiguration(
       ref,
       data: {
         ...value,
-        icon: DEFAULT_HABIT_ICON,
         status: 'active',
         sortOrder: sortOrders.habits + index,
         startDateKey: today,

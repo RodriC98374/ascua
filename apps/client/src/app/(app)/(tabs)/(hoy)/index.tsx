@@ -222,6 +222,7 @@ function TodayContent({
           name={habit.name}
           tier={habit.tier}
           color={habit.color}
+          icon={habit.icon}
           amount={amount}
           unit={habit.target.unit}
           count={count}
@@ -240,6 +241,7 @@ function TodayContent({
         name={habit.name}
         tier={habit.tier}
         color={habit.color}
+        icon={habit.icon}
         isDone={summary.isDone(habit.id)}
         isArchived={isArchived}
         isToggleDisabled={isToggleDisabled}
