@@ -11,6 +11,7 @@ import { Pressable, Text, View } from 'react-native';
 import { Button } from '@/components/ui/button';
 import { ScreenFooter } from '@/components/ui/screen';
 import { TextField } from '@/components/ui/text-field';
+import { RewardCalculator } from '@/features/reward-calculator/reward-calculator';
 import type { RewardInput } from '@/operations/rewards';
 
 import { TIER_LABELS, tierRange } from './reward-catalog';
@@ -107,6 +108,13 @@ export function RewardForm({ rewards, reward, onSubmit }: RewardFormProps) {
           })}
         </View>
       </View>
+
+      <RewardCalculator
+        onUseCost={(value) => {
+          update('cost', String(value));
+          touch('cost')();
+        }}
+      />
 
       <TextField
         label="Costo en puntos"

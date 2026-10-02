@@ -21,6 +21,7 @@ export * from './primary-habits';
 export * from './reflections';
 export * from './reminders';
 export * from './restore';
+export * from './reward-calculator';
 export * from './savings';
 export * from './statistics';
 export * from './streak-risk';

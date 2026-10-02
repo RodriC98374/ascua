@@ -112,6 +112,7 @@ interface UserProfile {
     dailyReminderTime: string;         // 'HH:mm' hora Bolivia; recordatorio general del día
     streakRiskReminderTime: string;    // 'HH:mm'; se cancela si la meta de hoy ya está cumplida
   };
+  rewardBudget?: number | null;        // fase 21: presupuesto mensual para gustos en Bs (1..100000); sin el campo o null = sin definir
 }
 ```
 
@@ -586,7 +587,7 @@ Sin servidor, las reglas son la única barrera: validan que cada operación de l
 - **Acceso:** todo bajo `users/{userId}` requiere `request.auth.uid == userId` y que el `uid` esté en la lista de permitidos.
 - **Registro cerrado:** la cuenta del usuario se creó a mano en la consola y el registro está desactivado (*Authentication → Settings → User actions*). La app no tiene pantalla de registro. La lista de permitidos es la segunda barrera.
 - **Clave de API restringida** (Google Cloud → Credenciales → "Browser key (auto created by Firebase)"): sin restricción de aplicación (Android con el SDK JS no envía los datos que esa restricción verifica) y **solo** Identity Toolkit API, Token Service API y Cloud Firestore API. La clave es pública por diseño; si se agrega otro servicio de Firebase, sumarlo a esa lista o fallará con un error 403.
-- **Libre, con forma validada** (tipos, enums, longitudes): `users/{userId}` (solo `displayName` y `reminderSettings` después de crearlo), `habits`, `rewards`. Hábitos y recompensas no se pueden borrar. En `habits`, `schedule` y `target` no cambian después de crear; `reminder` sí (hora 'HH:mm', días 1–7 sin repetir y, en días fijos, solo los del hábito). `steps` también: `null` o de 2 a 6 pasos con exactamente `id` y `title`.
+- **Libre, con forma validada** (tipos, enums, longitudes): `users/{userId}` (solo `displayName`, `reminderSettings` y `rewardBudget` después de crearlo), `habits`, `rewards`. Hábitos y recompensas no se pueden borrar. En `habits`, `schedule` y `target` no cambian después de crear; `reminder` sí (hora 'HH:mm', días 1–7 sin repetir y, en días fijos, solo los del hábito). `steps` también: `null` o de 2 a 6 pasos con exactamente `id` y `title`.
 - **`dailyLogs/{D}.entries` y `checkIn`:** solo si `D` es hoy en Bolivia según `request.time`. Al crear el documento, `status == 'open'` y `summary == null`. `checkIn` solo acepta `mood`, `energy` y `motivation` con enteros de 1 a 5; el cierre no lo cambia y un día cerrado sin actividad se crea sin él.
 - **Cierre de un día** (`status`/`summary` de `dailyLogs/{D}`, movimientos de cierre, `meta/gamification`, `monthlySummaries`):
   - `D` es estrictamente anterior a hoy (según `request.time`).

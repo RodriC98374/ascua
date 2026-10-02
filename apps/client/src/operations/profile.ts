@@ -17,3 +17,15 @@ export function updateReminderSettings(
     updatedAt: serverTimestamp(),
   });
 }
+
+/** Guarda el presupuesto mensual para gustos de la calculadora (fase 21); null lo quita. */
+export function updateRewardBudget(
+  db: Firestore,
+  uid: string,
+  rewardBudget: number | null,
+): Promise<void> {
+  return updateDoc(userProfileRef(db, uid).withConverter(null), {
+    rewardBudget,
+    updatedAt: serverTimestamp(),
+  });
+}

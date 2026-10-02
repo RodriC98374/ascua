@@ -186,7 +186,7 @@ service cloud.firestore {
       allow read: if isOwner(userId);
       allow create: if isOwner(userId) && isValidProfile(incoming()) && isCreatedNow();
       allow update: if isOwner(userId)
-        && onlyChanges(['displayName', 'reminderSettings', 'updatedAt'])
+        && onlyChanges(['displayName', 'reminderSettings', 'rewardBudget', 'updatedAt'])
         && isValidProfile(incoming())
         && isTouchedNow();
 
@@ -195,7 +195,12 @@ service cloud.firestore {
       }
 
       function isValidProfile(profile) {
-        return hasExactly(profile, ['email', 'displayName', 'reminderSettings', 'createdAt', 'updatedAt', 'schemaVersion'])
+        let fields = ['email', 'displayName', 'reminderSettings', 'createdAt', 'updatedAt', 'schemaVersion'];
+        return profile.keys().hasAll(fields)
+          && profile.keys().hasOnly(fields.concat(['rewardBudget']))
+          // Presupuesto mensual para gustos de la calculadora de recompensas (fase 21), en Bs.
+          && (!('rewardBudget' in profile) || profile.rewardBudget == null
+            || (profile.rewardBudget is int && profile.rewardBudget >= 1 && profile.rewardBudget <= 100000))
           && profile.email == request.auth.token.email
           && isText(profile.displayName, 1, 50)
           && hasExactly(profile.reminderSettings, ['enabled', 'dailyReminderTime', 'streakRiskReminderTime'])

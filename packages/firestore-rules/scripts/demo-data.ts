@@ -342,7 +342,8 @@ function buildDemoData(uid: string, options: DemoOptions): DemoData {
     reward('cine', 'Cine con palomitas', 'large', 600, 2),
   ];
 
-  const profile = initialUserProfile(DEMO_EMAIL);
+  // Con presupuesto para gustos (fase 21): la calculadora de recompensas funciona de entrada.
+  const profile = { ...initialUserProfile(DEMO_EMAIL), rewardBudget: 250 };
   if (options.isRiskAllDay) {
     profile.reminderSettings = {
       ...DEFAULT_REMINDER_SETTINGS,

@@ -196,6 +196,11 @@ export interface UserProfile {
   email: string;
   displayName: string;
   reminderSettings: ReminderSettings;
+  /**
+   * Presupuesto mensual para gustos, en Bs (fase 21): la calculadora de recompensas lo usa para la
+   * tasa de puntos por Bs. Sin el campo o null = sin definir.
+   */
+  rewardBudget?: number | null;
 }
 
 /** Saldo y racha del usuario (documento `meta/gamification`). */

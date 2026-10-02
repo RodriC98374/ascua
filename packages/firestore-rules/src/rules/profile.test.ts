@@ -41,6 +41,14 @@ describe('users/{uid} create', () => {
     );
   });
 
+  it('accepts a monthly reward budget from the start (fase 21)', async () => {
+    await assertSucceeds(setDoc(profile(), profileDoc({ rewardBudget: 250 })));
+  });
+
+  it('rejects a reward budget below 1 at creation', async () => {
+    await assertFails(setDoc(profile(), profileDoc({ rewardBudget: -1 })));
+  });
+
   it('requires server timestamps and schema version 1', async () => {
     await assertFails(setDoc(profile(), profileDoc({ createdAt: new Date('2020-01-01') })));
     await assertFails(setDoc(profile(), profileDoc({ schemaVersion: 2 })));
@@ -74,5 +82,28 @@ describe('users/{uid} update', () => {
 
   it('never deletes the profile', async () => {
     await assertFails(deleteDoc(profile()));
+  });
+});
+
+describe('users/{uid} reward budget (fase 21)', () => {
+  beforeEach(async () => {
+    await seedDocs({ [paths.user()]: profileDoc() });
+  });
+
+  const setBudget = (rewardBudget: unknown) =>
+    updateDoc(profile(), { rewardBudget, updatedAt: serverTimestamp() });
+
+  it('saves, changes and removes the monthly budget', async () => {
+    await assertSucceeds(setBudget(250));
+    await assertSucceeds(setBudget(100_000));
+    await assertSucceeds(setBudget(1));
+    await assertSucceeds(setBudget(null));
+  });
+
+  it('rejects a budget that is not a whole amount from 1 to 100000', async () => {
+    await assertFails(setBudget(0));
+    await assertFails(setBudget(100_001));
+    await assertFails(setBudget(2.5));
+    await assertFails(setBudget('250'));
   });
 });

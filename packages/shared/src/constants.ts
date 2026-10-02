@@ -73,6 +73,13 @@ export const REWARD_COST_MAX = 1_000_000;
 /** Nota opcional de un canje. */
 export const REDEMPTION_NOTE_MAX_LENGTH = 200;
 
+/**
+ * Presupuesto mensual para gustos de la calculadora de recompensas (fase 21): Bs enteros. Los
+ * mismos límites que validan las reglas.
+ */
+export const REWARD_BUDGET_MIN = 1;
+export const REWARD_BUDGET_MAX = 100_000;
+
 /** Rangos sugeridos por nivel de recompensa. Solo orientan a la UI; no se validan. */
 export const REWARD_TIER_COST_RANGES: Readonly<Record<RewardTier, { min: number; max: number }>> = {
   small: { min: 50, max: 80 },

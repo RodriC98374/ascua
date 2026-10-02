@@ -2,7 +2,10 @@ import { getDoc } from 'firebase/firestore';
 import { describe, expect, it } from 'vitest';
 
 import { userProfileRef } from '../../../../apps/client/src/data/documents';
-import { updateReminderSettings } from '../../../../apps/client/src/operations/profile';
+import {
+  updateReminderSettings,
+  updateRewardBudget,
+} from '../../../../apps/client/src/operations/profile';
 import { OWNER, ownerDb, useRulesTestEnvironment } from '../support/env';
 import { paths, profileDoc, seedDocs } from '../support/fixtures';
 
@@ -37,5 +40,17 @@ describe('profile operations', () => {
         streakRiskReminderTime: '21:00',
       }),
     ).rejects.toThrow();
+  });
+
+  it('saves, changes and removes the monthly reward budget', async () => {
+    await seedDocs({ [paths.user()]: profileDoc() });
+    const db = ownerDb();
+    const budget = async () => (await getDoc(userProfileRef(db, OWNER))).data()?.rewardBudget;
+
+    expect(await budget()).toBeUndefined();
+    await updateRewardBudget(db, OWNER, 250);
+    expect(await budget()).toBe(250);
+    await updateRewardBudget(db, OWNER, null);
+    expect(await budget()).toBeNull();
   });
 });

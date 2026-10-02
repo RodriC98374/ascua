@@ -9,6 +9,7 @@ import { signOut, useSession, useUid } from '@/features/auth/session';
 import { useHabits } from '@/data/hooks';
 import { ExportSection } from '@/features/export/export-section';
 import { InstallSection } from '@/features/pwa/install-section';
+import { BudgetSection } from '@/features/reward-calculator/budget-section';
 import { ReminderSettingsSection } from '@/features/reminders/reminder-settings';
 import { SoundsSection } from '@/features/sounds/sounds-section';
 
@@ -29,6 +30,8 @@ export default function SettingsScreen() {
         <AppearanceSection />
 
         <SoundsSection />
+
+        <BudgetSection />
 
         <ExportSection />
 
