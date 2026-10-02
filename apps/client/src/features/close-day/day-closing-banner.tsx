@@ -7,6 +7,8 @@ import { useThemeColors } from '@/theme/colors';
 import { useClosePendingDays } from './use-close-pending-days';
 
 const ERROR_MESSAGES = {
+  offline:
+    'No pudimos conectarnos para actualizar tus días. Revisa tu conexión y vuelve a intentarlo.',
   rejected:
     'No pudimos cerrar tus días: la fecha u hora de tu dispositivo no coincide con la real. Corrígela y vuelve a intentarlo.',
   unknown: 'No pudimos actualizar tus días. Vuelve a intentarlo.',
