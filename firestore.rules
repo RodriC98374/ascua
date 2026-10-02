@@ -216,17 +216,18 @@ service cloud.firestore {
           && incoming().archivedDateKey == null
           && incoming().startDateKey >= todayKey();
         allow update: if isOwner(userId)
-          && onlyChanges(['name', 'description', 'icon', 'color', 'category', 'tier', 'reminder', 'sortOrder', 'status', 'archivedDateKey', 'updatedAt'])
+          && onlyChanges(['name', 'description', 'icon', 'color', 'category', 'tier', 'reminder', 'steps', 'sortOrder', 'status', 'archivedDateKey', 'updatedAt'])
           && isValidHabit(incoming())
           && isTouchedNow()
           && isValidHabitStatusChange(existing(), incoming());
       }
 
-      // `target` y `reminder` son opcionales: los hábitos de antes de las fases 16 y 17 no los traen.
+      // `target`, `reminder` y `steps` son opcionales: los hábitos de antes de las fases 16, 17 y 21
+      // no los traen.
       function isValidHabit(habit) {
         let fields = ['name', 'description', 'icon', 'color', 'category', 'tier', 'schedule', 'status', 'sortOrder', 'startDateKey', 'archivedDateKey', 'createdAt', 'updatedAt', 'schemaVersion'];
         return habit.keys().hasAll(fields)
-          && habit.keys().hasOnly(fields.concat(['target', 'reminder']))
+          && habit.keys().hasOnly(fields.concat(['target', 'reminder', 'steps']))
           && isText(habit.name, 1, 60)
           && isOptionalText(habit.description, 200)
           && isText(habit.icon, 1, 40)
@@ -237,10 +238,34 @@ service cloud.firestore {
           && isValidSchedule(habit.schedule)
           && (!('target' in habit) || habit.target == null || isValidTarget(habit.target))
           && (!('reminder' in habit) || habit.reminder == null || isValidHabitReminder(habit.reminder, habit.schedule))
+          && (!('steps' in habit) || habit.steps == null || isValidHabitSteps(habit.steps))
           && habit.status in ['active', 'archived']
           && habit.sortOrder is int
           && isDateKey(habit.startDateKey)
           && (habit.archivedDateKey == null || isDateKey(habit.archivedDateKey));
+      }
+
+      // Pasos de un hábito (fase 21): de 2 a 6, cada uno con su id y su título. Las reglas no
+      // tienen bucles: cada posición se revisa por su índice. El máximo es 6 porque cada paso suma
+      // evaluaciones y con 8 la escritura pasaba el límite de Firestore. Que los ids no se repitan
+      // lo valida la app; un id repetido solo haría que dos pasos se marquen juntos.
+      function isValidHabitSteps(steps) {
+        return steps is list
+          && steps.size() >= 2
+          && steps.size() <= 6
+          && isHabitStep(steps[0])
+          && isHabitStep(steps[1])
+          && (steps.size() <= 2 || isHabitStep(steps[2]))
+          && (steps.size() <= 3 || isHabitStep(steps[3]))
+          && (steps.size() <= 4 || isHabitStep(steps[4]))
+          && (steps.size() <= 5 || isHabitStep(steps[5]));
+      }
+
+      // Si no es un mapa, `keys()` falla y la regla niega.
+      function isHabitStep(step) {
+        return hasExactly(step, ['id', 'title'])
+          && isText(step.id, 1, 20)
+          && isText(step.title, 1, 60);
       }
 
       // Todos los días, días fijos (1 = lunes … 7 = domingo; los siete son "todos los días") o N

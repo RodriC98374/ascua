@@ -36,6 +36,7 @@ const reading: NewHabitInput = {
   schedule: { type: 'daily' },
   target: null,
   reminder: null,
+  steps: null,
 };
 
 describe('habit operations', () => {
@@ -107,6 +108,49 @@ describe('habit operations', () => {
 
     await updateHabit(db, OWNER, habitId, { ...reading, icon: null });
     expect(await loadHabit(habitId)).toMatchObject({ icon: 'check' });
+  });
+
+  it('saves the steps with clean titles, lets them change and removes them', async () => {
+    const db = ownerDb();
+    const steps = [
+      { id: 'teeth', title: '  Lavarse los dientes ' },
+      { id: 'clothes', title: 'Preparar la ropa' },
+    ];
+    const { habitId, write } = createHabit(db, OWNER, { ...reading, steps }, 0, TODAY);
+    await write;
+    expect(await loadHabit(habitId)).toMatchObject({
+      steps: [
+        { id: 'teeth', title: 'Lavarse los dientes' },
+        { id: 'clothes', title: 'Preparar la ropa' },
+      ],
+    });
+
+    const longer = [...steps, { id: 'screen', title: 'Apagar la pantalla' }];
+    await updateHabit(db, OWNER, habitId, { ...reading, steps: longer });
+    expect((await loadHabit(habitId))?.steps).toHaveLength(3);
+
+    await updateHabit(db, OWNER, habitId, { ...reading, steps: null });
+    expect(await loadHabit(habitId)).toMatchObject({ steps: null });
+  });
+
+  it('does not keep steps in a habit with a daily target', async () => {
+    const db = ownerDb();
+    const { habitId, write } = createHabit(
+      db,
+      OWNER,
+      {
+        ...reading,
+        target: { amount: 8, unit: 'vasos' },
+        steps: [
+          { id: 'a', title: 'Uno' },
+          { id: 'b', title: 'Dos' },
+        ],
+      },
+      0,
+      TODAY,
+    );
+    await write;
+    expect(await loadHabit(habitId)).toMatchObject({ steps: null });
   });
 
   it('keeps the target when editing the rest of the habit', async () => {
@@ -192,6 +236,7 @@ describe('habit operations', () => {
       icon: null,
       color: '#C4B2DE',
       reminder: null,
+      steps: null,
     });
 
     const habit = await getDoc(habitRef(db, OWNER, habitId));

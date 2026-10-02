@@ -30,9 +30,11 @@ import { TimeField } from '@/components/ui/time-field';
 import { Toggle } from '@/components/ui/toggle';
 import { HabitIcon } from '@/features/habits/habit-icon';
 import { HabitIconPicker } from '@/features/habits/habit-icon-picker';
+import { HabitStepsField } from '@/features/habits/habit-steps-field';
 import { scheduleText, WEEKDAY_OPTIONS } from '@/features/habits/habit-text';
 import {
   draftReminder,
+  draftSteps,
   hasErrors,
   validateHabit,
   type HabitDraft,
@@ -148,6 +150,8 @@ export function HabitForm({ habits, habit, onSubmit }: HabitFormProps) {
     hasReminder: Boolean(habit?.reminder),
     reminderTime: habit?.reminder?.time ?? DEFAULT_REMINDER_TIME,
     reminderDays: habit?.reminder?.daysOfWeek ?? WEEKDAY_OPTIONS.map((day) => day.isoWeekday),
+    hasSteps: !habit?.target && Boolean(habit?.steps?.length),
+    steps: habit?.steps ? habit.steps.map((step) => ({ ...step })) : [],
   });
   // Los errores de un campo se muestran después de salir de él o de intentar guardar.
   const [touched, setTouched] = useState<Partial<Record<keyof HabitDraft, boolean>>>({});
@@ -216,6 +220,7 @@ export function HabitForm({ habits, habit, onSubmit }: HabitFormProps) {
         ? { amount: Number(draft.targetAmount), unit: draft.targetUnit.trim() }
         : null,
       reminder: draftReminder(draft),
+      steps: draftSteps(draft),
     });
   }
 
@@ -419,6 +424,17 @@ export function HabitForm({ habits, habit, onSubmit }: HabitFormProps) {
               note="Tampoco se puede cambiar después de crearlo."
             />
           </View>
+        )}
+
+        {/* Con cantidad manda el contador: los pasos son para los hábitos de casilla. */}
+        {!draft.hasTarget && (
+          <HabitStepsField
+            hasSteps={draft.hasSteps}
+            steps={draft.steps}
+            error={visibleError('steps')}
+            onToggle={(hasSteps) => update('hasSteps', hasSteps)}
+            onChange={(steps) => update('steps', steps)}
+          />
         )}
       </FormSection>
 

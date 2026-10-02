@@ -51,6 +51,7 @@ describe('restore texts', () => {
       schedule: { type: 'daily' as const },
       target: { amount: 8, unit: 'vasos' },
       reminder: null,
+      steps: null,
     };
     expect(habitRestoreDetail(habit)).toBe('Principal · Todos los días · 8 vasos');
     expect(habitRestoreDetail({ ...habit, tier: 'secondary', target: null })).toBe(

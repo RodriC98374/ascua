@@ -11,6 +11,7 @@ export * from './habit-appearance';
 export * from './habit-icons';
 export * from './habit-reminders';
 export * from './habit-schedule';
+export * from './habit-steps';
 export * from './insights';
 export * from './milestones';
 export * from './monthly-summary';

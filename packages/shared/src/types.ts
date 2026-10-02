@@ -62,6 +62,12 @@ export interface HabitReminder {
   daysOfWeek: number[];
 }
 
+/** Un paso de un hábito (fase 21, D27). El id no cambia aunque se edite el texto o el orden. */
+export interface HabitStep {
+  id: string;
+  title: string;
+}
+
 /** Lo que la lógica necesita de un hábito. */
 export interface Habit {
   id: string;
@@ -72,6 +78,11 @@ export interface Habit {
   target?: HabitTarget | null;
   /** Sin recordatorio si falta o es null (los hábitos de antes de la fase 17 no lo traen). */
   reminder?: HabitReminder | null;
+  /**
+   * Con pasos, el hábito se cumple al marcarlos todos. Sin pasos si falta, es null o está vacío
+   * (los hábitos de antes de la fase 21 no lo traen). Se pueden cambiar cuando sea.
+   */
+  steps?: readonly HabitStep[] | null;
   status: EntityStatus;
   /** Primer día en que cuenta. */
   startDateKey: DateKey;
@@ -113,6 +124,8 @@ export interface TaskRecord extends Task {
 export interface HabitEntry {
   completed: boolean;
   count?: number;
+  /** Ids de los pasos hechos, en un hábito con pasos: mandan sobre `completed`. */
+  doneSteps?: readonly string[];
 }
 
 /** Marcas del día por hábito, tal como las escribe el usuario. */

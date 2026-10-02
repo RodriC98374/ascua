@@ -1,7 +1,7 @@
 import type { HabitRecord } from '@ascua/shared';
 import { describe, expect, it } from '@jest/globals';
 
-import { draftReminder, hasErrors, validateHabit } from './habit-validation';
+import { draftReminder, draftSteps, hasErrors, validateHabit } from './habit-validation';
 
 function habit(id: string, overrides: Partial<HabitRecord> = {}) {
   return {
@@ -35,6 +35,8 @@ const valid = {
   hasReminder: false,
   reminderTime: '20:00',
   reminderDays: [1, 2, 3, 4, 5, 6, 7],
+  hasSteps: false,
+  steps: [],
 };
 
 describe('validateHabit', () => {
@@ -200,5 +202,45 @@ describe('habit reminder (fase 17)', () => {
     expect(
       validateHabit({ ...valid, reminderDays: [] }, { habits: [], isNew: true }).reminderDays,
     ).toBeUndefined();
+  });
+});
+
+describe('habit steps', () => {
+  const steps = [
+    { id: 'a', title: ' Lavarse los dientes ' },
+    { id: 'b', title: 'Preparar la ropa' },
+    { id: 'c', title: '   ' },
+  ];
+
+  it('saves the written steps with clean titles, leaving empty rows out', () => {
+    expect(draftSteps({ ...valid, hasSteps: true, steps })).toEqual([
+      { id: 'a', title: 'Lavarse los dientes' },
+      { id: 'b', title: 'Preparar la ropa' },
+    ]);
+  });
+
+  it('saves no steps when they are off or the habit has a quantity', () => {
+    expect(draftSteps({ ...valid, hasSteps: false, steps })).toBeNull();
+    expect(draftSteps({ ...valid, hasSteps: true, hasTarget: true, steps })).toBeNull();
+  });
+
+  it('asks for at least two steps', () => {
+    const one = { ...valid, hasSteps: true, steps: [steps[0]!, steps[2]!] };
+    expect(validateHabit(one, { habits: [], isNew: true }).steps).toBe(
+      'Escribe al menos 2 pasos, o desactiva los pasos.',
+    );
+    expect(validateHabit({ ...one, steps }, { habits: [], isNew: true }).steps).toBeUndefined();
+  });
+
+  it('validates the steps also when editing, where they can change', () => {
+    const one = { ...valid, hasSteps: true, steps: [steps[0]!] };
+    expect(validateHabit(one, { habits: [], isNew: false }).steps).toBeDefined();
+  });
+
+  it('does not ask for steps in a habit with a quantity', () => {
+    const counted = { ...valid, hasTarget: true, targetAmount: '8', targetUnit: 'vasos' };
+    expect(
+      validateHabit({ ...counted, hasSteps: true, steps: [] }, { habits: [], isNew: true }),
+    ).toEqual({});
   });
 });

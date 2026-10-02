@@ -36,6 +36,7 @@ import {
   type HabitRecord,
   type HabitReminder,
   type HabitSchedule,
+  type HabitStep,
   type HabitTarget,
   type HabitTier,
   type MonthKey,
@@ -315,6 +316,15 @@ function buildDemoData(uid: string, options: DemoOptions): DemoData {
   for (const habitRecord of habits) {
     habitRecord.icon = icons[habitRecord.id] ?? DEFAULT_HABIT_ICON;
   }
+  // Fase 21: un hábito con pasos, para ver las subcasillas en Hoy (hoy lleva uno de tres).
+  const nightSteps: HabitStep[] = [
+    { id: 'ropa', title: 'Dejar la ropa lista' },
+    { id: 'dientes', title: 'Lavarme los dientes' },
+    { id: 'pantalla', title: 'Apagar la pantalla' },
+  ];
+  for (const habitRecord of habits) {
+    if (habitRecord.id === 'dormir') habitRecord.steps = nightSteps;
+  }
   const chance: Record<string, number> = {
     leer: 0.97,
     ejercicio: 0.94,
@@ -434,7 +444,10 @@ function buildDemoData(uid: string, options: DemoOptions): DemoData {
           entries[id] = { completed: false, count: 1 + Math.floor(random() * (target.amount - 1)) };
         }
       } else if (isDone) {
-        entries[id] = { completed: true };
+        // Con pasos, cumplido es tener todos marcados.
+        entries[id] = habitRecord.steps
+          ? { completed: true, doneSteps: habitRecord.steps.map((step) => step.id) }
+          : { completed: true };
       }
     }
     // Las marcas de la semana hasta ayer, para el tope de los hábitos de N veces por semana.
@@ -555,6 +568,7 @@ function buildDemoData(uid: string, options: DemoOptions): DemoData {
       leer: { completed: true, updatedAt: nowAt },
       agua: { completed: true, updatedAt: nowAt },
       vasos: { completed: false, count: 5, updatedAt: nowAt },
+      dormir: { completed: false, doneSteps: ['ropa'], updatedAt: nowAt },
       ...(options.isWeekPowered && { natacion: { completed: true, updatedAt: nowAt } }),
     },
     status: 'open',

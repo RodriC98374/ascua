@@ -1,4 +1,5 @@
 import { isoWeekday } from './dates';
+import { areHabitStepsDone, habitStepsOf } from './habit-steps';
 import type { DailyEntries, DateKey, Habit, HabitEntry } from './types';
 
 /**
@@ -33,9 +34,13 @@ export function getScheduledHabits<T extends Habit>(habits: readonly T[], dateKe
   return habits.filter((habit) => isHabitScheduledOn(habit, dateKey));
 }
 
-/** Cumplido ese día. Con cantidad manda lo hecho (`count`), no la casilla. */
+/**
+ * Cumplido ese día. Con cantidad manda lo hecho (`count`) y con pasos, que estén todos marcados;
+ * en los dos casos, no la casilla.
+ */
 export function isHabitDone(habit: Habit, entry: HabitEntry | undefined): boolean {
   if (habit.target) return (entry?.count ?? 0) >= habit.target.amount;
+  if (habitStepsOf(habit).length > 0) return areHabitStepsDone(habit, entry);
   return entry?.completed === true;
 }
 

@@ -37,6 +37,7 @@ import {
 } from './habit-appearance';
 import { DEFAULT_HABIT_ICON, habitIconOf } from './habit-icons';
 import { isValidHabitReminder } from './habit-reminders';
+import { isValidHabitSteps } from './habit-steps';
 import { canWriteReflection, isReflectionAnswered } from './reflections';
 import type {
   DateKey,
@@ -44,6 +45,7 @@ import type {
   HabitRecord,
   HabitReminder,
   HabitSchedule,
+  HabitStep,
   HabitTarget,
   HabitTier,
   RewardRecord,
@@ -65,6 +67,8 @@ export interface RestoredHabit {
   schedule: HabitSchedule;
   target: HabitTarget | null;
   reminder: HabitReminder | null;
+  /** Pasos del hábito (fase 21), o null si no tiene, no son válidos o lleva cantidad. */
+  steps: HabitStep[] | null;
 }
 
 export interface RestoredReward {
@@ -222,6 +226,10 @@ function parseHabit(doc: UnknownRecord): Parsed<RestoredHabit> {
       schedule,
       target,
       reminder: readReminder(doc.reminder, schedule),
+      steps:
+        target === null && isValidHabitSteps(doc.steps)
+          ? doc.steps.map(({ id, title }) => ({ id, title }))
+          : null,
     },
     order: order(doc.sortOrder),
   };

@@ -135,6 +135,7 @@ interface Habit {
     time: string;                      // 'HH:mm' hora Bolivia
     daysOfWeek: number[];              // 1 = lunes … 7 = domingo, sin repetir; en días fijos, solo entre sus días
   } | null;
+  steps?: { id: string; title: string }[] | null; // fase 21: opcional y editable; de 2 a 6, sin cantidad
   status: EntityStatus;
   sortOrder: number;
   startDateKey: DateKey;               // primer día en que cuenta
@@ -148,6 +149,7 @@ interface Habit {
 - **Máximo 3 principales:** se valida en la UI (sección 10, deudas aceptadas).
 - **Frecuencia (fase 16):** un hábito de días fijos solo cuenta esos días; uno de N veces por semana no entra en la meta de racha ni en el día perfecto y suma sus puntos hasta N marcas por semana. Con todos los semanales cumplidos, la semana queda potenciada (la llama se ve morada); se deriva de las marcas, no se guarda. Con cantidad, se cumple al llegar a `target.amount` en el día.
 - **Recordatorio propio (fase 17):** hora y días elegidos; se agrega, cambia o quita cuando sea. No suena si el hábito ya está cumplido hoy ni, en un semanal que llegó a su N, el resto de la semana. Un hábito archivado no avisa.
+- **Pasos (fase 21):** un hábito sin cantidad puede tener de 2 a 6 pasos (con cantidad la app guarda `null` y, si llegaran, se ignoran) (`id` de 1 a 20 caracteres que no cambia al editar el texto; `title` de 1 a 60). **Solo se cumple con todos marcados** (`isHabitDone`); los puntos no cambian. Se agregan, editan o quitan cuando sea; un paso quitado deja de contar. El máximo es 6 porque con más la escritura del hábito pasa el límite de evaluación de las reglas.
 
 ### `users/{userId}/dailyLogs/{dateKey}` — DailyLog
 Un documento por día. El ID es la fecha (`'2026-09-21'`).
@@ -160,6 +162,7 @@ interface DailyLog {
   entries: Record<string /* habitId */, {
     completed: boolean;
     count?: number;                    // fase 16: lo hecho de un hábito con cantidad; manda sobre completed
+    doneSteps?: string[];              // fase 21: ids de los pasos hechos; en un hábito con pasos manda sobre completed
     updatedAt: Timestamp;
   }>;
   checkIn?: {                          // fase 15 (D22): opcional; cada escala de 1 a 5, sin la clave = sin contestar
@@ -580,7 +583,7 @@ Sin servidor, las reglas son la única barrera: validan que cada operación de l
 - **Acceso:** todo bajo `users/{userId}` requiere `request.auth.uid == userId` y que el `uid` esté en la lista de permitidos.
 - **Registro cerrado:** la cuenta del usuario se creó a mano en la consola y el registro está desactivado (*Authentication → Settings → User actions*). La app no tiene pantalla de registro. La lista de permitidos es la segunda barrera.
 - **Clave de API restringida** (Google Cloud → Credenciales → "Browser key (auto created by Firebase)"): sin restricción de aplicación (Android con el SDK JS no envía los datos que esa restricción verifica) y **solo** Identity Toolkit API, Token Service API y Cloud Firestore API. La clave es pública por diseño; si se agrega otro servicio de Firebase, sumarlo a esa lista o fallará con un error 403.
-- **Libre, con forma validada** (tipos, enums, longitudes): `users/{userId}` (solo `displayName` y `reminderSettings` después de crearlo), `habits`, `rewards`. Hábitos y recompensas no se pueden borrar. En `habits`, `schedule` y `target` no cambian después de crear; `reminder` sí (hora 'HH:mm', días 1–7 sin repetir y, en días fijos, solo los del hábito).
+- **Libre, con forma validada** (tipos, enums, longitudes): `users/{userId}` (solo `displayName` y `reminderSettings` después de crearlo), `habits`, `rewards`. Hábitos y recompensas no se pueden borrar. En `habits`, `schedule` y `target` no cambian después de crear; `reminder` sí (hora 'HH:mm', días 1–7 sin repetir y, en días fijos, solo los del hábito). `steps` también: `null` o de 2 a 6 pasos con exactamente `id` y `title`.
 - **`dailyLogs/{D}.entries` y `checkIn`:** solo si `D` es hoy en Bolivia según `request.time`. Al crear el documento, `status == 'open'` y `summary == null`. `checkIn` solo acepta `mood`, `energy` y `motivation` con enteros de 1 a 5; el cierre no lo cambia y un día cerrado sin actividad se crea sin él.
 - **Cierre de un día** (`status`/`summary` de `dailyLogs/{D}`, movimientos de cierre, `meta/gamification`, `monthlySummaries`):
   - `D` es estrictamente anterior a hoy (según `request.time`).

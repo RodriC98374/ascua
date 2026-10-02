@@ -188,6 +188,83 @@ describe('habit reminder (fase 17)', () => {
   });
 });
 
+describe('habit steps (fase 21)', () => {
+  const step = (id: unknown, title: unknown = `Paso ${String(id)}`) => ({ id, title });
+  const steps = (count: number) => ({
+    steps: Array.from({ length: count }, (_, index) => step(`s${index}`)),
+  });
+
+  it('accepts from two to six steps, or none', async () => {
+    await assertSucceeds(setDoc(habit('a'), habitDoc(steps(2))));
+    await assertSucceeds(setDoc(habit('b'), habitDoc(steps(6))));
+    await assertSucceeds(setDoc(habit('c'), habitDoc({ steps: null })));
+    await assertSucceeds(
+      setDoc(habit('d'), habitDoc({ steps: [step('a', 'x'.repeat(60)), step('x'.repeat(20))] })),
+    );
+  });
+
+  // Cada paso suma evaluaciones a la regla: el hábito más cargado tiene que seguir entrando en el
+  // límite de Firestore, al crearlo y al editarlo.
+  it('accepts the heaviest habit: fixed days, a reminder and six steps', async () => {
+    const heavy = {
+      schedule: { type: 'days_of_week', daysOfWeek: [1, 2, 3, 4, 5, 6] },
+      reminder: { time: '21:00', daysOfWeek: [1, 2, 3, 4, 5, 6] },
+      description: 'x'.repeat(200),
+      ...steps(6),
+    };
+    await assertSucceeds(setDoc(habit('heavy'), habitDoc(heavy)));
+    await seedDocs({ [paths.habit('old')]: habitDoc({ startDateKey: '2026-01-01', ...heavy }) });
+    await assertSucceeds(
+      updateDoc(habit('old'), {
+        name: 'Rutina de noche',
+        tier: 'secondary',
+        steps: steps(6).steps.map((item) => ({ ...item, title: 'x'.repeat(60) })),
+        reminder: { time: '22:15', daysOfWeek: [1, 2, 3, 4, 5, 6] },
+        updatedAt: serverTimestamp(),
+      }),
+    );
+  });
+
+  it('rejects too few or too many steps', async () => {
+    await assertFails(setDoc(habit(), habitDoc(steps(1))));
+    await assertFails(setDoc(habit(), habitDoc(steps(7))));
+    await assertFails(setDoc(habit(), habitDoc({ steps: [] })));
+  });
+
+  it('rejects something that is not a list of steps', async () => {
+    await assertFails(setDoc(habit(), habitDoc({ steps: 'dientes, ropa' })));
+    await assertFails(setDoc(habit(), habitDoc({ steps: { a: 'Dientes', b: 'Ropa' } })));
+    await assertFails(setDoc(habit(), habitDoc({ steps: [step('a'), 'Ropa'] })));
+  });
+
+  it('validates the id and the title of every step', async () => {
+    await assertFails(setDoc(habit(), habitDoc({ steps: [step('a'), step('b', '')] })));
+    await assertFails(setDoc(habit(), habitDoc({ steps: [step('a'), step('b', 'x'.repeat(61))] })));
+    await assertFails(setDoc(habit(), habitDoc({ steps: [step('a'), step('', 'Ropa')] })));
+    await assertFails(
+      setDoc(habit(), habitDoc({ steps: [step('a'), step('x'.repeat(21), 'Ropa')] })),
+    );
+    await assertFails(setDoc(habit(), habitDoc({ steps: [step('a'), step(2, 'Ropa')] })));
+    // El último de seis también se revisa.
+    await assertFails(setDoc(habit(), habitDoc({ steps: [...steps(5).steps, step('last', '')] })));
+  });
+
+  it('rejects extra or missing fields in a step', async () => {
+    await assertFails(setDoc(habit(), habitDoc({ steps: [step('a'), { id: 'b' }] })));
+    await assertFails(
+      setDoc(habit(), habitDoc({ steps: [step('a'), { id: 'b', title: 'Ropa', done: true }] })),
+    );
+  });
+
+  it('can be added, changed and removed after creating the habit', async () => {
+    await seedDocs({ [paths.habit('reading')]: habitDoc({ startDateKey: '2026-01-01' }) });
+    await assertSucceeds(updateDoc(habit(), { ...steps(3), updatedAt: serverTimestamp() }));
+    await assertSucceeds(updateDoc(habit(), { ...steps(2), updatedAt: serverTimestamp() }));
+    await assertSucceeds(updateDoc(habit(), { steps: null, updatedAt: serverTimestamp() }));
+    await assertFails(updateDoc(habit(), { ...steps(1), updatedAt: serverTimestamp() }));
+  });
+});
+
 describe('habits update', () => {
   beforeEach(async () => {
     await seedDocs({ [paths.habit('reading')]: habitDoc({ startDateKey: '2026-01-01' }) });

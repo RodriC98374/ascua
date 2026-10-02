@@ -5,6 +5,7 @@ import {
   HABIT_DESCRIPTION_MAX_LENGTH,
   HABIT_NAME_MAX_LENGTH,
   HABIT_NAME_MIN_LENGTH,
+  HABIT_STEPS_MIN,
   MAX_PRIMARY_HABITS,
   reminderDaysFor,
   TARGET_AMOUNT_MAX,
@@ -16,6 +17,7 @@ import {
   type HabitRecord,
   type HabitReminder,
   type HabitSchedule,
+  type HabitStep,
   type HabitTier,
 } from '@ascua/shared';
 
@@ -40,6 +42,10 @@ export interface HabitDraft {
   reminderTime: string;
   /** Días marcados; al guardar solo quedan los que la frecuencia permite. */
   reminderDays: number[];
+  /** Pasos (fase 21): opcionales y editables. Con cantidad no aplican. */
+  hasSteps: boolean;
+  /** Filas tal como se escriben; al guardar se limpian y las vacías se descartan. */
+  steps: HabitStep[];
 }
 
 export type HabitErrors = Partial<
@@ -64,6 +70,14 @@ export function draftReminder(draft: HabitDraft): HabitReminder | null {
     time: draft.reminderTime,
     daysOfWeek: allowed.filter((day) => draft.reminderDays.includes(day)),
   };
+}
+
+/** Los pasos que se guardan: los escritos, con el texto limpio. Sin pasos si lleva cantidad. */
+export function draftSteps(draft: HabitDraft): HabitStep[] | null {
+  if (!draft.hasSteps || draft.hasTarget) return null;
+  return draft.steps
+    .map((step) => ({ id: step.id, title: step.title.trim() }))
+    .filter((step) => step.title !== '');
 }
 
 export function validateHabit(
@@ -96,6 +110,10 @@ export function validateHabit(
 
   if (draftReminder(draft)?.daysOfWeek.length === 0)
     errors.reminderDays = 'Elige al menos un día para el recordatorio.';
+
+  const steps = draftSteps(draft);
+  if (steps && steps.length < HABIT_STEPS_MIN)
+    errors.steps = `Escribe al menos ${HABIT_STEPS_MIN} pasos, o desactiva los pasos.`;
 
   if (isNew) {
     if (draft.schedule.type === 'days_of_week' && draft.schedule.daysOfWeek.length === 0)

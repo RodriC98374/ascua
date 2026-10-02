@@ -68,8 +68,8 @@ export const userProfileConverter = domainConverter<UserProfile>();
 export const gamificationConverter = domainConverter<GamificationState>();
 
 // El ID del documento es el ID del hábito. Los hábitos creados antes de que existieran las
-// categorías no traen `category` ni un `color` de la paleta, y los de antes de las fases 16 y 17 no
-// traen `target` ni `reminder`: se les completa al leerlos.
+// categorías no traen `category` ni un `color` de la paleta, y los de antes de las fases 16, 17 y 21
+// no traen `target`, `reminder` ni `steps`: se les completa al leerlos.
 const baseHabitConverter = withIdConverter<HabitRecord>();
 export const habitConverter: FirestoreDataConverter<HabitRecord, DocumentData> = {
   toFirestore: (data) => data as DocumentData,
@@ -80,14 +80,15 @@ export const habitConverter: FirestoreDataConverter<HabitRecord, DocumentData> =
       ...habit,
       target: habit.target ?? null,
       reminder: habit.reminder ?? null,
+      steps: habit.steps ?? null,
       category: category.id,
       color: isHabitColor(habit.color) ? habit.color : category.color,
     };
   },
 };
 
-// Cada marca guarda también su updatedAt; el dominio solo necesita `completed` y, con cantidad,
-// `count`.
+// Cada marca guarda también su updatedAt; el dominio solo necesita `completed` y, con cantidad o
+// con pasos, `count` o `doneSteps`.
 const baseDailyLogConverter = domainConverter<DailyLog>();
 export const dailyLogConverter: FirestoreDataConverter<DailyLog, DocumentData> = {
   toFirestore: (data) => data as DocumentData,
@@ -95,10 +96,13 @@ export const dailyLogConverter: FirestoreDataConverter<DailyLog, DocumentData> =
     const log = baseDailyLogConverter.fromFirestore(snapshot, options);
     const entries: Record<string, HabitEntry> = {};
     for (const [habitId, entry] of Object.entries(log.entries)) {
-      entries[habitId] =
-        typeof entry.count === 'number'
-          ? { completed: entry.completed === true, count: entry.count }
-          : { completed: entry.completed === true };
+      entries[habitId] = {
+        completed: entry.completed === true,
+        ...(typeof entry.count === 'number' ? { count: entry.count } : {}),
+        ...(Array.isArray(entry.doneSteps)
+          ? { doneSteps: entry.doneSteps.filter((id) => typeof id === 'string') }
+          : {}),
+      };
     }
     // El check-in solo va si el documento lo trae (los de antes de la fase 15, no).
     return {

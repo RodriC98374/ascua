@@ -17,7 +17,7 @@ todo lo de esta fase antes de construir la APK.
 | 1 | La pestaña y la pantalla de recompensas se llaman **"Premios"**: "Recompensas" se partía en dos líneas en el celular y desalineaba el ícono. Cada premio sigue siendo "una recompensa" en botones y formularios | No | Hecho |
 | 11 | **Doce colores** de hábito en lugar de ocho: se suman lima, canela, pizarra y orquídea, cada uno con su tono oscuro | No (las reglas aceptan cualquier hexadecimal) | Hecho |
 | 10 | **Ícono por hábito**: 96 íconos en seis grupos (catálogo en `shared/habit-icons.ts`), elegidos en una hoja inferior desde el formulario. Se ve antes del nombre en Hoy, en el tono oscuro del color del hábito. **Solo íconos, sin emojis** (un emoji puede ir en el nombre). El campo `icon` ya existía; "sin ícono" guarda `check`. La restauración conserva el ícono del respaldo | No (las reglas aceptan un texto de 1 a 40) | Hecho |
-| 2 | **Hábitos con pasos** (subtareas): un hábito como "Rutina de noche" lista sus pasos y se cumple al marcarlos todos | Sí: diseño por confirmar | Pendiente |
+| 2 | **Hábitos con pasos** (subtareas): un hábito como "Rutina de noche" lista de 2 a 6 pasos y se cumple al marcarlos todos. Opcional, en "Cómo cuenta" del formulario ("Con pasos", con aviso), editable; no aplica a un hábito con cantidad. En Hoy, la casilla del hábito se marca sola y cada paso tiene su subcasilla; el último paso suena y suelta los puntos. Lógica en `shared/habit-steps.ts`; la marca del día guarda `doneSteps`. **Máximo 6** porque con 8 la escritura del hábito (con días fijos y recordatorio) pasaba el límite de evaluación de las reglas. La demo trae "Dormir antes de las 23:00" con tres pasos | Sí: campo `steps` en `habits` (validado en reglas) y `doneSteps` en `entries` | Hecho |
 | 5 | **Premios conseguidos**: dentro de Premios, los canjes hechos que todavía no se usaron, con un botón para marcarlos como usados | Sí: diseño por confirmar | Pendiente |
 | 3 | **Calculadora de recompensas**: sugiere el costo en puntos a partir del precio en dinero y estima cuánto se tarda en llegar | Por definir | Fórmula y flujo por definir con el usuario |
 
@@ -47,8 +47,9 @@ Los tres cambian datos o reglas, y los invariantes piden el visto bueno del usua
     cuándo alcanzan los puntos al ritmo real de los últimos 30 días.
   - Una recompensa gratis no usa la calculadora: su costo lo pone el usuario.
   - Un **(?)** explica que es solo una sugerencia: el costo final lo decide el usuario.
-  - Por decidir al implementarla: dónde se guarda el presupuesto (en el perfil, para que se vea
-    igual en el celular y en la PC, toca reglas; en el dispositivo, no).
+  - **Presupuesto en la cuenta (02-10-2026):** se guarda en el perfil (`users/{uid}`), igual en
+    el celular y en la PC, y se edita cuando sea. Toca las reglas del perfil. Se edita desde una
+    sección de Ajustes: una pestaña de "Perfil" aparte no entra en la barra (ya tiene cinco).
 
 ## Ideas documentadas, sin implementar
 

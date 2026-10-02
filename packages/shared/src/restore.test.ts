@@ -195,6 +195,7 @@ describe('readBackup', () => {
             schedule: { type: 'days_of_week', daysOfWeek: [1, 3, 5] },
             target: { amount: 8, unit: 'vasos' },
             reminder: { time: '08:30', daysOfWeek: [1, 5] },
+            steps: null,
           },
         },
       ]);
@@ -235,6 +236,21 @@ describe('readBackup', () => {
         habits: [habitDoc('a'), habitDoc('b', { icon: '🔥' }), habitDoc('c', { icon: undefined })],
       }).habits;
       expect(habits.map((habit) => habit.value.icon)).toEqual(['check', 'check', 'check']);
+    });
+
+    it('keeps the steps of a habit, and drops them if they are not a valid list', () => {
+      const steps = [
+        { id: 'a', title: 'Dientes' },
+        { id: 'b', title: 'Ropa' },
+      ];
+      const habits = read({
+        habits: [
+          habitDoc('a', { steps: [...steps.map((step) => ({ ...step, extra: true }))] }),
+          habitDoc('b', { steps: [steps[0]] }),
+          habitDoc('c', { steps, target: { amount: 3, unit: 'vasos' } }),
+        ],
+      }).habits;
+      expect(habits.map((habit) => habit.value.steps)).toEqual([steps, null, null]);
     });
 
     it('swaps a color that is no longer in the palette for the one of its category', () => {

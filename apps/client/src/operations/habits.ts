@@ -10,6 +10,7 @@ import {
   type HabitRecord,
   type HabitReminder,
   type HabitSchedule,
+  type HabitStep,
   type HabitTarget,
   type HabitTier,
 } from '@ascua/shared';
@@ -34,6 +35,8 @@ export interface HabitInput {
   color: HabitColor;
   /** Se puede agregar, cambiar o quitar cuando sea (D23). */
   reminder: HabitReminder | null;
+  /** Pasos del hábito (fase 21), o `null` si no tiene. Se pueden cambiar cuando sea. */
+  steps: readonly HabitStep[] | null;
 }
 
 /** Frecuencia y meta: se eligen al crear el hábito y después no cambian (D20). */
@@ -43,7 +46,7 @@ export interface NewHabitInput extends HabitInput {
 }
 
 /** Lo que se guarda de un hábito editable. Sin ícono, el campo lleva el valor por defecto. */
-function clean({ name, description, tier, category, icon, color, reminder }: HabitInput) {
+function clean({ name, description, tier, category, icon, color, reminder, steps }: HabitInput) {
   const trimmedDescription = description?.trim() ?? '';
   return {
     name: name.trim(),
@@ -56,6 +59,7 @@ function clean({ name, description, tier, category, icon, color, reminder }: Hab
       time: reminder.time,
       daysOfWeek: [...reminder.daysOfWeek].sort((a, b) => a - b),
     },
+    steps: steps && steps.map((step) => ({ id: step.id, title: step.title.trim() })),
   };
 }
 
@@ -70,6 +74,8 @@ export function createHabit(
   const ref = doc(habitsCollection(db, uid)).withConverter(null);
   const write = setDoc(ref, {
     ...clean(input),
+    // Con cantidad manda el contador: no lleva pasos.
+    ...(input.target ? { steps: null } : {}),
     schedule: input.schedule,
     target: input.target && { amount: input.target.amount, unit: input.target.unit.trim() },
     status: 'active',

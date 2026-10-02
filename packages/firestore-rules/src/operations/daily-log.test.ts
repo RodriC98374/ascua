@@ -78,6 +78,29 @@ describe('setHabitCompletion', () => {
     expect(log.data()?.entries).toEqual({ water: { completed: true, count: 8 } });
   });
 
+  it('saves which steps were done of a habit with steps', async () => {
+    const db = ownerDb();
+    await setHabitCompletion(db, OWNER, {
+      today: TODAY,
+      habitId: 'night',
+      completed: false,
+      doneSteps: ['teeth'],
+      logExists: false,
+    });
+    await setHabitCompletion(db, OWNER, {
+      today: TODAY,
+      habitId: 'night',
+      completed: true,
+      doneSteps: ['teeth', 'clothes'],
+      logExists: true,
+    });
+
+    const log = await getDoc(dailyLogRef(db, OWNER, TODAY));
+    expect(log.data()?.entries).toEqual({
+      night: { completed: true, doneSteps: ['teeth', 'clothes'] },
+    });
+  });
+
   it('works with habit IDs that contain dots', async () => {
     const db = ownerDb();
     await seedDocs({ [paths.dailyLog(TODAY)]: openLogDoc(TODAY) });

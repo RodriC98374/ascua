@@ -21,6 +21,11 @@ export interface HabitCompletion {
    * al cerrar el día manda `count`.
    */
   count?: number;
+  /**
+   * Los pasos hechos hoy de un hábito con pasos (fase 21). `completed` va igual, calculado con
+   * los pasos del hábito: al cerrar el día mandan los pasos.
+   */
+  doneSteps?: readonly string[];
   /** Si el documento de hoy ya existe (lo dice la suscripción); la primera marca lo crea. */
   logExists: boolean;
 }
@@ -28,12 +33,13 @@ export interface HabitCompletion {
 export function setHabitCompletion(
   db: Firestore,
   uid: string,
-  { today, habitId, completed, count, logExists }: HabitCompletion,
+  { today, habitId, completed, count, doneSteps, logExists }: HabitCompletion,
 ): Promise<void> {
   const ref = dailyLogRef(db, uid, today).withConverter(null);
   const entry = {
     completed,
     ...(count === undefined ? {} : { count }),
+    ...(doneSteps === undefined ? {} : { doneSteps: [...doneSteps] }),
     updatedAt: serverTimestamp(),
   };
 

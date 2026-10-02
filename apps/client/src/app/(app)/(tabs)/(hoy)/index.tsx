@@ -1,11 +1,14 @@
 import {
   DEFAULT_REMINDER_SETTINGS,
+  doneHabitStepIds,
   formatLongDate,
+  habitStepsOf,
   MAX_PRIMARY_HABITS,
   PERFECT_DAY_BONUS,
   spendablePoints,
   startOfWeek,
   streakRiskAt,
+  toggleHabitStep,
   type CheckInDimension,
   type DateKey,
   type GamificationState,
@@ -32,6 +35,7 @@ import { HabitActions } from '@/features/habits/habit-actions';
 import { HabitCheck } from '@/features/today/habit-check';
 import { NotTodayRow } from '@/features/today/not-today-row';
 import { QuantityCheck } from '@/features/today/quantity-check';
+import { StepsCheck } from '@/features/today/steps-check';
 import { TodayHero } from '@/features/today/today-hero';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -195,6 +199,20 @@ function TodayContent({
     );
   }
 
+  /** Un hábito con pasos: marca o desmarca un paso; el hábito se cumple con el último. */
+  function toggleStep(habit: HabitRecord, stepId: string) {
+    const next = toggleHabitStep(habit, log.data?.entries[habit.id], stepId);
+    trackWrite(
+      setHabitCompletion(db, uid, {
+        today,
+        habitId: habit.id,
+        completed: next.completed,
+        doneSteps: next.doneSteps,
+        logExists: log.exists,
+      }),
+    );
+  }
+
   function answerCheckIn(dimension: CheckInDimension, value: number | null) {
     trackWrite(setCheckIn(db, uid, { today, dimension, value, logExists: log.exists }));
   }
@@ -232,6 +250,25 @@ function TodayContent({
           onIncrement={() => setCount(habit.id, amount, count + 1)}
           onDecrement={() => setCount(habit.id, amount, count - 1)}
           trailing={trailing}
+        />
+      );
+    }
+    const steps = habitStepsOf(habit);
+    if (steps.length > 0) {
+      return (
+        <StepsCheck
+          key={habit.id}
+          name={habit.name}
+          tier={habit.tier}
+          color={habit.color}
+          icon={habit.icon}
+          steps={steps}
+          doneStepIds={doneHabitStepIds(habit, log.data?.entries[habit.id])}
+          isArchived={isArchived}
+          isToggleDisabled={isToggleDisabled}
+          onToggleStep={(stepId) => toggleStep(habit, stepId)}
+          trailing={trailing}
+          caption={caption}
         />
       );
     }

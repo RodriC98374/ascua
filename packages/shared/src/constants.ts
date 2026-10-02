@@ -102,3 +102,14 @@ export const GOAL_HABIT_LOOKBACK_DAYS = 365;
 
 /** Largo máximo de cada respuesta de la reflexión semanal (fase 18). */
 export const REFLECTION_ANSWER_MAX_LENGTH = 500;
+
+/**
+ * Pasos de un hábito (fase 21, D27): con pasos, el hábito se cumple al marcarlos todos. Los mismos
+ * límites valida `firestore.rules`. Menos de dos pasos no es una lista: es el hábito mismo.
+ */
+export const HABIT_STEPS_MIN = 2;
+/** Las reglas revisan cada paso por su índice: con más, la escritura pasa el límite de Firestore. */
+export const HABIT_STEPS_MAX = 6;
+export const HABIT_STEP_TITLE_MAX_LENGTH = 60;
+/** Largo máximo del id de un paso, que genera la app. */
+export const HABIT_STEP_ID_MAX_LENGTH = 20;
