@@ -238,7 +238,25 @@ export function taskRef(db: Firestore, uid: string, taskId: string): DocumentRef
   return doc(tasksCollection(db, uid), taskId);
 }
 
-export const redemptionConverter = withIdConverter<RewardRedemption>();
+// Trofeos (fase 21): `usedDateKey` sale de `usedAt` en hora de Bolivia. Sin el campo, el canje no
+// se usó; con el campo en null, "Utilizado" todavía no llegó al servidor y cuenta como hoy.
+const baseRedemptionConverter = withIdConverter<RewardRedemption>();
+export const redemptionConverter: FirestoreDataConverter<RewardRedemption, DocumentData> = {
+  toFirestore: (data) => data as DocumentData,
+  fromFirestore: (snapshot, options) => {
+    const {
+      redeemedAt: _redeemedAt,
+      usedAt,
+      ...redemption
+    } = baseRedemptionConverter.fromFirestore(snapshot, options) as RewardRedemption & {
+      redeemedAt?: unknown;
+      usedAt?: Timestamp | null;
+    };
+    const usedDateKey =
+      usedAt === undefined ? null : usedAt ? toDateKey(usedAt.toDate()) : todayDateKey();
+    return { ...redemption, usedDateKey };
+  },
+};
 
 export function redemptionsCollection(
   db: Firestore,

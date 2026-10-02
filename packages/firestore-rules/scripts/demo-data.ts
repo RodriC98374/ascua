@@ -532,6 +532,10 @@ function buildDemoData(uid: string, options: DemoOptions): DemoData {
           dateKey: spendDay,
           redeemedAt: spendAt,
           note: random() < 0.5 ? '¡Me lo gané!' : null,
+          // Trofeos (fase 21): los de hace más de dos semanas ya se usaron, dos días después.
+          ...(spendDay < addDays(today, -14)
+            ? { usedAt: at(addDays(spendDay, 2), '20:00:00') }
+            : {}),
           ...meta(spendAt),
         });
         addToMonth(toMonthKey(spendDay), (counters) =>

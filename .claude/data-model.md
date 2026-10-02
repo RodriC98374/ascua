@@ -17,7 +17,7 @@ users/{userId}                             UserProfile         libre (campos per
 ├── meta/savings                           SavingsJar (f. 18)  apartar solo sube; vaciar siempre; gasto no baja de lo apartado
 ├── pointTransactions/{transactionId}      PointTransaction    solo crear; nunca editar ni borrar
 ├── rewards/{rewardId}                     Reward              libre (forma validada)
-├── rewardRedemptions/{redemptionId}       RewardRedemption    solo crear, junto con su cobro
+├── rewardRedemptions/{redemptionId}       RewardRedemption    crear junto con su cobro; después solo usedAt, una vez
 ├── tasks/{taskId}                         Task (fase 14)      libre; se marca solo hoy; lo cumplido en un día pasado queda fijo
 ├── goals/{goalId}                         Goal (fase 18)      libre (forma validada); empieza hoy; lograda hoy; no se borra
 └── weeklyReflections/{weekStartDateKey}   WeeklyReflection    desde el domingo de su semana, cuando sea; no se borra
@@ -296,8 +296,11 @@ interface RewardRedemption {
   dateKey: DateKey;
   redeemedAt: Timestamp;
   note: string | null;
+  usedAt?: Timestamp;                  // fase 21 (trofeos): "Utilizado"; sin el campo = por usar
 }
 ```
+
+- **Trofeos (fase 21):** cada canje es un premio conseguido. "Utilizado" pone `usedAt` (hora del servidor) **una sola vez**, con `markTrophyUsed`: es la única escritura de la colección fuera de `redeemReward`, y no cambia nada más (ni el costo ni la nota). La app lo lee como `usedDateKey` (día en Bolivia, o `null`).
 
 ### `users/{userId}/tasks/{taskId}` — Task (fase 14)
 
@@ -592,7 +595,7 @@ Sin servidor, las reglas son la única barrera: validan que cada operación de l
   - `pointsBalance >= 0` y `streakFreezesAvailable` entre 0 y 2, y no sube durante un cierre.
 - **Compra de protector:** existe tras la transacción el movimiento `freeze_{requestId}` con −150; el saldo baja exactamente 150 y los protectores suben exactamente 1, sin pasar de 2.
 - **Canje:** existe tras la transacción el movimiento `redemption_{requestId}` con −`cost` de la recompensa (leída con `get()`); el saldo baja exactamente ese costo y el canje referencia a ese movimiento.
-- **`pointTransactions` y `rewardRedemptions`:** solo crear, nunca editar ni borrar.
+- **`pointTransactions` y `rewardRedemptions`:** solo crear, nunca borrar. Un movimiento nunca se edita; un canje solo recibe `usedAt` (fase 21): si no lo tenía, con `request.time`, tocando únicamente `usedAt` y `updatedAt`.
 - **`goals` (fase 18):** forma validada; se crean activas y con `startDateKey` = hoy; `habitIds` hasta 10 y `taskIds` hasta 50, sin repetir; fecha límite desde el inicio; lograda ⇔ `achievedDateKey` con valor, que al lograrla es hoy y no cambia mientras siga lograda. No se borran.
 - **`weeklyReflections` (fase 18):** ID = lunes y el domingo de esa semana ya llegó; tres textos hasta 500, al menos uno con texto; solo cambian las respuestas; no se borran.
 - **`meta/savings` (fase 18):** vaciar (sin recompensa, 0 puntos) se puede siempre; empezar es hoy; con la misma recompensa los puntos solo suben; cambiar de recompensa sin vaciar, no; puntos ≤ costo de la recompensa activa y ≤ saldo.

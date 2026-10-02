@@ -259,6 +259,11 @@ export interface RewardRedemption {
   pointTransactionId: string;
   dateKey: DateKey;
   note: string | null;
+  /**
+   * Trofeos (fase 21): día en que se marcó "Utilizado" (de `usedAt`, en hora de Bolivia), o
+   * `null` si todavía no se usó. Se marca una sola vez.
+   */
+  usedDateKey: DateKey | null;
 }
 
 /** Estado de una meta (fase 18, D25). Las metas no se borran: se logran o se archivan. */

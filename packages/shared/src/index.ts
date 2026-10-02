@@ -26,6 +26,7 @@ export * from './statistics';
 export * from './streak-risk';
 export * from './tasks';
 export * from './transaction-ids';
+export * from './trophies';
 export * from './user-profile';
 export * from './weekly-habits';
 export type * from './types';

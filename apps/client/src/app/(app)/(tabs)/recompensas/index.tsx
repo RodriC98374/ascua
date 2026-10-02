@@ -1,4 +1,4 @@
-import { spendablePoints, type RewardRecord } from '@ascua/shared';
+import { spendablePoints, trophyShelf, type RewardRecord } from '@ascua/shared';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Text, View } from 'react-native';
@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Fab } from '@/components/ui/fab';
 import { Screen } from '@/components/ui/screen';
-import { useGamificationState, useRewards, useSavings } from '@/data/hooks';
+import { useGamificationState, useRewards, useSavings, useTrophies } from '@/data/hooks';
 import { useUid } from '@/features/auth/session';
 import { FreezeCard } from '@/features/rewards/freeze-card';
 import { RedeemSheet } from '@/features/rewards/redeem-sheet';
@@ -15,6 +15,7 @@ import { RewardCard } from '@/features/rewards/reward-card';
 import { catalogByTier } from '@/features/rewards/reward-catalog';
 import { DepositSheet } from '@/features/savings/deposit-sheet';
 import { SavingsCard } from '@/features/savings/savings-card';
+import { TrophiesLink } from '@/features/trophies/trophies-link';
 import { useThemeColors } from '@/theme/colors';
 
 export default function RewardsScreen() {
@@ -23,6 +24,7 @@ export default function RewardsScreen() {
   const gamification = useGamificationState(uid);
   const rewards = useRewards(uid);
   const savings = useSavings(uid);
+  const trophies = useTrophies(uid);
   const [redeeming, setRedeeming] = useState<RewardRecord | null>(null);
   const [depositingFor, setDepositingFor] = useState<RewardRecord | null>(null);
 
@@ -64,6 +66,8 @@ export default function RewardsScreen() {
               {jar ? ` · ${jar.points} más en tu alcancía` : ''}
             </Text>
           </View>
+
+          <TrophiesLink shelf={trophyShelf(trophies.data)} />
 
           {jar && (
             <SavingsCard

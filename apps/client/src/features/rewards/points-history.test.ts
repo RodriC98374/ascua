@@ -24,6 +24,7 @@ const redemption: RewardRedemption = {
   pointTransactionId: 'redemption_req-1',
   dateKey: '2026-09-22',
   note: 'Con amigos',
+  usedDateKey: null,
 };
 
 describe('historyByDay', () => {

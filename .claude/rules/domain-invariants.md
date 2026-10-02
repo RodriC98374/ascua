@@ -13,7 +13,7 @@ Fuente completa: [../data-model.md](../data-model.md). Decisiones con fecha: [..
 
 - Todo vive bajo `users/{userId}/…`. Las funcionalidades nuevas se agregan como subcolecciones nuevas, sin cambiar la forma de las existentes.
 - **No hay servidor** (Firebase Spark, costo cero). La app ejecuta todas las operaciones y las reglas de Firestore validan cada escritura. No proponer Cloud Functions, GitHub Actions ni otros servidores sin que el usuario lo pida.
-- `meta/gamification`, `pointTransactions`, `monthlySummaries`, `rewardRedemptions` y `dailyLogs.summary`/`status` solo se escriben dentro de las operaciones `initializeAccount`, `closePendingDays`, `purchaseStreakFreeze` y `redeemReward`.
+- `meta/gamification`, `pointTransactions`, `monthlySummaries`, `rewardRedemptions` y `dailyLogs.summary`/`status` solo se escriben dentro de las operaciones `initializeAccount`, `closePendingDays`, `purchaseStreakFreeze` y `redeemReward`. Única excepción (fase 21, confirmada por el usuario): `markTrophyUsed` pone `usedAt` en un canje, una sola vez.
 - `dailyLogs/{dateKey}.entries` solo se escribe si `dateKey` es hoy en Bolivia según la hora del servidor. No hay margen de gracia.
 - `pointTransactions` es append-only con IDs deterministas. Todo cambio de saldo va en la misma transacción que su movimiento.
 - Hábitos y recompensas nunca se borran, se archivan. Las tareas sí se borran, salvo las cumplidas en un día ya pasado.

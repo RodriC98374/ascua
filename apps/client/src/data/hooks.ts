@@ -148,6 +148,17 @@ export function useRedemptions(uid: string) {
   );
 }
 
+/**
+ * Trofeos (fase 21): todos los canjes, sin el límite del historial. Son pocos (uno por premio
+ * conseguido), así que leerlos todos es barato.
+ */
+export function useTrophies(uid: string) {
+  return useQuery(
+    query(redemptionsCollection(db, uid), orderBy('createdAt', 'desc')),
+    `rewardRedemptions/${uid}/all`,
+  );
+}
+
 // ---------- Fase 18: metas, reflexión semanal y alcancía ----------
 
 /** Todas las metas (activas, logradas y archivadas), en el orden elegido. */

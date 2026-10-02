@@ -848,13 +848,19 @@ service cloud.firestore {
         return get(rewardPath(userId, redemption.rewardId)).data.cost;
       }
 
-      // --- Canjes: solo crear, junto con su cobro ---
+      // --- Canjes: se crean junto con su cobro; después solo se marcan como usados ---
 
       match /rewardRedemptions/{redemptionId} {
         allow read: if isOwner(userId);
         allow create: if isOwner(userId)
           && isCreatedNow()
           && isValidRedemption(userId, redemptionId, incoming());
+        // Trofeos (fase 21): "Utilizado" pone usedAt una sola vez, con la hora del servidor.
+        allow update: if isOwner(userId)
+          && !('usedAt' in existing())
+          && onlyChanges(['usedAt', 'updatedAt'])
+          && incoming().usedAt == request.time
+          && incoming().updatedAt == request.time;
       }
 
       function isValidRedemption(userId, redemptionId, redemption) {
