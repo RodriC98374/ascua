@@ -302,7 +302,7 @@ function buildDemoData(uid: string, options: DemoOptions): DemoData {
   for (const habitRecord of habits) {
     habitRecord.reminder = reminders[habitRecord.id] ?? null;
   }
-  // Fase 21: íconos de ejemplo; "agua" queda sin ícono para ver las dos formas en Hoy.
+  // Fase 21: íconos de ejemplo; "agua" no elige uno y muestra el de su categoría.
   const icons: Record<string, HabitIcon> = {
     leer: 'book-open',
     ejercicio: 'dumbbell',

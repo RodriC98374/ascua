@@ -7,6 +7,7 @@ import {
   HABIT_CATEGORY_IDS,
   HABIT_COLOR_ROTATION,
   HABIT_COLORS,
+  HABIT_COLORS_BY_HUE,
   isHabitCategory,
   isHabitColor,
   nextHabitColor,
@@ -53,6 +54,42 @@ describe('HABIT_COLORS', () => {
 
   it('offers twenty-four colors to choose from', () => {
     expect(HABIT_COLORS).toHaveLength(24);
+  });
+});
+
+describe('HABIT_COLORS_BY_HUE', () => {
+  const hsl = (hex: string) => {
+    const [r, g, b] = [1, 3, 5].map((at) => parseInt(hex.slice(at, at + 2), 16) / 255) as [
+      number,
+      number,
+      number,
+    ];
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    const delta = max - min;
+    const lightness = (max + min) / 2;
+    const saturation = delta === 0 ? 0 : delta / (1 - Math.abs(2 * lightness - 1));
+    const raw =
+      delta === 0
+        ? 0
+        : max === r
+          ? ((g - b) / delta) % 6
+          : max === g
+            ? (b - r) / delta + 2
+            : (r - g) / delta + 4;
+    return { hue: (raw * 60 + 360) % 360, saturation };
+  };
+
+  it('holds every palette color exactly once', () => {
+    expect([...HABIT_COLORS_BY_HUE].sort()).toEqual([...HABIT_COLORS].sort());
+  });
+
+  it('goes around the color wheel, with the greyish tones at the end', () => {
+    const vivid = HABIT_COLORS_BY_HUE.filter((color) => hsl(color).saturation >= 0.25);
+    const hues = vivid.map((color) => hsl(color).hue);
+    expect(hues).toEqual([...hues].sort((a, b) => a - b));
+    // Los apagados van juntos al final, no mezclados entre los vivos.
+    expect(HABIT_COLORS_BY_HUE.slice(0, vivid.length)).toEqual(vivid);
   });
 });
 

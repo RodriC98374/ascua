@@ -1,5 +1,6 @@
 import {
   canBePrimary,
+  CATEGORY_HABIT_ICONS,
   habitIconOf,
   HABIT_CATEGORIES,
   HABIT_DESCRIPTION_MAX_LENGTH,
@@ -470,7 +471,11 @@ export function HabitForm({ habits, habit, onSubmit }: HabitFormProps) {
         {/* Vista previa: la casilla de Hoy con el color y el ícono elegidos. */}
         <View className="bg-surface-100 min-h-14 flex-row items-center gap-3 rounded-md px-3">
           <Checkbox isDone size={28} color={draft.color} />
-          <HabitIcon icon={draft.icon} size={18} color={strongHabitColor(draft.color)} />
+          <HabitIcon
+            icon={draft.icon ?? CATEGORY_HABIT_ICONS[draft.category]}
+            size={18}
+            color={strongHabitColor(draft.color)}
+          />
           <Text numberOfLines={1} className="font-heading text-heading-sm text-ink flex-1">
             {draft.name.trim() || 'Tu hábito'}
           </Text>
@@ -488,12 +493,8 @@ export function HabitForm({ habits, habit, onSubmit }: HabitFormProps) {
                   accessibilityRole="radio"
                   accessibilityState={{ checked: isSelected }}
                   onPress={() => update('category', option.id)}
-                  className={`min-h-11 flex-row items-center gap-2 rounded-full border-2 px-3 ${choiceContainer(isSelected)}`}
+                  className={`min-h-11 items-center justify-center rounded-full border-2 px-4 ${choiceContainer(isSelected)}`}
                 >
-                  <View
-                    className="h-3 w-3 rounded-full"
-                    style={{ backgroundColor: option.color }}
-                  />
                   <Text className={`font-body-extrabold text-button ${choiceLabel(isSelected)}`}>
                     {option.label}
                   </Text>
@@ -505,7 +506,11 @@ export function HabitForm({ habits, habit, onSubmit }: HabitFormProps) {
 
         <HabitColorPicker value={draft.color} onChange={(color) => update('color', color)} />
 
-        <HabitIconPicker value={draft.icon} onChange={(icon) => update('icon', icon)} />
+        <HabitIconPicker
+          value={draft.icon}
+          category={draft.category}
+          onChange={(icon) => update('icon', icon)}
+        />
       </FormSection>
 
       <ScreenFooter>

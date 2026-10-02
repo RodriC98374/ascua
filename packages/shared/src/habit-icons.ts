@@ -1,8 +1,12 @@
 // Íconos que puede tener un hábito (fase 21, D27). El id es el nombre del ícono en Lucide, que
 // usa el mismo trazo que los íconos del diseño; la app lo traduce a su componente. Solo íconos:
 // un emoji puede ir en el nombre del hábito, nunca aquí.
+import { categoryOf, type HabitCategory } from './habit-appearance';
 
-/** Lo guardan los hábitos sin ícono elegido, incluidos los creados antes de la fase 21. */
+/**
+ * Lo guardan los hábitos sin ícono elegido, incluidos los creados antes de la fase 21. La app les
+ * muestra el de su categoría (`habitIconFor`): todos los hábitos se ven con ícono.
+ */
 export const DEFAULT_HABIT_ICON = 'check';
 
 export const HABIT_ICON_GROUPS = [
@@ -147,4 +151,18 @@ export function isHabitIcon(value: unknown): value is HabitIcon {
 /** El ícono elegido de un hábito, o `null` si no tiene (el valor por defecto o algo desconocido). */
 export function habitIconOf(value: unknown): HabitIcon | null {
   return isHabitIcon(value) ? value : null;
+}
+
+/** El ícono que muestra un hábito que no eligió uno: el de su categoría. */
+export const CATEGORY_HABIT_ICONS: Readonly<Record<HabitCategory, HabitIcon>> = {
+  health: 'heart-pulse',
+  physical: 'dumbbell',
+  mental: 'brain',
+  academic: 'book-open',
+  other: 'star',
+};
+
+/** El ícono con el que se ve un hábito: el que eligió o, si no eligió, el de su categoría. */
+export function habitIconFor(habit: { icon: unknown; category: unknown }): HabitIcon {
+  return habitIconOf(habit.icon) ?? CATEGORY_HABIT_ICONS[categoryOf(habit.category).id];
 }

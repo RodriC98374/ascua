@@ -109,6 +109,37 @@ export const HABIT_COLOR_ROTATION: readonly HabitColor[] = [
   '#B4C8B0',
 ];
 
+/**
+ * La paleta ordenada por tono, para la hoja de "Más colores": da la vuelta a la rueda de color
+ * (del salmón al rosa) y deja los tres apagados (topo, salvia y pizarra) al final.
+ */
+export const HABIT_COLORS_BY_HUE: readonly HabitColor[] = [
+  '#F2B3A6',
+  '#EFA98A',
+  '#D6B79C',
+  '#E3CB8E',
+  '#EBD97A',
+  '#C8C79A',
+  '#C6D88F',
+  '#A6E09C',
+  '#9FCBAC',
+  '#7CD8B2',
+  '#96C7C0',
+  '#8ED3DE',
+  '#A3C4D9',
+  '#92B4F0',
+  '#AEBBE2',
+  '#A7A2F0',
+  '#C4B2DE',
+  '#C79CF2',
+  '#DDAEDC',
+  '#F296D0',
+  '#E5AEC2',
+  '#C9BBB0',
+  '#B4C8B0',
+  '#B7C0CE',
+];
+
 /** Cuántos colores muestra el formulario antes de "Más colores". */
 export const VISIBLE_HABIT_COLORS = 8;
 
@@ -147,8 +178,8 @@ export interface HabitCategoryInfo {
   id: HabitCategory;
   label: string;
   /**
-   * Color de la categoría: su punto en el formulario, el radar del año y el respaldo de un hábito
-   * guardado con un color fuera de la paleta. Desde la fase 21 ya no es el color que se propone al
+   * Color de la categoría: el radar del año y el respaldo de un hábito guardado con un color fuera
+   * de la paleta. Desde la fase 21 ya no es el color que se propone al
    * hábito nuevo (eso lo hace `nextHabitColor`).
    */
   color: HabitColor;

@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
+import { HABIT_CATEGORY_IDS } from './habit-appearance';
 import {
+  CATEGORY_HABIT_ICONS,
   DEFAULT_HABIT_ICON,
   HABIT_ICON_GROUPS,
   HABIT_ICON_IDS,
+  habitIconFor,
   habitIconOf,
   isHabitIcon,
 } from './habit-icons';
@@ -57,5 +60,31 @@ describe('habitIconOf', () => {
     expect(habitIconOf('🔥')).toBeNull();
     expect(habitIconOf('unknown-icon')).toBeNull();
     expect(habitIconOf(null)).toBeNull();
+  });
+});
+
+describe('CATEGORY_HABIT_ICONS', () => {
+  it('gives every category a different icon of the catalog', () => {
+    const icons = HABIT_CATEGORY_IDS.map((category) => CATEGORY_HABIT_ICONS[category]);
+    for (const icon of icons) expect(isHabitIcon(icon)).toBe(true);
+    expect(new Set(icons).size).toBe(icons.length);
+  });
+});
+
+describe('habitIconFor', () => {
+  it('keeps the icon the habit chose', () => {
+    expect(habitIconFor({ icon: 'moon', category: 'health' })).toBe('moon');
+  });
+
+  it('falls back to the icon of its category, so every habit shows one', () => {
+    expect(habitIconFor({ icon: 'check', category: 'physical' })).toBe(
+      CATEGORY_HABIT_ICONS.physical,
+    );
+    expect(habitIconFor({ icon: null, category: 'academic' })).toBe(CATEGORY_HABIT_ICONS.academic);
+  });
+
+  it('uses the icon of "other" for a habit without a known category', () => {
+    expect(habitIconFor({ icon: undefined, category: undefined })).toBe(CATEGORY_HABIT_ICONS.other);
+    expect(habitIconFor({ icon: '🔥', category: 'mindfulness' })).toBe(CATEGORY_HABIT_ICONS.other);
   });
 });

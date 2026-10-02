@@ -124,7 +124,7 @@ Los horarios viven en el perfil para que se puedan editar desde cualquier dispos
 interface Habit {
   name: string;
   description: string | null;
-  icon: string; // id del catálogo de `shared/habit-icons.ts` (fase 21); `check` = sin ícono
+  icon: string; // id del catálogo de `shared/habit-icons.ts` (fase 21); `check` = sin elegir: se ve el de su categoría
   color: string;                       // hex, ej. '#8B5CF6'
   tier: HabitTier;                     // máximo MAX_PRIMARY_HABITS activos como 'primary'
   schedule:                            // fase 16 (D20); fija al crear el hábito

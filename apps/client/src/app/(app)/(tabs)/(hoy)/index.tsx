@@ -2,6 +2,7 @@ import {
   DEFAULT_REMINDER_SETTINGS,
   doneHabitStepIds,
   formatLongDate,
+  habitIconFor,
   habitStepsOf,
   MAX_PRIMARY_HABITS,
   PERFECT_DAY_BONUS,
@@ -240,7 +241,7 @@ function TodayContent({
           name={habit.name}
           tier={habit.tier}
           color={habit.color}
-          icon={habit.icon}
+          icon={habitIconFor(habit)}
           amount={amount}
           unit={habit.target.unit}
           count={count}
@@ -261,7 +262,7 @@ function TodayContent({
           name={habit.name}
           tier={habit.tier}
           color={habit.color}
-          icon={habit.icon}
+          icon={habitIconFor(habit)}
           steps={steps}
           doneStepIds={doneHabitStepIds(habit, log.data?.entries[habit.id])}
           isArchived={isArchived}
@@ -278,7 +279,7 @@ function TodayContent({
         name={habit.name}
         tier={habit.tier}
         color={habit.color}
-        icon={habit.icon}
+        icon={habitIconFor(habit)}
         isDone={summary.isDone(habit.id)}
         isArchived={isArchived}
         isToggleDisabled={isToggleDisabled}

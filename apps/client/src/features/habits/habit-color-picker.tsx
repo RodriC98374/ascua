@@ -1,4 +1,9 @@
-import { HABIT_COLORS, strongHabitColor, visibleHabitColors, type HabitColor } from '@ascua/shared';
+import {
+  HABIT_COLORS_BY_HUE,
+  strongHabitColor,
+  visibleHabitColors,
+  type HabitColor,
+} from '@ascua/shared';
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
@@ -48,12 +53,12 @@ export function HabitColorPicker({ value, onChange }: HabitColorPickerProps) {
       <BottomSheet
         isOpen={isOpen}
         title="Color del hábito"
-        subtitle={`${HABIT_COLORS.length} colores para elegir.`}
+        subtitle={`${HABIT_COLORS_BY_HUE.length} colores para elegir.`}
         onClose={() => setIsOpen(false)}
       >
-        {/* Seis por fila: a 360 px cada casilla mide más de 44 px. */}
+        {/* Ordenados por tono, seis por fila: a 360 px cada casilla mide más de 44 px. */}
         <View accessibilityRole="radiogroup" className="flex-row flex-wrap pb-1">
-          {HABIT_COLORS.map((color) => (
+          {HABIT_COLORS_BY_HUE.map((color) => (
             <Swatch
               key={color}
               color={color}

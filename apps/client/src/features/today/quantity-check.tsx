@@ -17,7 +17,7 @@ interface QuantityCheckProps {
   name: string;
   tier: HabitTier;
   color: string;
-  /** El campo `icon` del hábito: si eligió uno, va antes del nombre. */
+  /** El ícono con el que se ve el hábito (`habitIconFor`), antes del nombre. */
   icon?: unknown;
   amount: number;
   unit: string;

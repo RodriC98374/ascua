@@ -1,4 +1,9 @@
-import { HABIT_ICON_GROUPS, type HabitIcon as HabitIconId } from '@ascua/shared';
+import {
+  CATEGORY_HABIT_ICONS,
+  HABIT_ICON_GROUPS,
+  type HabitCategory,
+  type HabitIcon as HabitIconId,
+} from '@ascua/shared';
 import { useState } from 'react';
 import { Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native';
 
@@ -9,16 +14,19 @@ import { HabitIcon } from '@/features/habits/habit-icon';
 import { useThemeColors } from '@/theme/colors';
 
 interface HabitIconPickerProps {
-  /** El ícono elegido, o `null` si el hábito no lleva. */
+  /** El ícono elegido, o `null` si lleva el de su categoría. */
   value: HabitIconId | null;
+  /** La categoría del hábito: da el ícono mientras no se elija otro. */
+  category: HabitCategory;
   onChange: (icon: HabitIconId | null) => void;
 }
 
 /**
- * Campo "Ícono" del formulario de hábito: muestra el elegido y abre una hoja con el catálogo por
- * grupos. Solo íconos del catálogo (un emoji puede ir en el nombre, no aquí); "Sin ícono" lo quita.
+ * Campo "Ícono" del formulario de hábito: muestra el que lleva y abre una hoja con el catálogo por
+ * grupos. Solo íconos del catálogo (un emoji puede ir en el nombre, no aquí). Todo hábito se ve con
+ * ícono: si no se elige, lleva el de su categoría.
  */
-export function HabitIconPicker({ value, onChange }: HabitIconPickerProps) {
+export function HabitIconPicker({ value, category, onChange }: HabitIconPickerProps) {
   const colors = useThemeColors();
   const { height } = useWindowDimensions();
   const [isOpen, setIsOpen] = useState(false);
@@ -33,26 +41,24 @@ export function HabitIconPicker({ value, onChange }: HabitIconPickerProps) {
       <FieldLabel>Ícono</FieldLabel>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={value ? 'Cambiar el ícono' : 'Elegir un ícono'}
+        accessibilityLabel="Cambiar el ícono"
         onPress={() => setIsOpen(true)}
         className="border-border bg-surface-200 min-h-12 flex-row items-center gap-3 rounded-md border-[1.5px] px-3 active:opacity-85"
       >
         <View className="bg-surface-100 h-9 w-9 items-center justify-center rounded-full">
-          <HabitIcon icon={value} size={20} color={colors.ink} />
+          <HabitIcon icon={value ?? CATEGORY_HABIT_ICONS[category]} size={20} color={colors.ink} />
         </View>
         <Text className="font-body-bold text-body text-ink flex-1">
-          {value ? 'Ícono elegido' : 'Sin ícono'}
+          {value ? 'Ícono elegido' : 'El de la categoría'}
         </Text>
-        <Text className="font-body-bold text-body text-ember-strong">
-          {value ? 'Cambiar' : 'Elegir'}
-        </Text>
+        <Text className="font-body-bold text-body text-ember-strong">Cambiar</Text>
       </Pressable>
-      <Hint>Opcional. Se ve junto al nombre en Hoy.</Hint>
+      <Hint>Se ve junto al nombre en Hoy. Si no eliges uno, lleva el de su categoría.</Hint>
 
       <BottomSheet
         isOpen={isOpen}
         title="Ícono del hábito"
-        subtitle="Elige uno o déjalo sin ícono."
+        subtitle="Elige uno o deja el de la categoría."
         onClose={() => setIsOpen(false)}
       >
         {/* La hoja no pasa de la mitad de la pantalla: el catálogo se recorre con el dedo. */}
@@ -61,10 +67,15 @@ export function HabitIconPicker({ value, onChange }: HabitIconPickerProps) {
             accessibilityRole="radio"
             accessibilityState={{ checked: value === null }}
             onPress={() => select(null)}
-            className={`min-h-11 items-center justify-center self-start rounded-full border-2 px-4 ${choiceContainer(value === null)}`}
+            className={`min-h-11 flex-row items-center gap-2 self-start rounded-full border-2 px-4 ${choiceContainer(value === null)}`}
           >
+            <HabitIcon
+              icon={CATEGORY_HABIT_ICONS[category]}
+              size={18}
+              color={value === null ? colors.emberStrong : colors.inkMuted}
+            />
             <Text className={`font-body-extrabold text-button ${choiceLabel(value === null)}`}>
-              Sin ícono
+              El de la categoría
             </Text>
           </Pressable>
           {HABIT_ICON_GROUPS.map((group) => (
