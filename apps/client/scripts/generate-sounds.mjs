@@ -108,7 +108,28 @@ const SOUNDS = {
     return finish(buffer, 0.72);
   },
 
-  /** Día perfecto y canje: dos notas brillantes y un destello. */
+  /**
+   * Recompensa canjeada: una fanfarria corta y alegre. Tres notas iguales que piden paso, el acorde
+   * que llega arriba y unos destellos que caen como papelitos.
+   */
+  reward() {
+    const buffer = silence(2.2);
+    const step = 0.11;
+    [0, 1, 2].forEach((index) =>
+      bell(buffer, { at: index * step, freq: G5, gain: 0.8, decay: 0.09 }),
+    );
+    const arrival = 3 * step + 0.03;
+    bell(buffer, { at: arrival, freq: C6, decay: 0.75, vibrato: 0.002 });
+    for (const freq of [E6, G6]) bell(buffer, { at: arrival, freq, gain: 0.55, decay: 0.7 });
+    bell(buffer, { at: arrival, freq: C5, gain: 0.5, decay: 0.8, attack: 0.015 });
+    bell(buffer, { at: arrival, freq: C4, gain: 0.4, decay: 0.9, attack: 0.02 });
+    [C7, E7, G6, C7, E7].forEach((freq, index) =>
+      bell(buffer, { at: arrival + 0.16 + index * 0.1, freq, gain: 0.22, decay: 0.14 }),
+    );
+    return finish(buffer, 0.72);
+  },
+
+  /** Día perfecto: dos notas brillantes y un destello. */
   chime() {
     const buffer = silence(0.9);
     bell(buffer, { at: 0, freq: E6, decay: 0.25 });

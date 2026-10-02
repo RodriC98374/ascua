@@ -1,10 +1,10 @@
 // Sonidos que acompañan a las vibraciones en los momentos de logro (generados con
 // `scripts/generate-sounds.mjs`). Un reproductor por sonido, creado una vez y vivo mientras dure la
-// app: son cuatro y pesan poco. Suenan con el volumen multimedia y se mezclan con la música de
+// app: son cinco y pesan poco. Suenan con el volumen multimedia y se mezclan con la música de
 // otras apps. Nunca bloquean ni fallan: si algo sale mal, la app sigue en silencio.
 import { createAudioPlayer, type AudioPlayer, type AudioSource } from 'expo-audio';
 
-export type SoundName = 'tick' | 'streak' | 'milestone' | 'chime';
+export type SoundName = 'tick' | 'streak' | 'milestone' | 'chime' | 'reward';
 
 const SOURCES: Record<SoundName, AudioSource> = {
   /** Marcar un hábito. */
@@ -13,8 +13,10 @@ const SOURCES: Record<SoundName, AudioSource> = {
   streak: require('@/assets/sounds/streak.wav'),
   /** Insignia de hito (7, 30, 100, 365 días). */
   milestone: require('@/assets/sounds/milestone.wav'),
-  /** Día perfecto y recompensa canjeada. */
+  /** Día perfecto y premio marcado como utilizado. */
   chime: require('@/assets/sounds/chime.wav'),
+  /** Recompensa canjeada. */
+  reward: require('@/assets/sounds/reward.wav'),
 };
 
 const players = new Map<SoundName, AudioPlayer>();

@@ -15,11 +15,23 @@ todo lo de esta fase antes de construir la APK.
 | # | Qué | Toca datos o reglas | Estado |
 |---|---|---|---|
 | 1 | La pestaña y la pantalla de recompensas se llaman **"Premios"**: "Recompensas" se partía en dos líneas en el celular y desalineaba el ícono. Cada premio sigue siendo "una recompensa" en botones y formularios | No | Hecho |
-| 11 | **Doce colores** de hábito en lugar de ocho: se suman lima, canela, pizarra y orquídea, cada uno con su tono oscuro | No (las reglas aceptan cualquier hexadecimal) | Hecho |
+| 11 | **Doce colores** de hábito en lugar de ocho: se suman lima, canela, pizarra y orquídea, cada uno con su tono oscuro (en la segunda ronda pasaron a 24) | No (las reglas aceptan cualquier hexadecimal) | Hecho |
 | 10 | **Ícono por hábito**: 96 íconos en seis grupos (catálogo en `shared/habit-icons.ts`), elegidos en una hoja inferior desde el formulario. Se ve antes del nombre en Hoy, en el tono oscuro del color del hábito. **Solo íconos, sin emojis** (un emoji puede ir en el nombre). El campo `icon` ya existía; "sin ícono" guarda `check`. La restauración conserva el ícono del respaldo | No (las reglas aceptan un texto de 1 a 40) | Hecho |
 | 2 | **Hábitos con pasos** (subtareas): un hábito como "Rutina de noche" lista de 2 a 6 pasos y se cumple al marcarlos todos. Opcional, en "Cómo cuenta" del formulario ("Con pasos", con aviso), editable; no aplica a un hábito con cantidad. En Hoy, la casilla del hábito se marca sola y cada paso tiene su subcasilla; el último paso suena y suelta los puntos. Lógica en `shared/habit-steps.ts`; la marca del día guarda `doneSteps`. **Máximo 6** porque con 8 la escritura del hábito (con días fijos y recordatorio) pasaba el límite de evaluación de las reglas. La demo trae "Dormir antes de las 23:00" con tres pasos | Sí: campo `steps` en `habits` (validado en reglas) y `doneSteps` en `entries` | Hecho |
 | 5 | **Premios conseguidos (trofeos)**: tarjeta en Premios ("N por usar · M en total", con contador) que lleva a `/recompensas/trofeos`, una vitrina de tres bloques por fila: regalo, medalla o trofeo según el nivel; los por usar con borde de brasa, los usados con un visto verde. Entran uno tras otro con un rebote. Al tocar uno, tarjeta modal con lo conseguido, cuándo, cuánto costó y la nota; "Utilizado" lo marca y lo celebra (rebote, chispas, vibración y sonido), una sola vez y sin deshacer. Orden: el más nuevo primero (`trophyShelf` en shared). La demo trae canjes usados y por usar | Sí: `usedAt` en `rewardRedemptions` (regla nueva) y la operación `markTrophyUsed` | Hecho |
 | 3 | **Calculadora de recompensas**: en el formulario de recompensa, "Cuesta dinero" (apagado por defecto: una gratis no la usa) pide el precio en Bs y muestra el costo sugerido, un "?" que explica que es solo una sugerencia, cuándo alcanza el dinero (meses de presupuesto) y cuándo los puntos (ritmo real: promedio de los días cerrados de los últimos 30), y "Usar N pts" que llena el costo. El mes perfecto sale de simular 30 días desde un lunes con `evaluateDay` (el mismo cálculo del cierre: hábitos, día perfecto, bonos de racha y tope de los semanales). Costo redondeado a múltiplos de 5. El presupuesto se edita en Ajustes → Premios o desde la calculadora. Lógica en `shared/reward-calculator.ts`. La demo trae 250 Bs | Sí: `rewardBudget` en el perfil (entero de 1 a 100000 Bs, o null), validado en reglas | Hecho |
+
+### Segunda ronda (02-10-2026): ajustes tras probar la demo
+
+El usuario probó pasos, trofeos y calculadora en su demo ("está bien en general") y pidió:
+
+| Qué | Toca datos o reglas | Estado |
+|---|---|---|
+| **Casilla en el hábito con cantidad**: sin ella la fila parecía otra cosa. No se toca: se marca sola al llegar a la meta, y el contador queda debajo, alineado con el nombre (igual que los pasos) | No | Hecho |
+| **Aviso de "Utilizado" al canjear**: la celebración dice que el premio queda en la vitrina y que se marca como utilizado al disfrutarlo, con el botón "Ver mi vitrina" | No | Hecho |
+| **24 colores** de hábito (12 más: amarillo, pistacho, jade, cian, índigo, violeta, fucsia, salmón, cobalto, oliva, topo y salvia, cada uno con su tono oscuro). El formulario muestra **ocho** (siempre con el elegido a la vista) y "Más colores" abre una hoja con todos | No | Hecho |
+| **Color distinto por hábito nuevo**: antes lo proponía la categoría y varios hábitos de la misma categoría pintaban las gráficas de un solo color. Ahora `nextHabitColor` propone el primer color de `HABIT_COLOR_ROTATION` que ningún hábito activo usa (si se usan todos, el menos repetido). Cambiar de categoría ya no cambia el color; el usuario sigue eligiendo el que quiera. El color de la categoría queda para su punto en el formulario, el radar del año y el respaldo de un color inválido | No | Hecho |
+| **Celebración del canje a pantalla completa**: el trofeo del nivel cae y rebota con un "tada", rayos que giran un cuarto de vuelta, onda, chispas, lluvia de confeti (`components/ui/confetti.tsx`), el saldo que rueda a lo que queda, "Ya son N premios conseguidos" y la fanfarria `reward` (sintetizada en `generate-sounds.mjs`). Todo termina quieto | No | Hecho |
 
 ### Diseño por confirmar antes de escribir código
 
@@ -69,7 +81,8 @@ como frecuencia).
 ## Definición de terminado
 
 - En un celular de 360 px, las cinco pestañas entran en una línea con sus íconos alineados.
-- El formulario de hábito ofrece doce colores y un ícono del catálogo, y se ven en Hoy.
+- El formulario de hábito ofrece 24 colores (ocho a la vista) y un ícono del catálogo, y se ven en
+  Hoy. Cada hábito nuevo propone un color que no usa otro activo.
 - Un hábito con pasos se marca paso a paso y cuenta como cumplido al completarlos; las reglas lo
   validan y un hábito sin pasos sigue igual.
 - Un canje aparece en "Premios conseguidos" hasta que se marca como usado.

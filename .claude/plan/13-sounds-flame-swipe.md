@@ -27,7 +27,8 @@ preferencias se guardan en cada dispositivo, como el tema.
 
 **Sonidos** (`features/sounds/`)
 - Cuatro sonidos: `tick` al marcar, `streak` al asegurar la racha, `milestone` con una insignia y
-  `chime` en el día perfecto y al canjear. Suenan junto a cada vibración.
+  `chime` en el día perfecto (y, desde la fase 21, al marcar un premio como utilizado; el canje
+  tiene su fanfarria `reward`). Suenan junto a cada vibración.
 - `sounds.ts`: un reproductor por sonido, creado una vez; `playSound` vuelve al inicio y toca
   (marcar varios seguidos suena cada vez) y nunca falla.
 - Preferencia por dispositivo (`ascua.sounds`), **encendidos en Android y apagados en web** por

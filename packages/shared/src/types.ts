@@ -94,7 +94,7 @@ export interface Habit {
 export interface HabitRecord extends Habit {
   description: string | null;
   icon: string;
-  /** Uno de `HABIT_COLORS`. Propuesto por la categoría y editable. */
+  /** Uno de `HABIT_COLORS`. Al crear se propone uno que no use otro hábito activo; editable. */
   color: HabitColor;
   category: HabitCategory;
   sortOrder: number;

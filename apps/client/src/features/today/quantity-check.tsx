@@ -1,7 +1,8 @@
-// Fila de un hábito con cantidad (D20): en vez de una casilla, un contador hasta la meta del día.
-// Sin puntos parciales: los puntos llegan al tocar la meta, igual que un hábito normal.
+// Fila de un hábito con cantidad (D20): un contador hasta la meta del día. La casilla no se toca:
+// se marca sola al llegar a la meta, así la fila se lee como un hábito más. Sin puntos parciales:
+// los puntos llegan al tocar la meta, igual que un hábito normal.
 import { HABIT_POINTS, strongHabitColor, type HabitTier } from '@ascua/shared';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import { MinusIcon, PlusIcon } from '@/components/ui/icons';
@@ -10,7 +11,7 @@ import { HabitIcon } from '@/features/habits/habit-icon';
 import { playSound } from '@/features/sounds/sounds';
 import { useThemeColors } from '@/theme/colors';
 
-import { FloatingPoints } from './check-parts';
+import { Checkbox, FloatingPoints } from './check-parts';
 
 interface QuantityCheckProps {
   name: string;
@@ -45,6 +46,8 @@ export function QuantityCheck({
   weeklyCaption,
   trailing,
 }: QuantityCheckProps) {
+  // Cada vez que el contador llega a la meta sube un "+N" desde la casilla.
+  const [pointsBurst, setPointsBurst] = useState(0);
   const isPrimary = tier === 'primary';
 
   function increment() {
@@ -53,6 +56,7 @@ export function QuantityCheck({
     if (!wasDone && count + 1 >= amount) {
       tapFeedback();
       playSound('tick');
+      setPointsBurst((bursts) => bursts + 1);
     } else {
       selectionFeedback();
     }
@@ -66,22 +70,32 @@ export function QuantityCheck({
 
   return (
     // Una fila más de la tarjeta de su sección, como las casillas.
-    <View className="bg-surface-200 min-h-14 gap-2 py-3">
-      <View className="flex-row items-center gap-3">
-        <HabitIcon icon={icon} size={18} color={strongHabitColor(color)} />
-        <Text
-          className={`flex-1 ${isPrimary ? 'font-heading text-heading-sm' : 'font-body-semibold text-body'} ${isDone ? 'text-ink-muted' : 'text-ink'}`}
-        >
-          {name}
-        </Text>
-        {isArchived && (
-          <View className="bg-surface-300 rounded-full px-2 py-[3px]">
-            <Text className="font-body-bold text-caption text-ink-muted">Último día</Text>
+    <View className="bg-surface-200 gap-1 py-2">
+      <View
+        accessibilityLabel={`${name}, ${isPrimary ? 'principal' : 'secundario'}, ${count} de ${amount} ${unit}`}
+        className="min-h-11 flex-row items-center gap-1"
+      >
+        <View className="flex-1 flex-row items-center gap-3">
+          <View>
+            <Checkbox isDone={isDone} size={28} color={color} />
+            <FloatingPoints burst={pointsBurst} amount={HABIT_POINTS[tier]} />
           </View>
-        )}
+          <HabitIcon icon={icon} size={18} color={strongHabitColor(color)} />
+          <Text
+            className={`flex-1 ${isPrimary ? 'font-heading text-heading-sm' : 'font-body-semibold text-body'} ${isDone ? 'text-ink-muted' : 'text-ink'}`}
+          >
+            {name}
+          </Text>
+          {isArchived && (
+            <View className="bg-surface-300 rounded-full px-2 py-[3px]">
+              <Text className="font-body-bold text-caption text-ink-muted">Último día</Text>
+            </View>
+          )}
+        </View>
         {trailing ?? <View className="w-11" />}
       </View>
-      <View className="flex-row items-center gap-3">
+      {/* El contador, alineado con el nombre del hábito. */}
+      <View className="flex-row items-center gap-3 pb-1 pl-10">
         <Stepper
           color={color}
           disabled={isArchived}
@@ -95,9 +109,6 @@ export function QuantityCheck({
           {weeklyCaption && (
             <Text className="font-body-semibold text-caption text-ink-muted">{weeklyCaption}</Text>
           )}
-        </View>
-        <View>
-          <FloatingPoints burst={isDone ? 1 : 0} amount={HABIT_POINTS[tier]} />
         </View>
       </View>
     </View>

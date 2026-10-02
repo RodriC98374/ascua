@@ -5,11 +5,14 @@ import {
   DEFAULT_HABIT_CATEGORY,
   HABIT_CATEGORIES,
   HABIT_CATEGORY_IDS,
+  HABIT_COLOR_ROTATION,
   HABIT_COLORS,
   isHabitCategory,
   isHabitColor,
+  nextHabitColor,
   strongHabitColor,
   TASK_COLOR,
+  visibleHabitColors,
 } from './habit-appearance';
 
 describe('HABIT_CATEGORIES', () => {
@@ -48,8 +51,56 @@ describe('HABIT_COLORS', () => {
     expect(new Set(HABIT_COLORS).size).toBe(HABIT_COLORS.length);
   });
 
-  it('offers twelve colors to choose from', () => {
-    expect(HABIT_COLORS).toHaveLength(12);
+  it('offers twenty-four colors to choose from', () => {
+    expect(HABIT_COLORS).toHaveLength(24);
+  });
+});
+
+describe('HABIT_COLOR_ROTATION', () => {
+  it('holds every palette color exactly once', () => {
+    expect([...HABIT_COLOR_ROTATION].sort()).toEqual([...HABIT_COLORS].sort());
+  });
+});
+
+describe('nextHabitColor', () => {
+  const habit = (color: unknown, status: 'active' | 'archived' = 'active') => ({ color, status });
+  const [first, second, third] = HABIT_COLOR_ROTATION;
+
+  it('starts with the first color of the rotation', () => {
+    expect(nextHabitColor([])).toBe(first);
+  });
+
+  it('gives each new habit a color no active habit has yet', () => {
+    expect(nextHabitColor([habit(first)])).toBe(second);
+    expect(nextHabitColor([habit(second), habit(first)])).toBe(third);
+    // Un hueco en la rotación se llena primero.
+    expect(nextHabitColor([habit(first), habit(third)])).toBe(second);
+  });
+
+  it('frees the color of an archived habit', () => {
+    expect(nextHabitColor([habit(first, 'archived'), habit(second)])).toBe(first);
+  });
+
+  it('ignores colors outside the palette', () => {
+    expect(nextHabitColor([habit('#8B5CF6'), habit(undefined)])).toBe(first);
+  });
+
+  it('repeats the least used color once all are taken', () => {
+    const all = HABIT_COLOR_ROTATION.map((color) => habit(color));
+    expect(nextHabitColor(all)).toBe(first);
+    expect(nextHabitColor([...all, habit(first)])).toBe(second);
+  });
+});
+
+describe('visibleHabitColors', () => {
+  it('shows the first eight colors of the palette', () => {
+    expect(visibleHabitColors(HABIT_COLORS[0])).toEqual(HABIT_COLORS.slice(0, 8));
+    expect(visibleHabitColors(HABIT_COLORS[7])).toEqual(HABIT_COLORS.slice(0, 8));
+  });
+
+  it('keeps the chosen color in sight when it is one of the rest', () => {
+    const chosen = HABIT_COLORS[20];
+    expect(visibleHabitColors(chosen)).toEqual([...HABIT_COLORS.slice(0, 7), chosen]);
   });
 });
 

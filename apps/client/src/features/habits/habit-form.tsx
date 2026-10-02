@@ -1,18 +1,16 @@
 import {
   canBePrimary,
-  categoryOf,
   habitIconOf,
   HABIT_CATEGORIES,
-  HABIT_COLORS,
   HABIT_DESCRIPTION_MAX_LENGTH,
   HABIT_NAME_MAX_LENGTH,
   MAX_PRIMARY_HABITS,
+  nextHabitColor,
   reminderDaysFor,
   strongHabitColor,
   TARGET_UNIT_MAX_LENGTH,
   TIMES_PER_WEEK_MAX,
   TIMES_PER_WEEK_MIN,
-  type HabitCategory,
   type HabitRecord,
   type HabitScheduleType,
   type HabitTier,
@@ -24,10 +22,10 @@ import { Button } from '@/components/ui/button';
 import { ScreenFooter } from '@/components/ui/screen';
 import { choiceContainer, choiceLabel } from '@/components/ui/choice-styles';
 import { FieldError, FieldLabel, FormSection, Hint } from '@/components/ui/form-parts';
-import { CheckIcon } from '@/components/ui/icons';
 import { TextField } from '@/components/ui/text-field';
 import { TimeField } from '@/components/ui/time-field';
 import { Toggle } from '@/components/ui/toggle';
+import { HabitColorPicker } from '@/features/habits/habit-color-picker';
 import { HabitIcon } from '@/features/habits/habit-icon';
 import { HabitIconPicker } from '@/features/habits/habit-icon-picker';
 import { HabitStepsField } from '@/features/habits/habit-steps-field';
@@ -142,7 +140,8 @@ export function HabitForm({ habits, habit, onSubmit }: HabitFormProps) {
     tier: habit?.tier ?? (isPrimaryAllowed ? 'primary' : 'secondary'),
     category: habit?.category ?? 'health',
     icon: habitIconOf(habit?.icon),
-    color: habit?.color ?? categoryOf('health').color,
+    // Cada hábito nuevo propone un color que todavía no usa otro: así las gráficas se distinguen.
+    color: habit?.color ?? nextHabitColor(habits),
     schedule: habit?.schedule ?? { type: 'daily' },
     hasTarget: Boolean(habit?.target),
     targetAmount: habit?.target ? String(habit.target.amount) : '',
@@ -163,11 +162,6 @@ export function HabitForm({ habits, habit, onSubmit }: HabitFormProps) {
 
   function update<Field extends keyof HabitDraft>(field: Field, value: HabitDraft[Field]) {
     setDraft((current) => ({ ...current, [field]: value }));
-  }
-
-  // La categoría propone su color; si no gusta, se cambia después en la paleta.
-  function selectCategory(category: HabitCategory) {
-    setDraft((current) => ({ ...current, category, color: categoryOf(category).color }));
   }
 
   function selectScheduleType(type: HabitScheduleType) {
@@ -493,7 +487,7 @@ export function HabitForm({ habits, habit, onSubmit }: HabitFormProps) {
                   key={option.id}
                   accessibilityRole="radio"
                   accessibilityState={{ checked: isSelected }}
-                  onPress={() => selectCategory(option.id)}
+                  onPress={() => update('category', option.id)}
                   className={`min-h-11 flex-row items-center gap-2 rounded-full border-2 px-3 ${choiceContainer(isSelected)}`}
                 >
                   <View
@@ -509,38 +503,7 @@ export function HabitForm({ habits, habit, onSubmit }: HabitFormProps) {
           </View>
         </View>
 
-        <View className="gap-2">
-          <FieldLabel>Color</FieldLabel>
-          {/* Cuatro por fila: los doce colores caben en tres filas parejas a 360 px. */}
-          <View accessibilityRole="radiogroup" className="flex-row flex-wrap">
-            {HABIT_COLORS.map((color) => {
-              const isSelected = color === draft.color;
-              return (
-                <Pressable
-                  key={color}
-                  accessibilityRole="radio"
-                  accessibilityLabel={`Color ${color}`}
-                  accessibilityState={{ checked: isSelected }}
-                  onPress={() => update('color', color)}
-                  className="h-12 w-1/4 items-center justify-center active:opacity-85"
-                >
-                  {/* El elegido lleva un check del tono oscuro de su color, no solo un aro. */}
-                  <View
-                    className="h-10 w-10 items-center justify-center rounded-full"
-                    style={{
-                      backgroundColor: color,
-                      borderWidth: isSelected ? 2 : 0,
-                      borderColor: strongHabitColor(color),
-                    }}
-                  >
-                    {isSelected && <CheckIcon size={18} color={strongHabitColor(color)} />}
-                  </View>
-                </Pressable>
-              );
-            })}
-          </View>
-          <Hint>Lo propone la categoría. Cámbialo si quieres.</Hint>
-        </View>
+        <HabitColorPicker value={draft.color} onChange={(color) => update('color', color)} />
 
         <HabitIconPicker value={draft.icon} onChange={(icon) => update('icon', icon)} />
       </FormSection>
