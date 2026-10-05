@@ -3,6 +3,7 @@ import { Pressable, Text, View } from 'react-native';
 
 import { BottomSheet } from '@/components/ui/bottom-sheet';
 import { Button } from '@/components/ui/button';
+import { choiceContainer, choiceLabel } from '@/components/ui/choice-styles';
 import { ClockIcon } from '@/components/ui/icons';
 import { WHEEL_ITEM_HEIGHT, WHEEL_VISIBLE_ITEMS, WheelPicker } from '@/components/ui/wheel-picker';
 import { selectionFeedback } from '@/features/celebration/haptics';
@@ -63,7 +64,7 @@ export function TimeField({ label, value, onChange, hint, isDisabled = false }: 
         accessibilityState={{ disabled: isDisabled }}
         disabled={isDisabled}
         onPress={() => setDraft(splitTime(value))}
-        className={`min-h-12 flex-row items-center gap-3 py-2 ${isDisabled ? 'opacity-50' : 'active:opacity-85'}`}
+        className={`min-h-12 flex-row items-center gap-3 py-2 ${isDisabled ? 'opacity-40' : 'active:opacity-85'}`}
       >
         <View className="flex-1 gap-0.5">
           <Text className="font-body-bold text-body text-ink">{label}</Text>
@@ -123,11 +124,9 @@ export function TimeField({ label, value, onChange, hint, isDisabled = false }: 
                   selectionFeedback();
                   setDraft([presetHours, presetMinutes]);
                 }}
-                className={`min-h-12 flex-1 items-center justify-center rounded-md border-[1.5px] py-1.5 ${isSelected ? 'border-ember-strong bg-warning-soft' : 'border-border bg-surface-200 active:opacity-85'}`}
+                className={`min-h-12 flex-1 items-center justify-center rounded-md border-2 py-1.5 ${choiceContainer(isSelected)}`}
               >
-                <Text
-                  className={`font-body-bold text-caption ${isSelected ? 'text-ember-strong' : 'text-ink-muted'}`}
-                >
+                <Text className={`font-body-bold text-caption ${choiceLabel(isSelected)}`}>
                   {preset.label}
                 </Text>
                 <Text

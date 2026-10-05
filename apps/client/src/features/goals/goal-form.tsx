@@ -78,7 +78,7 @@ export function GoalForm({ habits, goal, onSubmit }: GoalFormProps) {
           placeholder="Ej.: Aprobar Cálculo II"
           autoCapitalize="sentences"
           error={visibleError('title')}
-          hint={`${draft.title.trim().length}/${GOAL_TITLE_MAX_LENGTH}`}
+          counter={`${draft.title.trim().length}/${GOAL_TITLE_MAX_LENGTH}`}
         />
         <TextField
           label="Por qué te importa (opcional)"
@@ -89,7 +89,7 @@ export function GoalForm({ habits, goal, onSubmit }: GoalFormProps) {
           multiline
           autoCapitalize="sentences"
           error={visibleError('description')}
-          hint={`${draft.description.trim().length}/${GOAL_DESCRIPTION_MAX_LENGTH}`}
+          counter={`${draft.description.trim().length}/${GOAL_DESCRIPTION_MAX_LENGTH}`}
         />
         <View className="border-border -my-2 border-t">
           <DateField

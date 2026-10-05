@@ -15,11 +15,12 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { DayDot } from './day-dot';
 import { DAY_STATUS_LABELS, formatPercent } from './statistics-text';
 
-const LABEL_WIDTH = 112;
+// Ancho y alto para que un nombre entre en dos líneas ("Leer 20 minutos") sin apretar la semana.
+const LABEL_WIDTH = 120;
 /** En el mes la grilla se desplaza de lado; en la semana las 7 columnas llenan el ancho. */
 const MONTH_COLUMN_WIDTH = 28;
 const BAND_HEIGHT = 20;
-const ROW_HEIGHT = 30;
+const ROW_HEIGHT = 36;
 const SUMMARY_HEIGHT = 40;
 
 // Una clase completa por bloque de 7 días (NativeWind solo genera las que aparecen escritas).
@@ -85,7 +86,7 @@ export function HabitGrid(props: HabitGridProps) {
                 }}
               />
               <Text
-                numberOfLines={1}
+                numberOfLines={2}
                 className={`text-caption flex-1 ${row.habit.tier === 'primary' ? 'font-body-bold text-ink' : 'font-body text-ink-muted'}`}
               >
                 {row.habit.name}

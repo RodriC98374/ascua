@@ -1,20 +1,24 @@
 import { useState } from 'react';
 import { Text, TextInput, View, type TextInputProps } from 'react-native';
 
+import { FieldError, FieldLabel, Hint } from '@/components/ui/form-parts';
 import { useThemeColors } from '@/theme/colors';
 
 interface TextFieldProps extends Omit<TextInputProps, 'className' | 'style'> {
   label: string;
   /** Mensaje de error bajo el campo; también pinta el borde en rojo. */
   error?: string | null;
-  /** Ayuda a la derecha bajo el campo, por ejemplo el contador de caracteres. */
+  /** Ayuda bajo el campo, a la izquierda. Sigue a la vista aunque haya un error. */
   hint?: string;
+  /** Contador de caracteres ("12/60"), a la derecha bajo el campo. */
+  counter?: string;
 }
 
 export function TextField({
   label,
   error,
   hint,
+  counter,
   multiline,
   onFocus,
   onBlur,
@@ -27,7 +31,7 @@ export function TextField({
   const sizeClass = multiline ? 'min-h-28 py-3' : 'min-h-12';
   return (
     <View className="gap-1">
-      <Text className="font-body-bold text-caption text-ink-muted">{label}</Text>
+      <FieldLabel>{label}</FieldLabel>
       <TextInput
         accessibilityLabel={label}
         accessibilityHint={error ?? undefined}
@@ -46,15 +50,15 @@ export function TextField({
         }}
         {...inputProps}
       />
-      {(error || hint) && (
+      {(error || hint || counter) && (
         <View className="flex-row gap-2">
-          <Text
-            accessibilityLiveRegion="polite"
-            className="font-body-bold text-caption text-error flex-1"
-          >
-            {error}
-          </Text>
-          {hint && <Text className="font-body-semibold text-caption text-ink-faint">{hint}</Text>}
+          <View className="flex-1 gap-0.5">
+            {error && <FieldError>{error}</FieldError>}
+            {hint && <Hint>{hint}</Hint>}
+          </View>
+          {counter && (
+            <Text className="font-body-semibold text-caption text-ink-muted">{counter}</Text>
+          )}
         </View>
       )}
     </View>

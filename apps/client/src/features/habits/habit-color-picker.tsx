@@ -43,7 +43,7 @@ export function HabitColorPicker({ value, onChange }: HabitColorPickerProps) {
       <Pressable
         accessibilityRole="button"
         onPress={() => setIsOpen(true)}
-        className="min-h-11 flex-row items-center gap-2 self-start px-1 active:opacity-70"
+        className="min-h-11 flex-row items-center gap-2 self-start px-1 active:opacity-85"
       >
         <PlusIcon size={18} color={colors.emberStrong} />
         <Text className="font-body-bold text-body text-ember-strong">Más colores</Text>

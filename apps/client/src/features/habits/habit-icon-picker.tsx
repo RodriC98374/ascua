@@ -43,7 +43,7 @@ export function HabitIconPicker({ value, category, onChange }: HabitIconPickerPr
         accessibilityRole="button"
         accessibilityLabel="Cambiar el ícono"
         onPress={() => setIsOpen(true)}
-        className="border-border bg-surface-200 min-h-12 flex-row items-center gap-3 rounded-md border-[1.5px] px-3 active:opacity-85"
+        className="border-border bg-surface-200 min-h-12 flex-row items-center gap-3 rounded-sm border-2 px-3 active:opacity-85"
       >
         <View className="bg-surface-100 h-9 w-9 items-center justify-center rounded-full">
           <HabitIcon icon={value ?? CATEGORY_HABIT_ICONS[category]} size={20} color={colors.ink} />
@@ -95,7 +95,7 @@ export function HabitIconPicker({ value, category, onChange }: HabitIconPickerPr
                       className="h-12 w-1/6 items-center justify-center"
                     >
                       <View
-                        className={`h-11 w-11 items-center justify-center rounded-md border-2 ${isSelected ? choiceContainer(true) : 'border-transparent active:opacity-70'}`}
+                        className={`h-11 w-11 items-center justify-center rounded-md border-2 ${isSelected ? choiceContainer(true) : 'border-transparent active:opacity-85'}`}
                       >
                         <HabitIcon
                           icon={icon}

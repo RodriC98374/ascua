@@ -9,6 +9,8 @@ import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/button';
+import { choiceContainer, choiceLabel } from '@/components/ui/choice-styles';
+import { FieldLabel, FormSection } from '@/components/ui/form-parts';
 import { ScreenFooter } from '@/components/ui/screen';
 import { TextField } from '@/components/ui/text-field';
 import { RewardCalculator } from '@/features/reward-calculator/reward-calculator';
@@ -57,7 +59,7 @@ export function RewardForm({ rewards, reward, onSubmit }: RewardFormProps) {
 
   return (
     <View className="gap-6">
-      <View className="gap-4">
+      <FormSection title="Lo básico">
         <TextField
           label="Nombre"
           value={draft.name}
@@ -67,7 +69,7 @@ export function RewardForm({ rewards, reward, onSubmit }: RewardFormProps) {
           placeholder="Ej.: Ir al cine"
           autoCapitalize="sentences"
           error={visibleError('name')}
-          hint={`${draft.name.trim().length}/${REWARD_NAME_MAX_LENGTH}`}
+          counter={`${draft.name.trim().length}/${REWARD_NAME_MAX_LENGTH}`}
         />
         <TextField
           label="Descripción (opcional)"
@@ -78,54 +80,54 @@ export function RewardForm({ rewards, reward, onSubmit }: RewardFormProps) {
           multiline
           autoCapitalize="sentences"
           error={visibleError('description')}
-          hint={`${draft.description.trim().length}/${REWARD_DESCRIPTION_MAX_LENGTH}`}
+          counter={`${draft.description.trim().length}/${REWARD_DESCRIPTION_MAX_LENGTH}`}
         />
-      </View>
+      </FormSection>
 
-      <View className="gap-2">
-        <Text className="font-body-bold text-caption text-ink-muted">Nivel</Text>
-        <View accessibilityRole="radiogroup" className="flex-row gap-2">
-          {TIERS.map((tier) => {
-            const isSelected = tier === draft.tier;
-            return (
-              <Pressable
-                key={tier}
-                accessibilityRole="radio"
-                accessibilityState={{ checked: isSelected }}
-                onPress={() => update('tier', tier)}
-                className={`min-h-14 flex-1 items-center justify-center rounded-md border-2 px-1 py-2 active:opacity-85 ${isSelected ? 'border-ember-strong bg-warning-soft' : 'border-border bg-surface-200'}`}
-              >
-                <Text
-                  className={`font-body-extrabold text-button ${isSelected ? 'text-ember-strong' : 'text-ink-muted'}`}
+      <FormSection title="Cuánto cuesta">
+        <View className="gap-2">
+          <FieldLabel>Nivel</FieldLabel>
+          <View accessibilityRole="radiogroup" className="flex-row gap-2">
+            {TIERS.map((tier) => {
+              const isSelected = tier === draft.tier;
+              return (
+                <Pressable
+                  key={tier}
+                  accessibilityRole="radio"
+                  accessibilityState={{ checked: isSelected }}
+                  onPress={() => update('tier', tier)}
+                  className={`min-h-14 flex-1 items-center justify-center rounded-md border-2 px-1 py-2 ${choiceContainer(isSelected)}`}
                 >
-                  {TIER_LABELS[tier].singular}
-                </Text>
-                <Text className="font-body-semibold text-caption text-ink-muted">
-                  {tierRange(tier)}
-                </Text>
-              </Pressable>
-            );
-          })}
+                  <Text className={`font-body-extrabold text-button ${choiceLabel(isSelected)}`}>
+                    {TIER_LABELS[tier].singular}
+                  </Text>
+                  <Text className={`font-body-semibold text-caption ${choiceLabel(isSelected)}`}>
+                    {tierRange(tier)}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
         </View>
-      </View>
 
-      <RewardCalculator
-        onUseCost={(value) => {
-          update('cost', String(value));
-          touch('cost')();
-        }}
-      />
+        <RewardCalculator
+          onUseCost={(value) => {
+            update('cost', String(value));
+            touch('cost')();
+          }}
+        />
 
-      <TextField
-        label="Costo en puntos"
-        value={draft.cost}
-        onChangeText={(value) => update('cost', value.replace(/[^\d]/g, ''))}
-        onBlur={touch('cost')}
-        keyboardType="number-pad"
-        placeholder={`Sugerido: ${range.min}–${range.max}`}
-        error={visibleError('cost')}
-        hint="El rango del nivel es una sugerencia"
-      />
+        <TextField
+          label="Costo en puntos"
+          value={draft.cost}
+          onChangeText={(value) => update('cost', value.replace(/[^\d]/g, ''))}
+          onBlur={touch('cost')}
+          keyboardType="number-pad"
+          placeholder={`Sugerido: ${range.min}–${range.max}`}
+          error={visibleError('cost')}
+          hint="El rango del nivel es una sugerencia."
+        />
+      </FormSection>
 
       <ScreenFooter>
         <View className="gap-2">

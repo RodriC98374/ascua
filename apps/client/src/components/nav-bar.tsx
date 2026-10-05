@@ -33,7 +33,7 @@ function NavButton({
   ...props
 }: NavButtonProps) {
   const colors = useThemeColors();
-  const color = isFocused ? colors.emberStrong : colors.inkFaint;
+  const color = isFocused ? colors.emberStrong : colors.inkMuted;
   return (
     <Pressable
       {...props}

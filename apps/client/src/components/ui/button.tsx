@@ -15,6 +15,8 @@ interface ButtonProps {
   variant?: 'primary' | 'secondary' | 'link' | 'danger';
   isLoading?: boolean;
   isDisabled?: boolean;
+  /** Para lectores de pantalla, si el texto solo no alcanza ("Descargar respaldo completo"). */
+  accessibilityLabel?: string;
 }
 
 const labelStyles = {
@@ -37,6 +39,7 @@ export function Button({
   variant = 'primary',
   isLoading = false,
   isDisabled = false,
+  accessibilityLabel,
 }: ButtonProps) {
   const colors = useThemeColors();
   const isInactive = isDisabled || isLoading;
@@ -57,6 +60,7 @@ export function Button({
   return (
     <PressableScale
       accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
       accessibilityState={{ disabled: isInactive, busy: isLoading }}
       disabled={isInactive}
       onPress={onPress}

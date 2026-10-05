@@ -7,7 +7,7 @@ import { useThemeColors } from '@/theme/colors';
 import { TIER_LABELS } from './reward-catalog';
 
 const PLAIN_TIERS = {
-  small: { chip: 'bg-week-verde-soft', text: 'text-week-verde' },
+  small: { chip: 'bg-success-soft', text: 'text-success' },
   medium: { chip: 'bg-week-azul-soft', text: 'text-week-azul' },
 };
 

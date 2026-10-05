@@ -55,20 +55,21 @@ export function CheckInSummary({
             key={dimension}
             accessible
             accessibilityLabel={`${CHECK_IN_LABELS[dimension].name}: ${formatCheckInAverage(averages[dimension])} de 5`}
-            className="bg-surface-300 flex-1 gap-0.5 rounded-md px-3 py-2"
+            className="bg-surface-300 flex-1 gap-0.5 rounded-md px-2.5 py-2"
           >
+            {/* El nombre va solo en su línea: con el punto al lado, "Motivación" se cortaba. */}
+            <Text numberOfLines={1} className="font-body-bold text-caption text-ink-muted">
+              {CHECK_IN_LABELS[dimension].name}
+            </Text>
             <View className="flex-row items-center gap-1.5">
               <View
                 className="h-2.5 w-2.5 rounded-full"
                 style={{ backgroundColor: scaleColors[dimension] }}
               />
-              <Text numberOfLines={1} className="font-body-bold text-caption text-ink-muted">
-                {CHECK_IN_LABELS[dimension].name}
+              <Text className="font-heading text-heading-md text-ink">
+                {formatCheckInAverage(averages[dimension])}
               </Text>
             </View>
-            <Text className="font-heading text-heading-md text-ink">
-              {formatCheckInAverage(averages[dimension])}
-            </Text>
           </View>
         ))}
       </View>

@@ -10,6 +10,7 @@ import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/button';
+import { FieldLabel, Hint } from '@/components/ui/form-parts';
 import { TextField } from '@/components/ui/text-field';
 import { Toggle } from '@/components/ui/toggle';
 import {
@@ -60,13 +61,12 @@ export function RewardCalculator({ onUseCost }: RewardCalculatorProps) {
   const pace = dailyPointsPace(logs.data, today);
 
   return (
-    <View className="bg-surface-200 gap-4 rounded-lg p-4">
+    // Sin tarjeta propia: va dentro de la del formulario ("Cuánto cuesta").
+    <View className="gap-4">
       <View className="min-h-11 flex-row items-center gap-3">
         <View className="flex-1 gap-0.5">
-          <Text className="font-body-bold text-body text-ink">Cuesta dinero</Text>
-          <Text className="font-body text-caption text-ink-muted">
-            Calcula un costo en puntos desde su precio.
-          </Text>
+          <FieldLabel>Cuesta dinero</FieldLabel>
+          <Hint>Calcula un costo en puntos desde su precio.</Hint>
         </View>
         <Toggle accessibilityLabel="Cuesta dinero" value={costsMoney} onChange={setCostsMoney} />
       </View>
@@ -102,16 +102,20 @@ export function RewardCalculator({ onUseCost }: RewardCalculatorProps) {
 
           {suggestion && budget !== null && (
             <View className="border-border gap-3 border-t pt-4">
-              <View className="flex-row items-center gap-2">
+              {/* El "?" mide 20 px; su área de toque, 44. La fila le da el alto (un `hitSlop` no
+                  pasa del borde de la vista que lo contiene) y el margen negativo lo compensa. */}
+              <View className="-my-3 min-h-11 flex-row items-center">
                 <Text className="font-body-bold text-caption text-ink-muted">Costo sugerido</Text>
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel="¿Cómo se calcula?"
+                  accessibilityState={{ expanded: isHelpOpen }}
                   onPress={() => setIsHelpOpen((open) => !open)}
-                  hitSlop={10}
-                  className="border-ink-muted h-5 w-5 items-center justify-center rounded-full border active:opacity-70"
+                  className="h-11 w-11 items-center justify-center active:opacity-85"
                 >
-                  <Text className="font-body-bold text-label text-ink-muted">?</Text>
+                  <View className="border-ink-muted h-5 w-5 items-center justify-center rounded-full border">
+                    <Text className="font-body-bold text-label text-ink-muted">?</Text>
+                  </View>
                 </Pressable>
               </View>
               <Text className="font-heading-extrabold text-display-md text-ink">

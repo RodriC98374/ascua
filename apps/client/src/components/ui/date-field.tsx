@@ -164,7 +164,7 @@ export function DateField({ label, value, onChange, minDateKey, hint }: DateFiel
                   selectionFeedback();
                   setDraft(split(preset.dateKey));
                 }}
-                className={`min-h-11 justify-center rounded-full border-[1.5px] px-3 ${choiceContainer(isSelected)}`}
+                className={`min-h-11 justify-center rounded-full border-2 px-3 ${choiceContainer(isSelected)}`}
               >
                 <Text className={`font-body-bold text-body ${choiceLabel(isSelected)}`}>
                   {preset.label}

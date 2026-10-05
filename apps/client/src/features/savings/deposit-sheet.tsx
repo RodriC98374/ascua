@@ -81,7 +81,7 @@ export function DepositSheet({ reward, state, jar, onClose }: DepositSheetProps)
                     selectionFeedback();
                     setAmount(option);
                   }}
-                  className={`min-h-11 items-center justify-center rounded-full border-[1.5px] px-4 ${choiceContainer(isSelected)}`}
+                  className={`min-h-11 items-center justify-center rounded-full border-2 px-4 ${choiceContainer(isSelected)}`}
                 >
                   <Text className={`font-body-extrabold text-button ${choiceLabel(isSelected)}`}>
                     {isMax ? `Todo · ${option}` : `+${option}`}

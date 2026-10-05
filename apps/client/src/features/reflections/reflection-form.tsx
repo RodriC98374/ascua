@@ -63,7 +63,7 @@ export function ReflectionForm({
           maxLength={REFLECTION_ANSWER_MAX_LENGTH}
           multiline
           autoCapitalize="sentences"
-          hint={`${answers[question.key].trim().length}/${REFLECTION_ANSWER_MAX_LENGTH}`}
+          counter={`${answers[question.key].trim().length}/${REFLECTION_ANSWER_MAX_LENGTH}`}
         />
       ))}
       <ScreenFooter>

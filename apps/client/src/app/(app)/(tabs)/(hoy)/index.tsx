@@ -503,7 +503,7 @@ function MoveButton({
       accessibilityLabel={`${direction === 'up' ? 'Subir' : 'Bajar'} ${habitName}`}
       disabled={!isEnabled}
       onPress={onPress}
-      className={`h-11 w-11 items-center justify-center rounded-md ${isEnabled ? 'active:opacity-85' : 'opacity-30'}`}
+      className={`h-11 w-11 items-center justify-center rounded-md ${isEnabled ? 'active:opacity-85' : 'opacity-40'}`}
     >
       <ArrowIcon direction={direction} size={18} color={colors.emberStrong} />
     </Pressable>

@@ -13,6 +13,7 @@ import { Pressable, Text, View } from 'react-native';
 import { Button } from '@/components/ui/button';
 import { ScreenFooter } from '@/components/ui/screen';
 import { choiceContainer, choiceLabel } from '@/components/ui/choice-styles';
+import { FieldError, FieldLabel, FormSection, Hint } from '@/components/ui/form-parts';
 import { TextField } from '@/components/ui/text-field';
 import type { TaskInput } from '@/operations/tasks';
 
@@ -61,74 +62,72 @@ export function TaskForm({ today, task, onSubmit }: TaskFormProps) {
 
   return (
     <View className="gap-6">
-      <TextField
-        label="Qué tienes que hacer"
-        value={draft.title}
-        onChangeText={(title) => setDraft((current) => ({ ...current, title }))}
-        onBlur={() => setIsTitleTouched(true)}
-        maxLength={TASK_TITLE_MAX_LENGTH}
-        placeholder="Ej.: Pagar la luz"
-        autoCapitalize="sentences"
-        returnKeyType="done"
-        error={titleError}
-        hint={`${draft.title.trim().length}/${TASK_TITLE_MAX_LENGTH}`}
-      />
+      <FormSection title="Tu tarea">
+        <TextField
+          label="Qué tienes que hacer"
+          value={draft.title}
+          onChangeText={(title) => setDraft((current) => ({ ...current, title }))}
+          onBlur={() => setIsTitleTouched(true)}
+          maxLength={TASK_TITLE_MAX_LENGTH}
+          placeholder="Ej.: Pagar la luz"
+          autoCapitalize="sentences"
+          returnKeyType="done"
+          error={titleError}
+          counter={`${draft.title.trim().length}/${TASK_TITLE_MAX_LENGTH}`}
+        />
 
-      <View className="gap-2">
-        <Text className="font-body-bold text-caption text-ink-muted">Tamaño</Text>
-        <View accessibilityRole="radiogroup" className="flex-row gap-2">
-          {SIZE_OPTIONS.map((option) => {
-            const isSelected = option.size === draft.size;
-            return (
-              <Pressable
-                key={option.size}
-                accessibilityRole="radio"
-                accessibilityState={{ checked: isSelected }}
-                onPress={() => setDraft((current) => ({ ...current, size: option.size }))}
-                className={`min-h-14 flex-1 items-center justify-center rounded-md border-2 py-1 ${choiceContainer(isSelected)}`}
-              >
-                <Text className={`font-body-extrabold text-button ${choiceLabel(isSelected)}`}>
-                  {option.label}
-                </Text>
-                <Text className={`font-body-semibold text-caption ${choiceLabel(isSelected)}`}>
-                  {TASK_POINTS[option.size]} pts
-                </Text>
-              </Pressable>
-            );
-          })}
+        <View className="gap-2">
+          <FieldLabel>Tamaño</FieldLabel>
+          <View accessibilityRole="radiogroup" className="flex-row gap-2">
+            {SIZE_OPTIONS.map((option) => {
+              const isSelected = option.size === draft.size;
+              return (
+                <Pressable
+                  key={option.size}
+                  accessibilityRole="radio"
+                  accessibilityState={{ checked: isSelected }}
+                  onPress={() => setDraft((current) => ({ ...current, size: option.size }))}
+                  className={`min-h-14 flex-1 items-center justify-center rounded-md border-2 py-1 ${choiceContainer(isSelected)}`}
+                >
+                  <Text className={`font-body-extrabold text-button ${choiceLabel(isSelected)}`}>
+                    {option.label}
+                  </Text>
+                  <Text className={`font-body-semibold text-caption ${choiceLabel(isSelected)}`}>
+                    {TASK_POINTS[option.size]} pts
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+          <Hint>
+            Pasan a tu saldo al cerrar el día, hasta {DAILY_TASK_POINTS_CAP} pts por día entre todas
+            tus tareas. No cuentan para la racha.
+          </Hint>
         </View>
-        <Text className="font-body-semibold text-caption text-ink-muted">
-          Pasan a tu saldo al cerrar el día, hasta {DAILY_TASK_POINTS_CAP} pts por día entre todas
-          tus tareas. No cuentan para la racha.
-        </Text>
-      </View>
 
-      <View className="gap-2">
-        <Text className="font-body-bold text-caption text-ink-muted">Para cuándo</Text>
-        <View accessibilityRole="radiogroup" className="flex-row flex-wrap gap-2">
-          {days.map((day) => {
-            const isSelected = day.dateKey === draft.dueDateKey;
-            return (
-              <Pressable
-                key={day.dateKey}
-                accessibilityRole="radio"
-                accessibilityState={{ checked: isSelected }}
-                onPress={() => setDraft((current) => ({ ...current, dueDateKey: day.dateKey }))}
-                className={`min-h-11 justify-center rounded-full border-2 px-4 ${choiceContainer(isSelected)}`}
-              >
-                <Text className={`font-body-extrabold text-button ${choiceLabel(isSelected)}`}>
-                  {day.label}
-                </Text>
-              </Pressable>
-            );
-          })}
+        <View className="gap-2">
+          <FieldLabel>Para cuándo</FieldLabel>
+          <View accessibilityRole="radiogroup" className="flex-row flex-wrap gap-2">
+            {days.map((day) => {
+              const isSelected = day.dateKey === draft.dueDateKey;
+              return (
+                <Pressable
+                  key={day.dateKey}
+                  accessibilityRole="radio"
+                  accessibilityState={{ checked: isSelected }}
+                  onPress={() => setDraft((current) => ({ ...current, dueDateKey: day.dateKey }))}
+                  className={`min-h-11 justify-center rounded-full border-2 px-4 ${choiceContainer(isSelected)}`}
+                >
+                  <Text className={`font-body-extrabold text-button ${choiceLabel(isSelected)}`}>
+                    {day.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+          {hasTriedSubmit && errors.dueDateKey && <FieldError>{errors.dueDateKey}</FieldError>}
         </View>
-        {hasTriedSubmit && errors.dueDateKey && (
-          <Text accessibilityLiveRegion="polite" className="font-body-bold text-caption text-error">
-            {errors.dueDateKey}
-          </Text>
-        )}
-      </View>
+      </FormSection>
 
       <ScreenFooter>
         <View className="gap-2">

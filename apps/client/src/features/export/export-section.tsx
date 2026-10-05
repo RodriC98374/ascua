@@ -1,8 +1,9 @@
 import type { ExportKind } from '@ascua/shared';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
+import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ChevronIcon } from '@/components/ui/icons';
 import { buildExportFile } from '@/data/export-files';
@@ -59,29 +60,23 @@ export function ExportSection() {
         {OPTIONS.map((option, index) => {
           const isBusy = busyKind === option.kind;
           return (
-            <Pressable
+            <View
               key={option.kind}
-              accessibilityRole="button"
-              accessibilityLabel={`${SAVE_ACTION_LABEL} ${option.title.toLowerCase()}`}
-              accessibilityState={{ busy: isBusy, disabled: busyKind !== null }}
-              disabled={busyKind !== null}
-              onPress={() => exportKind(option.kind)}
               className={`min-h-12 flex-row items-center gap-3 py-2 ${index > 0 ? 'border-border border-t' : ''}`}
             >
               <View className="flex-1 gap-0.5">
                 <Text className="font-body-bold text-body text-ink">{option.title}</Text>
                 <Text className="font-body text-caption text-ink-muted">{option.hint}</Text>
               </View>
-              <View className="bg-surface-300 min-w-24 items-center rounded-sm px-3 py-2">
-                {isBusy ? (
-                  <ActivityIndicator size="small" color={colors.emberStrong} />
-                ) : (
-                  <Text className="font-body-bold text-caption text-ember-strong">
-                    {SAVE_ACTION_LABEL}
-                  </Text>
-                )}
-              </View>
-            </Pressable>
+              <Button
+                label={SAVE_ACTION_LABEL}
+                variant="secondary"
+                accessibilityLabel={`${SAVE_ACTION_LABEL} ${option.title.toLowerCase()}`}
+                isLoading={isBusy}
+                isDisabled={busyKind !== null}
+                onPress={() => exportKind(option.kind)}
+              />
+            </View>
           );
         })}
         <Pressable

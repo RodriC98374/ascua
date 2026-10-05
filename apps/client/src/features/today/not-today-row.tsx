@@ -22,8 +22,8 @@ export function NotTodayRow({
   return (
     <View className="min-h-12 flex-row items-center gap-3 py-2">
       <View className="flex-1">
-        <Text className="font-body text-body text-ink-faint">{name}</Text>
-        <Text className="font-body-semibold text-caption text-ink-faint">
+        <Text className="font-body text-body text-ink-muted">{name}</Text>
+        <Text className="font-body-semibold text-caption text-ink-muted">
           Le toca: {describeDays(daysOfWeek)}
         </Text>
       </View>

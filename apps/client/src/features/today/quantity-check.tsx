@@ -134,7 +134,7 @@ function Stepper({
         accessibilityLabel="Restar uno"
         disabled={disabled}
         onPress={onDecrement}
-        className={`border-border h-11 w-11 items-center justify-center rounded-full border-2 ${disabled ? 'opacity-30' : 'active:opacity-85'}`}
+        className={`border-border h-11 w-11 items-center justify-center rounded-full border-2 ${disabled ? 'opacity-40' : 'active:opacity-85'}`}
       >
         <MinusIcon size={18} color={colors.inkMuted} />
       </Pressable>
@@ -143,7 +143,7 @@ function Stepper({
         accessibilityLabel="Sumar uno"
         disabled={disabled}
         onPress={onIncrement}
-        className={`h-11 w-11 items-center justify-center rounded-full ${disabled ? 'opacity-30' : 'active:opacity-85'}`}
+        className={`h-11 w-11 items-center justify-center rounded-full ${disabled ? 'opacity-40' : 'active:opacity-85'}`}
         style={{ backgroundColor: color }}
       >
         <PlusIcon size={18} color={colors.inkOnFill} />

@@ -236,7 +236,7 @@ export function HabitForm({ habits, habit, onSubmit }: HabitFormProps) {
           autoCapitalize="sentences"
           returnKeyType="next"
           error={visibleError('name')}
-          hint={`${draft.name.trim().length}/${HABIT_NAME_MAX_LENGTH}`}
+          counter={`${draft.name.trim().length}/${HABIT_NAME_MAX_LENGTH}`}
         />
         <TextField
           label="Descripción (opcional)"
@@ -247,7 +247,7 @@ export function HabitForm({ habits, habit, onSubmit }: HabitFormProps) {
           multiline
           autoCapitalize="sentences"
           error={visibleError('description')}
-          hint={`${draft.description.trim().length}/${HABIT_DESCRIPTION_MAX_LENGTH}`}
+          counter={`${draft.description.trim().length}/${HABIT_DESCRIPTION_MAX_LENGTH}`}
         />
       </FormSection>
 
@@ -479,7 +479,7 @@ export function HabitForm({ habits, habit, onSubmit }: HabitFormProps) {
           <Text numberOfLines={1} className="font-heading text-heading-sm text-ink flex-1">
             {draft.name.trim() || 'Tu hábito'}
           </Text>
-          <Text className="font-body-semibold text-caption text-ink-faint">Así se verá</Text>
+          <Hint>Así se verá</Hint>
         </View>
 
         <View className="gap-2">
