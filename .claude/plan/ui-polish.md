@@ -6,8 +6,9 @@ textos poco coherentes, botones, sombras, cajas y contrastes que no estén bien,
 como **propuesta en una rama aparte**. No toca datos, reglas ni `shared`; **no quita ninguna
 función**.
 
-**Estado: aplicado, a la espera de la revisión del usuario.** Los 13 hallazgos están hechos y la
-pantalla de inicio de sesión, revisada. No se une a `develop` sin su visto bueno.
+**Estado: hecho.** Los 13 hallazgos aplicados y la pantalla de inicio de sesión revisada. El usuario
+lo aprobó en su demo y se unió a `develop` el 05-10-2026. Sin publicar: va con la versión de la
+fase 21.
 
 ## Qué se revisó
 
@@ -80,7 +81,7 @@ anterior fallaban dos casos.
 - Lint, typecheck y tests en verde.
 - El usuario la revisa en su demo antes de unirla a `develop`.
 
-**Hecho el 05-10-2026**, salvo la revisión del usuario. Capturas de 14 pantallas (inicio de sesión,
+**Hecho el 05-10-2026**, con la revisión del usuario. Capturas de 14 pantallas (inicio de sesión,
 Hoy, Premios, los cuatro formularios, la calculadora abierta, Ajustes, Semana, Mes y Año) antes y
 después a 390 px en claro, después en oscuro y a 360 px. Medido en el navegador: el "?" pasó de
 20 × 20 a 44 × 44, y Mes pasó de cuatro nombres cortados a ninguno. Las capturas quedaron en la
