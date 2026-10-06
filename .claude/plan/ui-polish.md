@@ -7,8 +7,8 @@ como **propuesta en una rama aparte**. No toca datos, reglas ni `shared`; **no q
 función**.
 
 **Estado: hecho.** Los 13 hallazgos aplicados y la pantalla de inicio de sesión revisada. El usuario
-lo aprobó en su demo y se unió a `develop` el 05-10-2026. Sin publicar: va con la versión de la
-fase 21.
+lo aprobó en su demo y se unió a `develop` el 05-10-2026. Publicado el 06-10-2026 con la versión
+de la fase 21.
 
 ## Qué se revisó
 
