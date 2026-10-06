@@ -1,6 +1,6 @@
 // Una línea por escala del check-in (1 a 5), dibujada a mano con SVG: la librería de gráficas no
 // deja huecos en una misma línea ni superpone tres con toque propio. Une los días contestados
-// seguidos; los puntos marcan lo que de verdad se contestó.
+// seguidos con una curva suave (`smoothPath`); los puntos marcan lo que de verdad se contestó.
 import { CHECK_IN_DIMENSIONS, CHECK_IN_MAX, CHECK_IN_MIN } from '@ascua/shared';
 import { Pressable, Text, View } from 'react-native';
 import Svg, { Circle, G, Line, Path } from 'react-native-svg';
@@ -10,6 +10,7 @@ import { useThemeColors } from '@/theme/colors';
 
 import type { CheckInSlot } from './chart-data';
 import { useChartStyle, useLayoutWidth } from './chart-parts';
+import { smoothPath } from './smooth-path';
 
 const HEIGHT = 120;
 const Y_AXIS_WIDTH = 20;
@@ -75,9 +76,7 @@ export function CheckInChart({ slots, selectedIndex, onSelect, describeSlot }: C
                   const value = slot.values[dimension];
                   return value === undefined ? [] : [{ x: xOf(index), y: yOf(value), index }];
                 });
-                const path = points
-                  .map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`)
-                  .join(' ');
+                const path = smoothPath(points);
                 return (
                   <G key={dimension}>
                     {points.length > 1 && (

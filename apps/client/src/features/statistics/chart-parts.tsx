@@ -15,6 +15,8 @@ import { LineChart } from 'react-native-gifted-charts';
 
 import { useThemeColors, type ThemeColors } from '@/theme/colors';
 
+import { smoothValues } from './smooth-path';
+
 /** Ancho disponible para la gráfica: se mide al montar y al cambiar el tamaño de la pantalla. */
 export function useLayoutWidth(): [number, (event: LayoutChangeEvent) => void] {
   const [width, setWidth] = useState(0);
@@ -28,6 +30,12 @@ export const CHART_HEIGHT = 140;
 const TOOLTIP_HEIGHT = 28;
 const TOOLTIP_WIDTH = 112;
 const EDGE_SPACING = 12;
+/**
+ * Puntos que se dibujan entre cada par de datos. La librería solo traza rectas, y su opción `curved`
+ * se pasa del eje en una caída brusca (la racha que vuelve a 0 se hundía unos píxeles bajo la línea
+ * de base); por eso la curva se calcula aparte (`smoothValues`, sin desborde) y se le pasa como datos.
+ */
+const CURVE_STEPS = 8;
 
 function buildChartStyle(colors: ThemeColors) {
   const axisTextStyle: TextStyle = {
@@ -115,6 +123,14 @@ export function TouchLineChart({
   const spacing =
     points.length > 1 ? (plotWidth - 2 * EDGE_SPACING) / (points.length - 1) : plotWidth / 2;
   const xOf = (index: number) => Y_AXIS_WIDTH + EDGE_SPACING + spacing * index;
+  // Con la curva, la librería recibe `CURVE_STEPS` puntos por tramo; solo los originales llevan
+  // punto y etiqueta.
+  const curveSteps = points.length > 2 ? CURVE_STEPS : 1;
+  const curveSpacing = spacing / curveSteps;
+  const curveValues = smoothValues(
+    points.map((point) => point.value),
+    curveSteps,
+  );
   const tooltipLeft =
     selectedIndex >= 0
       ? Math.min(Math.max(0, xOf(selectedIndex) - TOOLTIP_WIDTH / 2), width - TOOLTIP_WIDTH)
@@ -126,16 +142,20 @@ export function TouchLineChart({
         <>
           <LineChart
             {...chartStyle}
-            data={points.map((point) => ({
-              value: point.value,
-              // La librería recorta la etiqueta al ancho entre puntos ("1…"): va una propia.
-              labelComponent: point.label
-                ? () => <AxisLabel text={point.label} spacing={spacing} />
-                : undefined,
-            }))}
+            data={curveValues.map((value, index) => {
+              const point = index % curveSteps === 0 ? points[index / curveSteps] : undefined;
+              return {
+                value,
+                hideDataPoint: !point,
+                // La librería recorta la etiqueta al ancho entre puntos ("1…"): va una propia.
+                labelComponent: point?.label
+                  ? () => <AxisLabel text={point.label} spacing={curveSpacing} />
+                  : undefined,
+              };
+            })}
             width={plotWidth}
             height={CHART_HEIGHT}
-            spacing={spacing}
+            spacing={curveSpacing}
             initialSpacing={EDGE_SPACING}
             endSpacing={EDGE_SPACING}
             maxValue={maxValue}
@@ -150,7 +170,7 @@ export function TouchLineChart({
             endOpacity={0.06}
             dataPointsColor={color}
             dataPointsRadius={2.5}
-            focusedDataPointIndex={selectedIndex}
+            focusedDataPointIndex={selectedIndex >= 0 ? selectedIndex * curveSteps : -1}
             focusedDataPointColor={color}
             focusedDataPointRadius={5}
           />
