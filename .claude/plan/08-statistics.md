@@ -57,6 +57,9 @@ emuladores locales**; el proyecto real no se toca. Todo con un comando (necesita
   `--powered` llega con la semana potenciada (fase 16): Natación ya cumplió sus veces de la
   semana y la llama de Hoy se ve morada; el lunes pide 1 vez y el martes 2, porque antes no hay
   días para llegar a 3.
+  `--forgot` (fase 22) deja a ayer, que sigue abierto por el día de gracia, con los principales
+  sin marcar: Hoy muestra la franja "Marcar ayer" y `/ayer` deja marcarlos. Sin `--forgot`, ayer
+  queda marcado pero abierto: se cierra al día siguiente.
 - La demo trae un hábito de cada frecuencia (fase 16): Yoga de días fijos (martes, jueves y
   sábado), Natación 3 veces por semana y Vasos de agua con meta de 8 (hoy va 5 de 8).
 - `npm run seed:demo` (mismas opciones) solo vuelve a sembrar, con los emuladores encendidos.

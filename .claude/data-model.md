@@ -515,13 +515,13 @@ Nota: `DAILY_LOG_ENTRY` y `DAILY_SUMMARY` no son colecciones: viven como los cam
 ## 6. Ciclo de un día
 
 1. **Durante el día:** el usuario marca hábitos → se escribe `dailyLogs/{hoy}.entries`. La UI muestra al instante la racha, los puntos del día y la celebración de día perfecto, calculados con `evaluateDay` de `packages/shared`: los **mismos números** que dará el cierre. Si se desmarca algo, se recalculan solos.
-2. **A las 00:00 Bolivia:** las reglas dejan de aceptar escrituras sobre ese día (sin margen de gracia).
-3. **La próxima vez que se abre la app** (o al pasar la medianoche con la app abierta): la app **cierra los días pendientes** (sección 7). Los puntos pasan al saldo oficial y desde ese momento se pueden gastar.
+2. **A las 00:00 Bolivia:** el día sigue abierto un día más (**día de gracia**, D29): se pueden marcar sus hábitos (no tareas ni check-in) hasta las 00:00 del día siguiente. La racha de Hoy ya cuenta ayer con sus marcas actuales.
+3. **A las 00:00 del día siguiente:** las reglas dejan de aceptar escrituras sobre ese día. **La próxima vez que se abre la app** (o al pasar la medianoche con la app abierta): la app **cierra los días pendientes**, hasta anteayer (sección 7). Los puntos pasan al saldo oficial y desde ese momento se pueden gastar: **un día más tarde que antes de D29**.
 
 **Por qué los puntos pasan al saldo al cierre y no al marcar cada hábito:**
 - Marcar y desmarcar no genera movimientos en el ledger (sin reversos ni ruido).
 - Todos los puntos del día se calculan con la misma foto de hábitos y tiers, siempre coherentes con el resumen.
-- Consecuencia: los puntos de hoy se pueden gastar desde mañana. Encaja con la idea de "me lo gané".
+- Consecuencia: los puntos de hoy se pueden gastar desde pasado mañana (desde D29; antes, mañana). Encaja con la idea de "me lo gané".
 
 ## 7. Operaciones de la app
 
@@ -531,7 +531,8 @@ No hay servidor: estas operaciones las ejecuta la app como **transacciones de Fi
 |---|---|---|
 | `initializeAccount` | Primer inicio de sesión (idempotente) | Crea `users/{uid}` y `meta/gamification` con valores iniciales (`lastClosedDateKey` = ayer, todo en 0). Si los dos ya están en la caché local (`isAccountCached`), no se llama: así la web instalada abre sin conexión (fase 19). |
 | `restoreConfiguration` (fase 19, D26) | El usuario confirma la vista previa de un respaldo | Crea lo elegido con la misma forma que los formularios y **sin puertas especiales en las reglas**: hábitos y metas activos que empiezan hoy, recompensas activas, tareas pendientes (una vencida vence hoy) y reflexiones. Las metas apuntan a los IDs nuevos o a lo que ya estaba. En lotes de hasta 400; lo repetido se detecta por nombre y no se duplica. No toca historial, puntos ni racha. |
-| `closePendingDays` | Al abrir la app, al volver a primer plano y al pasar la medianoche con la app abierta | Cierra cada día desde `lastClosedDateKey + 1` hasta ayer (ver abajo). |
+| `closePendingDays` | Al abrir la app, al volver a primer plano y al pasar la medianoche con la app abierta | Cierra cada día desde `lastClosedDateKey + 1` hasta **anteayer**: ayer sigue abierto por el día de gracia (ver abajo). |
+| `resetAccount` (fase 22, D30) | El usuario confirma "Empezar de cero" en Ajustes | Escribe el marcador `meta/reset` (con la hora del servidor), borra cada colección de `users/{uid}` en lotes de 200 (leídas del servidor), `meta/gamification`, `meta/savings`, el perfil y el marcador, y vuelve a llamar a `initializeAccount`. No toca al usuario de Auth. Pide conexión. Es lo único que borra el historial. |
 | `purchaseStreakFreeze` | El usuario compra un protector | Transacción: puntos para gastar (saldo sin lo apartado) ≥ `STREAK_FREEZE_COST` y protectores < `MAX_STREAK_FREEZES` → movimiento, estado (con `lastSpendTransactionId`) y `pointsSpent` del mes de hoy. |
 | `redeemReward` | El usuario canjea una recompensa | Transacción: recompensa activa y saldo ≥ costo → movimiento, canje con foto de la recompensa, estado (con `lastSpendTransactionId`) y `pointsSpent` del mes de hoy. Lo apartado en la alcancía no cuenta para otra recompensa; si es la de la alcancía, cuenta el saldo entero y la alcancía se vacía en la misma transacción (fase 18). |
 | `depositSavings` (fase 18) | El usuario aparta puntos | Transacción: recompensa activa, sin otra alcancía en curso y hasta `min(costo − apartado, saldo − apartado)` → empieza la alcancía hoy o le suma. Sin movimiento en el historial. |
@@ -588,15 +589,16 @@ Sin servidor, las reglas son la única barrera: validan que cada operación de l
 - **Registro cerrado:** la cuenta del usuario se creó a mano en la consola y el registro está desactivado (*Authentication → Settings → User actions*). La app no tiene pantalla de registro. La lista de permitidos es la segunda barrera.
 - **Clave de API restringida** (Google Cloud → Credenciales → "Browser key (auto created by Firebase)"): sin restricción de aplicación (Android con el SDK JS no envía los datos que esa restricción verifica) y **solo** Identity Toolkit API, Token Service API y Cloud Firestore API. La clave es pública por diseño; si se agrega otro servicio de Firebase, sumarlo a esa lista o fallará con un error 403.
 - **Libre, con forma validada** (tipos, enums, longitudes): `users/{userId}` (solo `displayName`, `reminderSettings` y `rewardBudget` después de crearlo), `habits`, `rewards`. Hábitos y recompensas no se pueden borrar. En `habits`, `schedule` y `target` no cambian después de crear; `reminder` sí (hora 'HH:mm', días 1–7 sin repetir y, en días fijos, solo los del hábito). `steps` también: `null` o de 2 a 6 pasos con exactamente `id` y `title`.
-- **`dailyLogs/{D}.entries` y `checkIn`:** solo si `D` es hoy en Bolivia según `request.time`. Al crear el documento, `status == 'open'` y `summary == null`. `checkIn` solo acepta `mood`, `energy` y `motivation` con enteros de 1 a 5; el cierre no lo cambia y un día cerrado sin actividad se crea sin él.
+- **`dailyLogs/{D}.entries` y `checkIn`:** `D` es hoy en Bolivia según `request.time` (marcas y check-in) **o ayer, el día de gracia** (D29): ahí solo cambia `entries` (nunca `checkIn`) y solo si el log sigue `open`; crear el log de ayer exige `lastClosedDateKey < ayer` (una cuenta nueva nace con ayer cerrado). Al crear el documento, `status == 'open'` y `summary == null`. `checkIn` solo acepta `mood`, `energy` y `motivation` con enteros de 1 a 5; el cierre no lo cambia y un día cerrado sin actividad se crea sin él.
 - **Cierre de un día** (`status`/`summary` de `dailyLogs/{D}`, movimientos de cierre, `meta/gamification`, `monthlySummaries`):
-  - `D` es estrictamente anterior a hoy (según `request.time`).
+  - `D` es anterior a ayer (según `request.time`): ayer sigue abierto por el día de gracia.
   - `lastClosedDateKey` avanza **exactamente un día**, hasta `D`.
   - Los movimientos tienen el ID determinista del día y un monto válido para su tipo (10 o 5 por hábito, 5, 20, 100; tareas entre 1 y el tope de 30).
   - `pointsBalance >= 0` y `streakFreezesAvailable` entre 0 y 2, y no sube durante un cierre.
 - **Compra de protector:** existe tras la transacción el movimiento `freeze_{requestId}` con −150; el saldo baja exactamente 150 y los protectores suben exactamente 1, sin pasar de 2.
 - **Canje:** existe tras la transacción el movimiento `redemption_{requestId}` con −`cost` de la recompensa (leída con `get()`); el saldo baja exactamente ese costo y el canje referencia a ese movimiento.
-- **`pointTransactions` y `rewardRedemptions`:** solo crear, nunca borrar. Un movimiento nunca se edita; un canje solo recibe `usedAt` (fase 21): si no lo tenía, con `request.time`, tocando únicamente `usedAt` y `updatedAt`.
+- **Borrado (fase 22, D30):** ningún documento de `users/{uid}` se borra, salvo las tareas que ya se podían borrar, mientras exista `meta/reset` con `requestedAt` de los últimos 15 minutos (`isResetting`). El marcador lo crea el dueño con la hora del servidor (`requestedAt == request.time`, solo ese campo) y lo borra al terminar.
+- **`pointTransactions` y `rewardRedemptions`:** solo crear, nunca borrar (fuera de un reinicio). Un movimiento nunca se edita; un canje solo recibe `usedAt` (fase 21): si no lo tenía, con `request.time`, tocando únicamente `usedAt` y `updatedAt`.
 - **`goals` (fase 18):** forma validada; se crean activas y con `startDateKey` = hoy; `habitIds` hasta 10 y `taskIds` hasta 50, sin repetir; fecha límite desde el inicio; lograda ⇔ `achievedDateKey` con valor, que al lograrla es hoy y no cambia mientras siga lograda. No se borran.
 - **`weeklyReflections` (fase 18):** ID = lunes y el domingo de esa semana ya llegó; tres textos hasta 500, al menos uno con texto; solo cambian las respuestas; no se borran.
 - **`meta/savings` (fase 18):** vaciar (sin recompensa, 0 puntos) se puede siempre; empezar es hoy; con la misma recompensa los puntos solo suben; cambiar de recompensa sin vaciar, no; puntos ≤ costo de la recompensa activa y ≤ saldo.
@@ -607,7 +609,7 @@ Sin servidor, las reglas son la única barrera: validan que cada operación de l
 - **Las reglas validan la forma, no la matemática del cierre.** No pueden comprobar que la racha o los puntos calculados sean los correctos; eso lo garantizan los tests de `evaluateDay` (fase 02). El único que podría escribir datos incoherentes sería el propio dueño, a propósito.
 - **Máximo de 3 principales:** se valida solo en la UI; las reglas no pueden contar documentos.
 - **Tier al cierre:** si se cambia el tier de un hábito durante el día, el cierre usa el tier nuevo.
-- **Marcas offline tardías:** una marca hecha sin conexión a las 23:58 que se sincroniza después de medianoche es rechazada (política sin gracia). La app muestra un indicador de "pendiente de sincronizar".
+- **Marcas offline tardías:** una marca hecha sin conexión a las 23:58 que se sincroniza hasta las 00:00 del día siguiente se acepta (día de gracia, D29); después, es rechazada. La app muestra un indicador de "pendiente de sincronizar".
 - **Offline en Android:** las marcas pendientes se pierden si se cierra la app antes de recuperar la conexión (sección 9).
 - **Lo que las reglas no pueden recorrer:** la forma de cada marca de `entries` (solo se limita a 100 claves), `habitStats` del resumen mensual, que `checkInStats` sume el check-in del día cerrado (se valida su forma y que cada total quepa entre días × 1 y días × 5; un gasto no lo cambia) y que la suma de los movimientos del día sea igual a `summary.pointsEarned`. Lo garantiza la app, probada con los tests de `evaluateDay`.
 - **Tier de cada movimiento de hábito:** las reglas aceptan 10 o 5 sin leer el hábito (leerlo sumaría una lectura por hábito y superaría el límite).
@@ -619,7 +621,7 @@ Sin servidor, las reglas son la única barrera: validan que cada operación de l
 1. **Meta de racha:** todos los hábitos principales programados. Tres resultados: racha perdida (`missed`), racha activa (`completed`) y racha perfecta (`completed` + `isPerfectDay`, principales y secundarios al 100%). "Perfecta" no es un valor de `status`: solo suma el bono, no cambia el conteo.
 2. **Bonos de 7/30 días:** recurrentes en cada múltiplo.
 3. **Día protegido:** conserva la racha sin sumarla (`frozen`). El protector solo se usa si hay una racha activa.
-4. **Sin margen de gracia:** solo se edita el día de hoy; a las 00:00 Bolivia el día se bloquea.
+4. ~~Sin margen de gracia~~ **Reemplazada por D29 (07-10-2026): un día de gracia.** Se editan hoy y ayer; ayer se bloquea a las 00:00 de hoy y su cierre llega entonces.
 5. **Costos de recompensas:** los rangos son una sugerencia. Pendiente calibrar con datos reales antes de cerrar el MVP.
 6. **Costo cero:** Firebase Spark sin tarjeta; sin Cloud Functions ni servidores propios. Todo lo ejecuta la app, validado por las reglas.
 7. **Notificaciones locales solo en Android**; la web no notifica.
