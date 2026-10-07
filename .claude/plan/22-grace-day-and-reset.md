@@ -76,7 +76,7 @@ usuario de acceso (Auth) no se toca y la cuenta se vuelve a crear en cero.
 | Ajustes: reiniciar la cuenta | Hecho |
 | Demo: `--forgot` y ayer abierto | Hecho |
 | Revisión del usuario en su demo y unión a `develop` | Pendiente |
-| Publicar: reglas → web → una APK | Pendiente (con la versión siguiente) |
+| Publicar: reglas → web → una APK | Reglas publicadas el 07-10-2026 y APK de prueba en EAS (`45b4e2a8…`); falta unir a `develop` y `main` y publicar la web |
 
 ## Cómo probarlo
 
