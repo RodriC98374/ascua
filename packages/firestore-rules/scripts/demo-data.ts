@@ -96,6 +96,8 @@ export interface DemoOptions {
   isRiskAllDay: boolean;
   /** Los semanales ya cumplieron su N esta semana: la llama de Hoy se ve morada. */
   isWeekPowered: boolean;
+  /** Ayer (el día de gracia) queda con los principales sin marcar: sale el aviso "Marcar ayer". */
+  isYesterdayForgotten: boolean;
 }
 
 export const DEMO_USAGE = [
@@ -107,15 +109,23 @@ export const DEMO_USAGE = [
   '  --powered        semana potenciada: Natación ya cumplió sus veces de esta semana y la',
   '                   llama de Hoy se ve morada. Al principio de la semana pide menos veces',
   '                   (lunes 1, martes 2), porque no hay días para llegar a 3.',
+  '  --forgot         ayer, que sigue abierto por el día de gracia, queda con los principales',
+  '                   sin marcar: Hoy muestra el aviso "Marcar ayer" y la racha en juego.',
 ].join('\n');
 
 export function parseDemoOptions(args: readonly string[]): DemoOptions {
-  const options: DemoOptions = { streak: null, isRiskAllDay: false, isWeekPowered: false };
+  const options: DemoOptions = {
+    streak: null,
+    isRiskAllDay: false,
+    isWeekPowered: false,
+    isYesterdayForgotten: false,
+  };
   for (const arg of args) {
     const streak = /^--streak=(\d+)$/.exec(arg)?.[1];
     if (streak !== undefined) options.streak = Number(streak);
     else if (arg === '--risk') options.isRiskAllDay = true;
     else if (arg === '--powered') options.isWeekPowered = true;
+    else if (arg === '--forgot') options.isYesterdayForgotten = true;
     else throw new Error(`Opción desconocida: ${arg}\n${DEMO_USAGE}`);
   }
   return options;
@@ -424,7 +434,11 @@ function buildDemoData(uid: string, options: DemoOptions): DemoData {
     return task;
   };
 
-  for (const dateKey of dateKeyRange(start, addDays(today, -1))) {
+  // Ayer sigue abierto por el día de gracia (D29): se cierra al acabarse, no antes.
+  const yesterday = addDays(today, -1);
+  // Lo que Hoy mostrará de racha: el estado oficial más ayer, si ayer cumple su meta.
+  let shownState: GamificationState | null = null;
+  for (const dateKey of dateKeyRange(start, yesterday)) {
     const { isGoalForced, isRoughDay, canSpend } = planDay(dateKey);
     const entries: Record<string, HabitEntry> = {};
     for (const habitRecord of habits) {
@@ -467,6 +481,35 @@ function buildDemoData(uid: string, options: DemoOptions): DemoData {
         const dueDateKey = taskRandom() < 0.2 ? addDays(dateKey, -2) : dateKey;
         completedTasks.push(addTask(dueDateKey, dateKey));
       }
+    }
+    if (dateKey === yesterday) {
+      // Olvidado: se quitan las marcas de los principales, como si no los hubiera marcado.
+      const graceEntries = options.isYesterdayForgotten
+        ? Object.fromEntries(
+            Object.entries(entries).filter(
+              ([id]) => habits.find((habitRecord) => habitRecord.id === id)?.tier !== 'primary',
+            ),
+          )
+        : entries;
+      const markedAt = at(dateKey, '20:00:00');
+      documents.set(`${user}/dailyLogs/${dateKey}`, {
+        dateKey,
+        entries: Object.fromEntries(
+          Object.entries(graceEntries).map(([id, entry]) => [id, { ...entry, updatedAt: markedAt }]),
+        ),
+        status: 'open',
+        summary: null,
+        ...meta(markedAt),
+      });
+      shownState = evaluateDay({
+        dateKey,
+        habits,
+        entries: graceEntries,
+        weekLogs,
+        completedTasks,
+        state,
+      }).nextState;
+      break;
     }
     const evaluation = evaluateDay({
       dateKey,
@@ -548,12 +591,15 @@ function buildDemoData(uid: string, options: DemoOptions): DemoData {
   }
 
   // La racha de hoy debe ser la pedida y, si hay racha, también la mejor (la del hito por ganar).
+  // Con --forgot ayer no cumple su meta a propósito: no se comprueba.
+  const shown = shownState ?? state;
   if (
     streak !== null &&
-    (state.currentStreak !== streak || (streak > 0 && state.longestStreak !== streak))
+    !options.isYesterdayForgotten &&
+    (shown.currentStreak !== streak || (streak > 0 && shown.longestStreak !== streak))
   ) {
     throw new Error(
-      `La historia quedó con racha ${state.currentStreak} y mejor racha ${state.longestStreak}; se pidió ${streak}.`,
+      `La historia quedó con racha ${shown.currentStreak} y mejor racha ${shown.longestStreak}; se pidió ${streak}.`,
     );
   }
 
