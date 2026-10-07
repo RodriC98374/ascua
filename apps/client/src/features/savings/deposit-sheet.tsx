@@ -64,7 +64,7 @@ export function DepositSheet({ reward, state, jar, onClose }: DepositSheetProps)
         <Text className="font-body text-body text-ink-muted">
           {saved >= reward.cost
             ? 'Ya tienes todo lo que cuesta. ¡Canjéala!'
-            : 'No te quedan puntos libres. Vuelve mañana, cuando cierre el día.'}
+            : 'No te quedan puntos libres. Se suman a tu saldo cuando cierra cada día.'}
         </Text>
       ) : (
         <>

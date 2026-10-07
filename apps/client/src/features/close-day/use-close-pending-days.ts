@@ -1,4 +1,4 @@
-import { addDays } from '@ascua/shared';
+import { addDays, lastClosableDateKey } from '@ascua/shared';
 import { useNetworkState } from 'expo-network';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
@@ -46,7 +46,9 @@ export function useClosePendingDays() {
   const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const lastClosed = gamification.data?.lastClosedDateKey;
-  const hasPendingDays = lastClosed !== undefined && addDays(lastClosed, 1) < today;
+  // Ayer sigue abierto por el día de gracia (D29): solo se cierra hasta anteayer.
+  const hasPendingDays =
+    lastClosed !== undefined && addDays(lastClosed, 1) <= lastClosableDateKey(today);
   // Mientras no se sabe (undefined), se asume que hay red: el cierre fallará y reintentará.
   const isOnline = network.isConnected !== false && network.isInternetReachable !== false;
 

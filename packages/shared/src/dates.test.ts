@@ -169,18 +169,20 @@ describe('dateKeyRange', () => {
 });
 
 describe('pendingDateKeysToClose', () => {
-  it('lists the days after the last closed one, up to yesterday', () => {
-    expect(pendingDateKeysToClose('2026-09-18', '2026-09-21')).toEqual([
+  it('lists the days after the last closed one, up to two days ago', () => {
+    expect(pendingDateKeysToClose('2026-09-17', '2026-09-21')).toEqual([
+      '2026-09-18',
       '2026-09-19',
-      '2026-09-20',
     ]);
   });
 
-  it('is empty when yesterday is already closed', () => {
-    expect(pendingDateKeysToClose('2026-09-20', '2026-09-21')).toEqual([]);
+  it('is empty when only yesterday is left: it stays open for the grace day', () => {
+    expect(pendingDateKeysToClose('2026-09-19', '2026-09-21')).toEqual([]);
   });
 
-  it('never includes today', () => {
+  it('never includes yesterday or today', () => {
+    expect(pendingDateKeysToClose('2026-09-18', '2026-09-21')).toEqual(['2026-09-19']);
+    expect(pendingDateKeysToClose('2026-09-20', '2026-09-21')).toEqual([]);
     expect(pendingDateKeysToClose('2026-09-21', '2026-09-21')).toEqual([]);
   });
 });

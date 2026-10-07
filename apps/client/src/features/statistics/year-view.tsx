@@ -1,4 +1,5 @@
 import {
+  addDays,
   bestWeekdays,
   buildRangeStats,
   buildYearStats,
@@ -61,6 +62,8 @@ export function YearView({
   const summaries = useMonthlySummaries(uid, year);
   const gamification = useGamificationState(uid);
   const todayLog = useDailyLog(uid, today);
+  // Ayer, si sigue abierto (día de gracia, D29): su racha cuenta en la de hoy.
+  const graceLog = useDailyLog(uid, addDays(today, -1));
   const yearLogs = useDailyLogsInRange(uid, period.startDateKey, period.endDateKey);
   const [selectedMonthKey, setSelectedMonthKey] = useState<MonthKey | null>(null);
   const [selectedHabitId, setSelectedHabitId] = useState<string | null>(null);
@@ -88,7 +91,14 @@ export function YearView({
   const state = gamification.data;
   // Rachas con hoy incluido en cuanto se cumple la meta, como en Hoy y en su celebración.
   const streak =
-    state && buildTodaySummary({ today, habits, entries: todayLog.data?.entries ?? {}, state });
+    state &&
+    buildTodaySummary({
+      today,
+      habits,
+      entries: todayLog.data?.entries ?? {},
+      graceEntries: graceLog.data?.entries,
+      state,
+    });
 
   function monthRowCaption(month: MonthStats): string {
     if (!selectedHabit) return monthCaption(month);

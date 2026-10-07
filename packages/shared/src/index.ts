@@ -15,6 +15,7 @@ export * from './habit-steps';
 export * from './insights';
 export * from './milestones';
 export * from './monthly-summary';
+export * from './open-days';
 export * from './periods';
 export * from './points';
 export * from './primary-habits';

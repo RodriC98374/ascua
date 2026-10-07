@@ -151,6 +151,70 @@ describe('buildTodaySummary', () => {
     expect(summary.isGoalMet).toBe(false);
   });
 
+  describe('with yesterday still open (grace day, D29)', () => {
+    // El último cierre fue anteayer (19): ayer (20) sigue abierto y hoy es 21.
+    const withGrace: GamificationState = { ...state, lastClosedDateKey: '2026-09-19' };
+
+    it('counts yesterday in the streak as soon as its goal is met', () => {
+      const summary = buildTodaySummary({
+        today: TODAY,
+        habits,
+        entries: {},
+        graceEntries: done('run', 'read'),
+        state: withGrace,
+      });
+      expect(summary.streakDays).toBe(7);
+      expect(summary.baseState.currentStreak).toBe(7);
+    });
+
+    it('shows the streak broken while yesterday goal is missing', () => {
+      const summary = buildTodaySummary({
+        today: TODAY,
+        habits,
+        entries: done('run', 'read'),
+        graceEntries: done('run'),
+        // Sin protectores: ayer incompleto rompe la racha y hoy empieza una nueva.
+        state: { ...withGrace, streakFreezesAvailable: 0 },
+      });
+      expect(summary.baseState.currentStreak).toBe(0);
+      expect(summary.streakDays).toBe(1);
+    });
+
+    it('shows the freeze as spent while yesterday goal is missing', () => {
+      const summary = buildTodaySummary({
+        today: TODAY,
+        habits,
+        entries: {},
+        graceEntries: done('run'),
+        state: withGrace,
+      });
+      expect(summary.baseState.streakFreezesAvailable).toBe(0);
+      expect(summary.streakDays).toBe(6);
+    });
+
+    it('treats yesterday as not marked when it has no entries', () => {
+      const summary = buildTodaySummary({
+        today: TODAY,
+        habits,
+        entries: {},
+        state: { ...withGrace, streakFreezesAvailable: 0 },
+      });
+      expect(summary.baseState.currentStreak).toBe(0);
+    });
+
+    it('ignores graceEntries once yesterday is closed', () => {
+      const summary = buildTodaySummary({
+        today: TODAY,
+        habits,
+        entries: {},
+        graceEntries: done('run', 'read'),
+        state,
+      });
+      expect(summary.baseState).toEqual(state);
+      expect(summary.streakDays).toBe(6);
+    });
+  });
+
   it('has nothing to show without habits', () => {
     const summary = buildTodaySummary({ today: TODAY, habits: [], entries: {}, state });
     expect(summary.hasHabits).toBe(false);

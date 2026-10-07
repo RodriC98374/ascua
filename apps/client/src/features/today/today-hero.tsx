@@ -74,7 +74,9 @@ export function TodayHero({
             />
             <Text className="font-heading text-heading-md text-ember-strong"> hoy</Text>
           </View>
-          <Text className="font-body-semibold text-caption text-ink-muted">disponibles mañana</Text>
+          <Text className="font-body-semibold text-caption text-ink-muted">
+            disponibles pasado mañana
+          </Text>
         </View>
         <View className="flex-1">
           <Text className="font-heading text-heading-md text-ink">{pointsBalance}</Text>

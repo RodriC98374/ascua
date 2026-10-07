@@ -7,6 +7,7 @@ import {
   isHabitScheduledOn,
   isWeekPowered,
   previewDay,
+  stateAfterGraceDay,
   weeklyProgress,
   type DailyEntries,
   type DateKey,
@@ -26,6 +27,11 @@ export interface TodayInput {
   weekLogs?: readonly WeekLog[];
   /** Tareas de Hoy; las cumplidas hoy suman puntos (con tope), sin tocar la racha. */
   tasks?: readonly Task[];
+  /**
+   * Las marcas de ayer, mientras sigue abierto por el día de gracia (D29): su racha cuenta como si
+   * se cerrara ahora. Se ignora si ayer ya está cerrado. Sin marcas, ayer se toma como no marcado.
+   */
+  graceEntries?: DailyEntries;
   state: GamificationState;
 }
 
@@ -35,6 +41,11 @@ interface Progress {
 }
 
 export interface TodaySummary {
+  /**
+   * El estado antes de hoy: el oficial y, si ayer sigue abierto, con ayer ya sumado o perdido. De
+   * aquí salen la racha y los protectores que se ven en Hoy.
+   */
+  baseState: GamificationState;
   hasHabits: boolean;
   primaries: HabitRecord[];
   secondaries: HabitRecord[];
@@ -75,8 +86,16 @@ export function buildTodaySummary({
   entries,
   weekLogs = [],
   tasks = [],
-  state,
+  graceEntries = {},
+  state: officialState,
 }: TodayInput): TodaySummary {
+  const state = stateAfterGraceDay({
+    today,
+    habits,
+    entries: graceEntries,
+    weekLogs,
+    state: officialState,
+  });
   const preview = previewDay({ dateKey: today, habits, entries, completedTasks: tasks, state });
   const scheduled = [...getScheduledHabits(habits, today)].sort(
     (a, b) => a.sortOrder - b.sortOrder,
@@ -120,6 +139,7 @@ export function buildTodaySummary({
   }
 
   return {
+    baseState: state,
     hasHabits: scheduled.length > 0 || weeklies.length > 0 || notToday.length > 0,
     primaries,
     secondaries,

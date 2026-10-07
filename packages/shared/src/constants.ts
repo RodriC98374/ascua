@@ -3,6 +3,13 @@ import type { HabitTier, PointTransactionType, RewardTier, TaskSize } from './ty
 /** Zona horaria en la que opera todo el sistema, sin importar el dispositivo. */
 export const APP_TIME_ZONE = 'America/La_Paz';
 
+/**
+ * Días de gracia (fase 22, D29): después de medianoche, el día que acaba de pasar sigue abierto
+ * para marcar lo que se olvidó. Su cierre (puntos y racha) llega recién cuando se acaba la gracia.
+ * Las reglas de Firestore lo repiten con `prevDateKey(todayKey())`: un día, no más.
+ */
+export const EDIT_GRACE_DAYS = 1;
+
 /** Puntos por día cumplido según el nivel del hábito. */
 export const HABIT_POINTS: Readonly<Record<HabitTier, number>> = { primary: 10, secondary: 5 };
 

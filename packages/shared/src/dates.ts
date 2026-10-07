@@ -1,6 +1,6 @@
 // Fechas del sistema. Regla única: los días de calendario se calculan en America/La_Paz
 // y la aritmética de días se hace sobre UTC puro, sin depender de la zona de la máquina.
-import { APP_TIME_ZONE } from './constants';
+import { APP_TIME_ZONE, EDIT_GRACE_DAYS } from './constants';
 import type { DateKey, MonthKey } from './types';
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -146,7 +146,10 @@ export function dateKeyRange(from: DateKey, to: DateKey): DateKey[] {
   return Array.from({ length: Math.max(length, 0) }, (_, i) => addDays(from, i));
 }
 
-/** Días que faltan cerrar: desde el siguiente al último cerrado hasta ayer. Nunca incluye hoy. */
+/**
+ * Días que faltan cerrar: desde el siguiente al último cerrado hasta anteayer. Ayer sigue abierto
+ * por el día de gracia (D29) y hoy también.
+ */
 export function pendingDateKeysToClose(lastClosedDateKey: DateKey, today: DateKey): DateKey[] {
-  return dateKeyRange(addDays(lastClosedDateKey, 1), addDays(today, -1));
+  return dateKeyRange(addDays(lastClosedDateKey, 1), addDays(today, -(EDIT_GRACE_DAYS + 1)));
 }

@@ -2,6 +2,7 @@
 // horarios o los hábitos y al marcar o desmarcar (data-model §8). En la web solo informa que no
 // aplica.
 import {
+  addDays,
   planHabitReminders,
   planReminders,
   startOfWeek,
@@ -22,7 +23,13 @@ import {
 } from 'react';
 import { AppState, Linking } from 'react-native';
 
-import { useDailyLogsInRange, useGamificationState, useHabits, useUserProfile } from '@/data/hooks';
+import {
+  useDailyLog,
+  useDailyLogsInRange,
+  useGamificationState,
+  useHabits,
+  useUserProfile,
+} from '@/data/hooks';
 import { buildTodaySummary } from '@/features/today/today-summary';
 import { useToday } from '@/features/today/use-today';
 
@@ -110,14 +117,25 @@ function ReminderScheduler({ uid }: { uid: string }) {
   // La semana, hoy incluido: dice qué hábitos ya se cumplieron (hoy y los semanales).
   const weekLogs = useDailyLogsInRange(uid, startOfWeek(today), today);
   const gamification = useGamificationState(uid);
+  // Ayer, si sigue abierto (día de gracia, D29): su racha cuenta para saber si hoy hay riesgo.
+  const graceLog = useDailyLog(uid, addDays(today, -1));
 
   const settings = profile.data?.reminderSettings;
-  if (habits.isLoading || weekLogs.isLoading || !gamification.data || !settings) return null;
+  if (
+    habits.isLoading ||
+    weekLogs.isLoading ||
+    graceLog.isLoading ||
+    !gamification.data ||
+    !settings
+  ) {
+    return null;
+  }
 
   const summary = buildTodaySummary({
     today,
     habits: habits.data,
     entries: weekLogs.data.find((log) => log.dateKey === today)?.entries ?? {},
+    graceEntries: graceLog.data?.entries,
     state: gamification.data,
   });
   return (

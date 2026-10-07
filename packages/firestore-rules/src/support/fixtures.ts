@@ -40,6 +40,7 @@ import { OWNER, OWNER_EMAIL, seed } from './env';
 export const TODAY = todayDateKey();
 export const YESTERDAY = addDays(TODAY, -1);
 export const TWO_DAYS_AGO = addDays(TODAY, -2);
+export const THREE_DAYS_AGO = addDays(TODAY, -3);
 export const TOMORROW = addDays(TODAY, 1);
 
 export const paths = {
@@ -185,9 +186,12 @@ export function gamificationDoc(state: GamificationState): DocumentData {
   return { ...state, ...created() };
 }
 
-/** Estado con al menos un día pendiente de cerrar (ayer). */
+/**
+ * Estado con un día pendiente de cerrar: anteayer. Ayer sigue abierto por el día de gracia (D29) y
+ * hasta mañana no se cierra.
+ */
 export function pendingState(overrides: Partial<GamificationState> = {}): GamificationState {
-  return { ...initialGamificationState(YESTERDAY), ...overrides };
+  return { ...initialGamificationState(TWO_DAYS_AGO), ...overrides };
 }
 
 export function transactionDoc({ id: _id, ...fields }: PointTransaction): DocumentData {

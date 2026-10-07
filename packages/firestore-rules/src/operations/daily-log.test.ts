@@ -6,7 +6,16 @@ import { describe, expect, it } from 'vitest';
 import { dailyLogRef } from '../../../../apps/client/src/data/documents';
 import { setCheckIn, setHabitCompletion } from '../../../../apps/client/src/operations/daily-log';
 import { OWNER, ownerDb, useRulesTestEnvironment } from '../support/env';
-import { openLogDoc, paths, seedDocs, TODAY, YESTERDAY } from '../support/fixtures';
+import {
+  gamificationDoc,
+  openLogDoc,
+  paths,
+  pendingState,
+  seedDocs,
+  TODAY,
+  TWO_DAYS_AGO,
+  YESTERDAY,
+} from '../support/fixtures';
 
 useRulesTestEnvironment();
 
@@ -14,7 +23,7 @@ describe('setHabitCompletion', () => {
   it("creates today's log with the first mark", async () => {
     const db = ownerDb();
     await setHabitCompletion(db, OWNER, {
-      today: TODAY,
+      dateKey: TODAY,
       habitId: 'reading',
       completed: true,
       logExists: false,
@@ -32,19 +41,19 @@ describe('setHabitCompletion', () => {
   it('marks and unmarks more habits on an existing log', async () => {
     const db = ownerDb();
     await setHabitCompletion(db, OWNER, {
-      today: TODAY,
+      dateKey: TODAY,
       habitId: 'reading',
       completed: true,
       logExists: false,
     });
     await setHabitCompletion(db, OWNER, {
-      today: TODAY,
+      dateKey: TODAY,
       habitId: 'water',
       completed: true,
       logExists: true,
     });
     await setHabitCompletion(db, OWNER, {
-      today: TODAY,
+      dateKey: TODAY,
       habitId: 'reading',
       completed: false,
       logExists: true,
@@ -60,14 +69,14 @@ describe('setHabitCompletion', () => {
   it('saves how much was done of a habit with a target', async () => {
     const db = ownerDb();
     await setHabitCompletion(db, OWNER, {
-      today: TODAY,
+      dateKey: TODAY,
       habitId: 'water',
       completed: false,
       count: 3,
       logExists: false,
     });
     await setHabitCompletion(db, OWNER, {
-      today: TODAY,
+      dateKey: TODAY,
       habitId: 'water',
       completed: true,
       count: 8,
@@ -81,14 +90,14 @@ describe('setHabitCompletion', () => {
   it('saves which steps were done of a habit with steps', async () => {
     const db = ownerDb();
     await setHabitCompletion(db, OWNER, {
-      today: TODAY,
+      dateKey: TODAY,
       habitId: 'night',
       completed: false,
       doneSteps: ['teeth'],
       logExists: false,
     });
     await setHabitCompletion(db, OWNER, {
-      today: TODAY,
+      dateKey: TODAY,
       habitId: 'night',
       completed: true,
       doneSteps: ['teeth', 'clothes'],
@@ -105,7 +114,7 @@ describe('setHabitCompletion', () => {
     const db = ownerDb();
     await seedDocs({ [paths.dailyLog(TODAY)]: openLogDoc(TODAY) });
     await setHabitCompletion(db, OWNER, {
-      today: TODAY,
+      dateKey: TODAY,
       habitId: 'a.b',
       completed: true,
       logExists: true,
@@ -115,16 +124,71 @@ describe('setHabitCompletion', () => {
     expect(log.data()?.entries).toEqual({ 'a.b': { completed: true } });
   });
 
-  it('is rejected for yesterday, even if its log is still open', async () => {
-    await seedDocs({ [paths.dailyLog(YESTERDAY)]: openLogDoc(YESTERDAY) });
-    await assertFails(
-      setHabitCompletion(ownerDb(), OWNER, {
-        today: YESTERDAY,
+  describe('on the grace day (yesterday)', () => {
+    it('marks a habit on yesterday’s open log', async () => {
+      await seedDocs({
+        [paths.gamification()]: gamificationDoc(pendingState()),
+        [paths.dailyLog(YESTERDAY)]: openLogDoc(YESTERDAY),
+      });
+      const db = ownerDb();
+      await setHabitCompletion(db, OWNER, {
+        dateKey: YESTERDAY,
         habitId: 'reading',
         completed: true,
         logExists: true,
-      }),
-    );
+      });
+
+      const log = await getDoc(dailyLogRef(db, OWNER, YESTERDAY));
+      expect(log.data()?.entries).toEqual({ reading: { completed: true } });
+    });
+
+    it('creates yesterday’s log with the first mark when nothing was marked then', async () => {
+      await seedDocs({ [paths.gamification()]: gamificationDoc(pendingState()) });
+      const db = ownerDb();
+      await setHabitCompletion(db, OWNER, {
+        dateKey: YESTERDAY,
+        habitId: 'reading',
+        completed: true,
+        logExists: false,
+      });
+
+      const log = await getDoc(dailyLogRef(db, OWNER, YESTERDAY));
+      expect(log.data()).toEqual({
+        dateKey: YESTERDAY,
+        entries: { reading: { completed: true } },
+        status: 'open',
+        summary: null,
+      });
+    });
+
+    it('is rejected once yesterday is closed', async () => {
+      await seedDocs({
+        [paths.gamification()]: gamificationDoc(pendingState({ lastClosedDateKey: YESTERDAY })),
+      });
+      await assertFails(
+        setHabitCompletion(ownerDb(), OWNER, {
+          dateKey: YESTERDAY,
+          habitId: 'reading',
+          completed: true,
+          logExists: false,
+        }),
+      );
+    });
+
+    it('is rejected for two days ago, even if its log is still open', async () => {
+      await seedDocs({
+        [paths.gamification()]: gamificationDoc(pendingState()),
+        [paths.dailyLog(TWO_DAYS_AGO)]: openLogDoc(TWO_DAYS_AGO),
+      });
+      await assertFails(
+        setHabitCompletion(ownerDb(), OWNER, {
+          dateKey: TWO_DAYS_AGO,
+          habitId: 'reading',
+          completed: true,
+          logExists: true,
+        }),
+      );
+    });
   });
 });
 
@@ -146,7 +210,7 @@ describe('setCheckIn', () => {
   it('answers, changes and clears scales on an existing log, next to the marks', async () => {
     const db = ownerDb();
     await setHabitCompletion(db, OWNER, {
-      today: TODAY,
+      dateKey: TODAY,
       habitId: 'reading',
       completed: true,
       logExists: false,

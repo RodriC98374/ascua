@@ -1,5 +1,5 @@
-// closePendingDays: cierra, en orden, cada día desde `lastClosedDateKey + 1` hasta ayer
-// (data-model §7). Una transacción por día: como `lastClosedDateKey` avanza dentro de la misma
+// closePendingDays: cierra, en orden, cada día desde `lastClosedDateKey + 1` hasta anteayer: ayer
+// sigue abierto por el día de gracia (D29, data-model §7). Una transacción por día: como `lastClosedDateKey` avanza dentro de la misma
 // transacción, ningún día se cierra dos veces aunque la app esté abierta en el celular y en la PC.
 // La lógica de negocio es `evaluateDay` de @ascua/shared; aquí solo se lee y se escribe.
 import {
@@ -7,6 +7,7 @@ import {
   addDays,
   EMPTY_MONTHLY_COUNTERS,
   evaluateDay,
+  lastClosableDateKey,
   startOfWeek,
   todayDateKey,
   toMonthKey,
@@ -68,18 +69,19 @@ export async function closePendingDays(
   const knownState = (await getDoc(gamificationRef(db, uid))).data();
   if (!knownState) return result;
   const firstPending = addDays(knownState.lastClosedDateKey, 1);
-  if (firstPending >= today) return result;
+  const lastClosable = lastClosableDateKey(today);
+  if (firstPending > lastClosable) return result;
 
   // Las transacciones del SDK cliente no admiten consultas: hábitos y tareas se leen antes. Los
-  // cambios de hoy no alteran días pasados (un hábito nuevo empieza hoy y una tarea solo se marca
-  // hoy), así que la foto sirve para todos los días pendientes.
+  // cambios de hoy y de ayer no alteran los días por cerrar (un hábito nuevo empieza hoy y una tarea
+  // solo se marca hoy), así que la foto sirve para todos los días pendientes.
   const [habitsSnapshot, tasksSnapshot] = await Promise.all([
     getDocs(habitsCollection(db, uid)),
     getDocs(
       query(
         tasksCollection(db, uid),
         where('completedDateKey', '>=', firstPending),
-        where('completedDateKey', '<', today),
+        where('completedDateKey', '<=', lastClosable),
       ),
     ),
   ]);
@@ -87,7 +89,7 @@ export async function closePendingDays(
   const completedTasks = tasksSnapshot.docs.map((snapshot) => snapshot.data());
 
   // Con hábitos semanales, sus marcas de la semana (desde el lunes del primer día pendiente) para
-  // el tope de N por semana. Las marcas de días pasados ya no cambian.
+  // el tope de N por semana. Las marcas de los días por cerrar ya no cambian.
   const hasWeeklyHabits = habits.some((habit) => habit.schedule.type === 'times_per_week');
   const weekLogs = hasWeeklyHabits
     ? (
@@ -95,7 +97,7 @@ export async function closePendingDays(
           query(
             dailyLogsCollection(db, uid),
             where('dateKey', '>=', startOfWeek(firstPending)),
-            where('dateKey', '<', today),
+            where('dateKey', '<=', lastClosable),
           ),
         )
       ).docs.map((snapshot) => snapshot.data())
@@ -110,7 +112,7 @@ export async function closePendingDays(
           db,
           uid,
           { habits, completedTasks, weekLogs },
-          today,
+          lastClosable,
           (dateKey) => {
             attemptedDateKey = dateKey;
           },
@@ -144,7 +146,7 @@ async function wasClosedElsewhere(
   return state !== undefined && state.lastClosedDateKey >= attemptedDateKey;
 }
 
-/** Cierra el día siguiente a `lastClosedDateKey` si ya pasó; null si no queda nada por cerrar. */
+/** Cierra el día siguiente a `lastClosedDateKey` si ya se puede; null si no queda nada por cerrar. */
 async function closeNextDay(
   transaction: Transaction,
   db: Firestore,
@@ -158,7 +160,7 @@ async function closeNextDay(
     completedTasks: readonly TaskRecord[];
     weekLogs: readonly WeekLog[];
   },
-  today: DateKey,
+  lastClosable: DateKey,
   onAttempt: (dateKey: DateKey) => void,
 ): Promise<{ day: ClosedDay; state: GamificationState } | null> {
   const stateSnapshot = await transaction.get(gamificationRef(db, uid));
@@ -167,7 +169,7 @@ async function closeNextDay(
 
   // Se recalcula en cada intento: si otro dispositivo ya cerró este día, sigue con el próximo.
   const dateKey = addDays(state.lastClosedDateKey, 1);
-  if (dateKey >= today) return null;
+  if (dateKey > lastClosable) return null;
   onAttempt(dateKey);
 
   const logRef = dailyLogRef(db, uid, dateKey);

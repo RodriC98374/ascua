@@ -1,5 +1,6 @@
-// Marcas y check-in del día. Solo se puede escribir sobre hoy (las reglas usan la hora del
-// servidor). Sin transacción para que funcione sin conexión.
+// Marcas y check-in del día. Las marcas se escriben sobre hoy o sobre ayer (el día de gracia, D29); el
+// check-in, solo sobre hoy. Las reglas usan la hora del servidor. Sin transacción para que funcione
+// sin conexión.
 import type { CheckInDimension, DateKey } from '@ascua/shared';
 import {
   deleteField,
@@ -13,29 +14,30 @@ import {
 import { dailyLogRef, newDocumentFields } from '../data/documents';
 
 export interface HabitCompletion {
-  today: DateKey;
+  /** El día que se marca: hoy o ayer (el día de gracia). */
+  dateKey: DateKey;
   habitId: string;
   completed: boolean;
   /**
-   * Lo hecho hoy de un hábito con cantidad (3 de 8). `completed` va igual, calculado con la meta:
+   * Lo hecho ese día de un hábito con cantidad (3 de 8). `completed` va igual, calculado con la meta:
    * al cerrar el día manda `count`.
    */
   count?: number;
   /**
-   * Los pasos hechos hoy de un hábito con pasos (fase 21). `completed` va igual, calculado con
+   * Los pasos hechos ese día de un hábito con pasos (fase 21). `completed` va igual, calculado con
    * los pasos del hábito: al cerrar el día mandan los pasos.
    */
   doneSteps?: readonly string[];
-  /** Si el documento de hoy ya existe (lo dice la suscripción); la primera marca lo crea. */
+  /** Si el documento del día ya existe (lo dice la suscripción); la primera marca lo crea. */
   logExists: boolean;
 }
 
 export function setHabitCompletion(
   db: Firestore,
   uid: string,
-  { today, habitId, completed, count, doneSteps, logExists }: HabitCompletion,
+  { dateKey, habitId, completed, count, doneSteps, logExists }: HabitCompletion,
 ): Promise<void> {
-  const ref = dailyLogRef(db, uid, today).withConverter(null);
+  const ref = dailyLogRef(db, uid, dateKey).withConverter(null);
   const entry = {
     completed,
     ...(count === undefined ? {} : { count }),
@@ -45,7 +47,7 @@ export function setHabitCompletion(
 
   if (!logExists) {
     return setDoc(ref, {
-      dateKey: today,
+      dateKey,
       entries: { [habitId]: entry },
       status: 'open',
       summary: null,

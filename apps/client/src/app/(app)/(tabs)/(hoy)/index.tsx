@@ -1,15 +1,13 @@
 import {
+  addDays,
   DEFAULT_REMINDER_SETTINGS,
-  doneHabitStepIds,
   formatLongDate,
-  habitIconFor,
-  habitStepsOf,
+  graceDateKey,
   MAX_PRIMARY_HABITS,
   PERFECT_DAY_BONUS,
   spendablePoints,
   startOfWeek,
   streakRiskAt,
-  toggleHabitStep,
   type CheckInDimension,
   type DateKey,
   type GamificationState,
@@ -33,10 +31,10 @@ import Animated, {
 import { CheckInCard } from '@/features/check-in/check-in-card';
 import { ReflectionInvite } from '@/features/reflections/reflection-invite';
 import { HabitActions } from '@/features/habits/habit-actions';
-import { HabitCheck } from '@/features/today/habit-check';
+import { GraceDayBand } from '@/features/today/grace-day-band';
+import { habitMarks } from '@/features/today/habit-marks';
+import { HabitRow } from '@/features/today/habit-row';
 import { NotTodayRow } from '@/features/today/not-today-row';
-import { QuantityCheck } from '@/features/today/quantity-check';
-import { StepsCheck } from '@/features/today/steps-check';
 import { TodayHero } from '@/features/today/today-hero';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -66,7 +64,7 @@ import { buildTodaySummary, type TodaySummary } from '@/features/today/today-sum
 import { useMinuteClock } from '@/features/today/use-minute-clock';
 import { useToday } from '@/features/today/use-today';
 import { db } from '@/lib/firebase';
-import { setCheckIn, setHabitCompletion } from '@/operations/daily-log';
+import { setCheckIn } from '@/operations/daily-log';
 import { reorderHabits } from '@/operations/habits';
 import { setTaskCompletion } from '@/operations/tasks';
 import { useThemeColors } from '@/theme/colors';
@@ -78,6 +76,8 @@ export default function TodayScreen() {
   const today = useToday();
   const habits = useHabits(uid);
   const log = useDailyLog(uid, today);
+  // Ayer, por si sigue abierto (día de gracia, D29): sus marcas cuentan para la racha de hoy.
+  const graceLog = useDailyLog(uid, addDays(today, -1));
   const tasks = useTodayTasks(uid, today);
   const gamification = useGamificationState(uid);
   // Solo hace falta la semana completa si hay hábitos semanales; si no, el mismo día alcanza.
@@ -89,7 +89,13 @@ export default function TodayScreen() {
   const savings = useSavings(uid);
 
   // Las tareas también esperan: suman a los puntos de hoy, que no deben saltar al llegar.
-  if (habits.isLoading || log.isLoading || tasks.isLoading || !gamification.data) {
+  if (
+    habits.isLoading ||
+    log.isLoading ||
+    graceLog.isLoading ||
+    tasks.isLoading ||
+    !gamification.data
+  ) {
     return (
       <View className="bg-surface-100 flex-1 items-center justify-center">
         <ActivityIndicator color={colors.emberStrong} size="large" />
@@ -103,6 +109,7 @@ export default function TodayScreen() {
       today={today}
       habits={habits}
       log={log}
+      graceLog={graceLog}
       tasks={tasks}
       weekLogs={weekLogs.data}
       state={gamification.data}
@@ -120,6 +127,8 @@ interface TodayContentProps {
   today: DateKey;
   habits: ReturnType<typeof useHabits>;
   log: ReturnType<typeof useDailyLog>;
+  /** El registro de ayer; solo cuenta mientras ayer sigue abierto. */
+  graceLog: ReturnType<typeof useDailyLog>;
   tasks: ReturnType<typeof useTodayTasks>;
   weekLogs: readonly WeekLog[];
   state: GamificationState;
@@ -142,6 +151,7 @@ function TodayContent({
   today,
   habits,
   log,
+  graceLog,
   tasks,
   weekLogs,
   state,
@@ -156,8 +166,20 @@ function TodayContent({
     entries: log.data?.entries ?? {},
     weekLogs,
     tasks: tasks.data,
+    graceEntries: graceLog.data?.entries,
     state,
   });
+  // Ayer, mientras sigue abierto: lo que quedó sin marcar y qué está en juego.
+  const graceDay = graceDateKey(today, state.lastClosedDateKey);
+  const graceSummary = graceDay
+    ? buildTodaySummary({
+        today: graceDay,
+        habits: habits.data,
+        entries: graceLog.data?.entries ?? {},
+        weekLogs,
+        state,
+      })
+    : null;
   const moments = useTodayMoments({
     today,
     isGoalMet: summary.isGoalMet,
@@ -170,49 +192,18 @@ function TodayContent({
     riskTime,
     isGoalMet: summary.isGoalMet,
     hasPrimaries: summary.primaries.length > 0,
-    currentStreak: state.currentStreak,
-    streakFreezesAvailable: state.streakFreezesAvailable,
+    currentStreak: summary.baseState.currentStreak,
+    streakFreezesAvailable: summary.baseState.streakFreezesAvailable,
   });
   const canReorder = habits.data.filter((habit) => habit.status === 'active').length > 1;
 
-  function toggle(habitId: string) {
-    trackWrite(
-      setHabitCompletion(db, uid, {
-        today,
-        habitId,
-        completed: !summary.isDone(habitId),
-        logExists: log.exists,
-      }),
-    );
-  }
-
-  /** Un hábito con cantidad: suma o resta una unidad, entre 0 y su meta. */
-  function setCount(habitId: string, amount: number, nextCount: number) {
-    const count = Math.max(0, Math.min(nextCount, amount));
-    trackWrite(
-      setHabitCompletion(db, uid, {
-        today,
-        habitId,
-        completed: count >= amount,
-        count,
-        logExists: log.exists,
-      }),
-    );
-  }
-
-  /** Un hábito con pasos: marca o desmarca un paso; el hábito se cumple con el último. */
-  function toggleStep(habit: HabitRecord, stepId: string) {
-    const next = toggleHabitStep(habit, log.data?.entries[habit.id], stepId);
-    trackWrite(
-      setHabitCompletion(db, uid, {
-        today,
-        habitId: habit.id,
-        completed: next.completed,
-        doneSteps: next.doneSteps,
-        logExists: log.exists,
-      }),
-    );
-  }
+  const marks = habitMarks({
+    uid,
+    dateKey: today,
+    logExists: log.exists,
+    entries: log.data?.entries ?? {},
+    isDone: summary.isDone,
+  });
 
   function answerCheckIn(dimension: CheckInDimension, value: number | null) {
     trackWrite(setCheckIn(db, uid, { today, dimension, value, logExists: log.exists }));
@@ -226,66 +217,22 @@ function TodayContent({
     trackWrite(reorderHabits(db, uid, moveHabit(habits.data, habitId, offset), habits.data));
   }
 
-  /** La casilla o el contador de un hábito, según tenga cantidad o no. */
+  /** La casilla, el contador o los pasos de un hábito, según tenga cantidad, pasos o ninguno. */
   function habitRow(
     habit: HabitRecord,
     { trailing, caption, isToggleDisabled = false }: RowOptions,
   ) {
-    const isArchived = habit.status === 'archived';
-    if (habit.target) {
-      const amount = habit.target.amount;
-      const count = summary.countOf(habit.id);
-      return (
-        <QuantityCheck
-          key={habit.id}
-          name={habit.name}
-          tier={habit.tier}
-          color={habit.color}
-          icon={habitIconFor(habit)}
-          amount={amount}
-          unit={habit.target.unit}
-          count={count}
-          isDone={summary.isDone(habit.id)}
-          isArchived={isArchived}
-          weeklyCaption={caption}
-          onIncrement={() => setCount(habit.id, amount, count + 1)}
-          onDecrement={() => setCount(habit.id, amount, count - 1)}
-          trailing={trailing}
-        />
-      );
-    }
-    const steps = habitStepsOf(habit);
-    if (steps.length > 0) {
-      return (
-        <StepsCheck
-          key={habit.id}
-          name={habit.name}
-          tier={habit.tier}
-          color={habit.color}
-          icon={habitIconFor(habit)}
-          steps={steps}
-          doneStepIds={doneHabitStepIds(habit, log.data?.entries[habit.id])}
-          isArchived={isArchived}
-          isToggleDisabled={isToggleDisabled}
-          onToggleStep={(stepId) => toggleStep(habit, stepId)}
-          trailing={trailing}
-          caption={caption}
-        />
-      );
-    }
     return (
-      <HabitCheck
+      <HabitRow
         key={habit.id}
-        name={habit.name}
-        tier={habit.tier}
-        color={habit.color}
-        icon={habitIconFor(habit)}
+        habit={habit}
+        marks={marks}
         isDone={summary.isDone(habit.id)}
-        isArchived={isArchived}
-        isToggleDisabled={isToggleDisabled}
-        onToggle={() => toggle(habit.id)}
+        count={summary.countOf(habit.id)}
+        entry={log.data?.entries[habit.id]}
         trailing={trailing}
         caption={caption}
+        isToggleDisabled={isToggleDisabled}
       />
     );
   }
@@ -351,12 +298,20 @@ function TodayContent({
             )}
           </View>
 
+          {graceSummary && (
+            <GraceDayBand
+              summary={graceSummary}
+              streakDays={state.currentStreak}
+              freezes={state.streakFreezesAvailable}
+            />
+          )}
+
           {summary.hasHabits ? (
             <>
               <TodayHero
                 summary={summary}
                 pointsBalance={spendablePoints(state.pointsBalance, savings)}
-                streakFreezesAvailable={state.streakFreezesAvailable}
+                streakFreezesAvailable={summary.baseState.streakFreezesAvailable}
                 risk={risk}
               />
               {summary.isPerfectDay && <PerfectDayBanner burst={moments.perfectDayBurst} />}

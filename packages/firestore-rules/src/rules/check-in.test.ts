@@ -20,6 +20,7 @@ import {
   tamper,
   testHabit,
   TODAY,
+  TWO_DAYS_AGO,
   YESTERDAY,
 } from '../support/fixtures';
 
@@ -64,7 +65,7 @@ describe('check-in in dailyLogs', () => {
     await assertFails(setDoc(log(TODAY), { ...openLogDoc(TODAY), checkIn: 'bien' }));
   });
 
-  it("rejects changing yesterday's check-in, even while its log is still open", async () => {
+  it("rejects changing yesterday's check-in: the grace day only takes habit marks", async () => {
     await seedDocs({ [paths.dailyLog(YESTERDAY)]: openLogDoc(YESTERDAY) });
     await assertFails(updateDoc(log(YESTERDAY), answer({ mood: 3 })));
   });
@@ -73,7 +74,7 @@ describe('check-in in dailyLogs', () => {
     const input = { state: pendingState(), habits: [READING], checkIn: { mood: 2 } };
     await seedBeforeClose(input);
     const { writes } = planClose(input);
-    const logPath = paths.dailyLog(YESTERDAY);
+    const logPath = paths.dailyLog(TWO_DAYS_AGO);
     await assertFails(commit(ownerDb(), tamper(writes, logPath, { checkIn: { mood: 5 } })));
     await assertSucceeds(commit(ownerDb(), writes));
   });
@@ -82,13 +83,13 @@ describe('check-in in dailyLogs', () => {
     const input = { state: pendingState(), habits: [READING], logExists: false };
     await seedBeforeClose(input);
     const { writes } = planClose(input);
-    const logPath = paths.dailyLog(YESTERDAY);
+    const logPath = paths.dailyLog(TWO_DAYS_AGO);
     await assertFails(commit(ownerDb(), tamper(writes, logPath, { checkIn: { mood: 3 } })));
   });
 });
 
 describe('checkInStats in monthlySummaries', () => {
-  const monthPath = paths.monthlySummary(toMonthKey(YESTERDAY));
+  const monthPath = paths.monthlySummary(toMonthKey(TWO_DAYS_AGO));
 
   it("adds the day's check-in to the month when closing", async () => {
     const input = {
@@ -106,7 +107,9 @@ describe('checkInStats in monthlySummaries', () => {
     const withoutMonth = { state: pendingState(), habits: [READING] };
     const input = { ...withoutMonth, monthly: EMPTY_MONTHLY_COUNTERS };
     await seedBeforeClose(withoutMonth);
-    await seedDocs({ [monthPath]: { monthKey: toMonthKey(YESTERDAY), ...legacy, ...created() } });
+    await seedDocs({
+      [monthPath]: { monthKey: toMonthKey(TWO_DAYS_AGO), ...legacy, ...created() },
+    });
     await assertSucceeds(commit(ownerDb(), planClose(input).writes));
   });
 
@@ -133,7 +136,10 @@ describe('checkInStats in monthlySummaries', () => {
     await seedDocs({ [todayMonth]: monthlyDoc(toMonthKey(TODAY), monthly) });
     const writes = planFreeze(state, 'freeze-1', monthly);
     await assertFails(
-      commit(ownerDb(), tamper(writes, todayMonth, { checkInStats: { mood: { days: 3, total: 9 } } })),
+      commit(
+        ownerDb(),
+        tamper(writes, todayMonth, { checkInStats: { mood: { days: 3, total: 9 } } }),
+      ),
     );
     await assertSucceeds(commit(ownerDb(), writes));
   });

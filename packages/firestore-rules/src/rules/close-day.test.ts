@@ -25,6 +25,7 @@ import {
   testHabit,
   testTask,
   TODAY,
+  TWO_DAYS_AGO,
   without,
   YESTERDAY,
   type CloseInput,
@@ -43,7 +44,7 @@ function perfectDay(): CloseInput {
       lifetimePointsEarned: 100,
       currentStreak: 2,
       longestStreak: 4,
-      currentStreakStartDateKey: addDays(YESTERDAY, -2),
+      currentStreakStartDateKey: addDays(CLOSED, -2),
       daysWithoutFreeze: 2,
     }),
     habits: [READING, WATER],
@@ -56,12 +57,15 @@ async function prepared(input: CloseInput) {
   return planClose(input);
 }
 
+// El día que cierran estos tests: anteayer. Ayer sigue abierto por el día de gracia (D29).
+const CLOSED = TWO_DAYS_AGO;
+
 const gamificationPath = paths.gamification();
-const yesterdayLog = paths.dailyLog(YESTERDAY);
-const yesterdayMonth = paths.monthlySummary(toMonthKey(YESTERDAY));
+const closedLog = paths.dailyLog(CLOSED);
+const closedMonth = paths.monthlySummary(toMonthKey(CLOSED));
 
 describe('closePendingDays: allowed', () => {
-  it('closes yesterday with completions and the perfect day bonus', async () => {
+  it('closes a day with completions and the perfect day bonus', async () => {
     const { evaluation, writes } = await prepared(perfectDay());
     expect(evaluation.status).toBe('completed');
     expect(evaluation.transactions.map((t) => t.type)).toEqual([
@@ -84,7 +88,7 @@ describe('closePendingDays: allowed', () => {
       state: pendingState({
         currentStreak: 3,
         longestStreak: 3,
-        currentStreakStartDateKey: addDays(YESTERDAY, -3),
+        currentStreakStartDateKey: addDays(CLOSED, -3),
         daysWithoutFreeze: 3,
         streakFreezesAvailable: 1,
       }),
@@ -117,11 +121,11 @@ describe('closePendingDays: allowed', () => {
   it('closes a day with tasks, credited in a single movement', async () => {
     const input: CloseInput = {
       ...perfectDay(),
-      completedTasks: [testTask('call', 'small', YESTERDAY), testTask('bill', 'medium', YESTERDAY)],
+      completedTasks: [testTask('call', 'small', CLOSED), testTask('bill', 'medium', CLOSED)],
     };
     const { evaluation, writes } = await prepared(input);
     const movement = evaluation.transactions.find((t) => t.type === 'task_completion');
-    expect(movement?.id).toBe(transactionIds.dayTasks(YESTERDAY));
+    expect(movement?.id).toBe(transactionIds.dayTasks(CLOSED));
     expect(movement?.amount).toBe(15);
     await assertSucceeds(commit(ownerDb(), writes));
   });
@@ -131,7 +135,7 @@ describe('closePendingDays: allowed', () => {
       state: pendingState(),
       habits: [],
       logExists: false,
-      completedTasks: [testTask('a', 'large', YESTERDAY), testTask('b', 'large', YESTERDAY)],
+      completedTasks: [testTask('a', 'large', CLOSED), testTask('b', 'large', CLOSED)],
     };
     const { evaluation, writes } = await prepared(input);
     expect(evaluation.status).toBe('inactive');
@@ -150,12 +154,12 @@ describe('closePendingDays: allowed', () => {
         lifetimePointsSpent: 4000,
         currentStreak: 209,
         longestStreak: 209,
-        currentStreakStartDateKey: addDays(YESTERDAY, -209),
+        currentStreakStartDateKey: addDays(CLOSED, -209),
         daysWithoutFreeze: 209,
       }),
       habits,
       entries: done(...habits.map((habit) => habit.id)),
-      completedTasks: Array.from({ length: 12 }, (_, i) => testTask(`t${i}`, 'large', YESTERDAY)),
+      completedTasks: Array.from({ length: 12 }, (_, i) => testTask(`t${i}`, 'large', CLOSED)),
       monthly: { ...EMPTY_MONTHLY_COUNTERS, closedDays: 20, completedDays: 20, pointsEarned: 900 },
     };
     const { evaluation, writes } = await prepared(input);
@@ -165,6 +169,16 @@ describe('closePendingDays: allowed', () => {
 });
 
 describe('closePendingDays: denied', () => {
+  it('rejects closing yesterday: it stays open for the grace day', async () => {
+    const input: CloseInput = {
+      ...perfectDay(),
+      state: { ...perfectDay().state, lastClosedDateKey: CLOSED },
+    };
+    const { evaluation, writes } = await prepared(input);
+    expect(evaluation.dateKey).toBe(YESTERDAY);
+    await assertFails(commit(ownerDb(), writes));
+  });
+
   it('rejects closing today', async () => {
     const input: CloseInput = {
       ...perfectDay(),
@@ -177,13 +191,13 @@ describe('closePendingDays: denied', () => {
 
   it('rejects skipping a pending day', async () => {
     const { writes } = planClose(perfectDay());
-    const threeDaysAgo = addDays(TODAY, -3);
+    const fourDaysAgo = addDays(TODAY, -4);
     await seedDocs({
       [gamificationPath]: gamificationDoc({
         ...perfectDay().state,
-        lastClosedDateKey: threeDaysAgo,
+        lastClosedDateKey: fourDaysAgo,
       }),
-      [yesterdayLog]: openLogDoc(YESTERDAY, done('reading', 'water')),
+      [closedLog]: openLogDoc(CLOSED, done('reading', 'water')),
     });
     await assertFails(commit(ownerDb(), writes));
   });
@@ -196,14 +210,14 @@ describe('closePendingDays: denied', () => {
 
   it('rejects a completion whose amount is not a habit value', async () => {
     const { writes } = await prepared(perfectDay());
-    const path = paths.transaction(transactionIds.habitCompletion(YESTERDAY, 'reading'));
+    const path = paths.transaction(transactionIds.habitCompletion(CLOSED, 'reading'));
     await assertFails(commit(ownerDb(), tamper(writes, path, { amount: 15 })));
   });
 
   it('rejects a completion for a habit not completed that day', async () => {
     const input: CloseInput = { ...perfectDay(), entries: done('reading') };
     const { writes } = await prepared(input);
-    const id = transactionIds.habitCompletion(YESTERDAY, 'water');
+    const id = transactionIds.habitCompletion(CLOSED, 'water');
     const extra = {
       kind: 'set' as const,
       path: paths.transaction(id),
@@ -212,7 +226,7 @@ describe('closePendingDays: denied', () => {
         amount: 5,
         // Dentro del saldo final (110): así solo puede fallar por el hábito no cumplido.
         balanceAfter: 110,
-        dateKey: YESTERDAY,
+        dateKey: CLOSED,
         sourceType: 'habit',
         sourceId: 'water',
         description: 'Hábito cumplido: Hábito water',
@@ -226,15 +240,15 @@ describe('closePendingDays: denied', () => {
     const { writes } = await prepared(perfectDay());
     const bonus = {
       kind: 'set' as const,
-      path: paths.transaction(transactionIds.streakBonus(7, YESTERDAY)),
+      path: paths.transaction(transactionIds.streakBonus(7, CLOSED)),
       data: {
         type: 'streak_bonus_7_days',
         amount: 20,
         // Dentro del saldo final (120): así solo puede fallar por no ser múltiplo de 7.
         balanceAfter: 120,
-        dateKey: YESTERDAY,
+        dateKey: CLOSED,
         sourceType: 'daily_log',
-        sourceId: YESTERDAY,
+        sourceId: CLOSED,
         description: 'Racha de 7 días sin protector',
         ...created(),
       },
@@ -248,26 +262,26 @@ describe('closePendingDays: denied', () => {
       state: pendingState({ pointsBalance: 100, lifetimePointsEarned: 100 }),
       habits: [],
       logExists: false,
-      completedTasks: [testTask('a', 'large', YESTERDAY), testTask('b', 'medium', YESTERDAY)],
+      completedTasks: [testTask('a', 'large', CLOSED), testTask('b', 'medium', CLOSED)],
     });
-    const movementPath = paths.transaction(transactionIds.dayTasks(YESTERDAY));
+    const movementPath = paths.transaction(transactionIds.dayTasks(CLOSED));
 
     it('rejects more than the daily cap, even when everything else adds up', async () => {
       const { writes } = await prepared(tasksOnlyDay());
-      const summary = writes.find((write) => write.path === yesterdayLog)?.data.summary;
+      const summary = writes.find((write) => write.path === closedLog)?.data.summary;
       const extra = 5;
       let tampered = tamper(writes, movementPath, {
         amount: DAILY_TASK_POINTS_CAP + extra,
         balanceAfter: 100 + DAILY_TASK_POINTS_CAP + extra,
       });
-      tampered = tamper(tampered, yesterdayLog, {
+      tampered = tamper(tampered, closedLog, {
         summary: { ...summary, pointsEarned: DAILY_TASK_POINTS_CAP + extra },
       });
       tampered = tamper(tampered, gamificationPath, {
         pointsBalance: 100 + DAILY_TASK_POINTS_CAP + extra,
         lifetimePointsEarned: 100 + DAILY_TASK_POINTS_CAP + extra,
       });
-      tampered = tamper(tampered, yesterdayMonth, { pointsEarned: DAILY_TASK_POINTS_CAP + extra });
+      tampered = tamper(tampered, closedMonth, { pointsEarned: DAILY_TASK_POINTS_CAP + extra });
       await assertFails(commit(ownerDb(), tampered));
     });
 
@@ -275,7 +289,7 @@ describe('closePendingDays: denied', () => {
       const { writes } = await prepared(tasksOnlyDay());
       const renamed = writes.map((write) =>
         write.path === movementPath
-          ? { ...write, path: paths.transaction(`tasks_${YESTERDAY}_extra`) }
+          ? { ...write, path: paths.transaction(`tasks_${CLOSED}_extra`) }
           : write,
       );
       await assertFails(commit(ownerDb(), renamed));
@@ -320,10 +334,10 @@ describe('closePendingDays: denied', () => {
 
   it('rejects a streak that does not follow from the day status', async () => {
     const { writes } = await prepared(perfectDay());
-    const summary = writes.find((write) => write.path === yesterdayLog)?.data.summary;
+    const summary = writes.find((write) => write.path === closedLog)?.data.summary;
     const tampered = tamper(
       tamper(writes, gamificationPath, { currentStreak: 30, longestStreak: 30 }),
-      yesterdayLog,
+      closedLog,
       { summary: { ...summary, streakAfterClose: 30 } },
     );
     await assertFails(commit(ownerDb(), tampered));
@@ -337,19 +351,19 @@ describe('closePendingDays: denied', () => {
 
   it('rejects closing the log without advancing the state', async () => {
     const { writes } = await prepared(perfectDay());
-    await assertFails(commit(ownerDb(), [writes.find((write) => write.path === yesterdayLog)!]));
+    await assertFails(commit(ownerDb(), [writes.find((write) => write.path === closedLog)!]));
   });
 
   it('rejects advancing the state without closing the log', async () => {
     const { writes } = await prepared(perfectDay());
-    await assertFails(commit(ownerDb(), without(writes, yesterdayLog)));
+    await assertFails(commit(ownerDb(), without(writes, closedLog)));
   });
 
   it('rejects a monthly summary that does not add exactly this day', async () => {
     const { writes } = await prepared(perfectDay());
-    await assertFails(commit(ownerDb(), tamper(writes, yesterdayMonth, { closedDays: 2 })));
-    await assertFails(commit(ownerDb(), tamper(writes, yesterdayMonth, { pointsEarned: 999 })));
-    await assertFails(commit(ownerDb(), tamper(writes, yesterdayMonth, { pointsSpent: 50 })));
+    await assertFails(commit(ownerDb(), tamper(writes, closedMonth, { closedDays: 2 })));
+    await assertFails(commit(ownerDb(), tamper(writes, closedMonth, { pointsEarned: 999 })));
+    await assertFails(commit(ownerDb(), tamper(writes, closedMonth, { pointsSpent: 50 })));
   });
 
   it('rejects entries written together with the close', async () => {
@@ -357,7 +371,7 @@ describe('closePendingDays: denied', () => {
     await assertFails(
       commit(
         ownerDb(),
-        tamper(writes, yesterdayLog, {
+        tamper(writes, closedLog, {
           'entries.late': { completed: true, updatedAt: serverTimestamp() },
         }),
       ),

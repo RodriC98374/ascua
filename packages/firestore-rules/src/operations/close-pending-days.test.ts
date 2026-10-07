@@ -33,10 +33,14 @@ import {
   taskDoc,
   testHabit,
   TODAY,
+  TWO_DAYS_AGO,
   YESTERDAY,
 } from '../support/fixtures';
 
 useRulesTestEnvironment();
+
+// El último día que se puede cerrar hoy: anteayer. Ayer sigue abierto por el día de gracia (D29).
+const CLOSABLE = TWO_DAYS_AGO;
 
 const READING = testHabit('reading', 'primary');
 const WATER = testHabit('water', 'secondary');
@@ -81,24 +85,24 @@ async function transactionIds(db: Firestore): Promise<string[]> {
   return snapshot.docs.map((transaction) => transaction.id).sort();
 }
 
-/** Estado con racha activa y el último cierre `daysAgo` días antes de hoy. */
+/** Estado cuyo último cierre fue `daysAgo` días antes del último día que se puede cerrar hoy + 1. */
 function stateClosedDaysAgo(daysAgo: number, overrides: Partial<GamificationState> = {}) {
-  return pendingState({ lastClosedDateKey: addDays(TODAY, -daysAgo), ...overrides });
+  return pendingState({ lastClosedDateKey: addDays(CLOSABLE, -(daysAgo - 1)), ...overrides });
 }
 
 describe('closePendingDays', () => {
   it('writes exactly what evaluateDay predicts for a normal day', async () => {
     const state = stateClosedDaysAgo(2, { pointsBalance: 40, lifetimePointsEarned: 40 });
     const entries = done('reading', 'water');
-    await seed({ state, logs: { [YESTERDAY]: entries } });
-    const expected = evaluateDay({ dateKey: YESTERDAY, habits: [READING, WATER], entries, state });
+    await seed({ state, logs: { [CLOSABLE]: entries } });
+    const expected = evaluateDay({ dateKey: CLOSABLE, habits: [READING, WATER], entries, state });
 
     const db = ownerDb();
     const result = await closePendingDays(db, OWNER, TODAY);
 
     expect(result.closedDays).toEqual([
       {
-        dateKey: YESTERDAY,
+        dateKey: CLOSABLE,
         status: 'completed',
         pointsEarned: expected.summary.pointsEarned,
         freezeUsed: false,
@@ -109,7 +113,7 @@ describe('closePendingDays', () => {
     expect(result.state).toEqual(expected.nextState);
     expect(await read(db, paths.gamification())).toMatchObject(expected.nextState);
 
-    const log = await read(db, paths.dailyLog(YESTERDAY));
+    const log = await read(db, paths.dailyLog(CLOSABLE));
     expect(log).toMatchObject({ status: 'completed', summary: expected.summary });
 
     expect(await transactionIds(db)).toEqual(expected.transactions.map((t) => t.id).sort());
@@ -117,14 +121,14 @@ describe('closePendingDays', () => {
       expect(await read(db, paths.transaction(id))).toMatchObject(fields);
     }
 
-    expect(await read(db, paths.monthlySummary(toMonthKey(YESTERDAY)))).toMatchObject({
-      monthKey: toMonthKey(YESTERDAY),
+    expect(await read(db, paths.monthlySummary(toMonthKey(CLOSABLE)))).toMatchObject({
+      monthKey: toMonthKey(CLOSABLE),
       ...addClosedDay(EMPTY_MONTHLY_COUNTERS, expected),
     });
   });
 
   it('catches up several pending days in order', async () => {
-    const [first, second, third] = [addDays(TODAY, -3), addDays(TODAY, -2), YESTERDAY];
+    const [first, second, third] = [addDays(CLOSABLE, -2), addDays(CLOSABLE, -1), CLOSABLE];
     await seed({
       state: stateClosedDaysAgo(4),
       logs: { [first]: done('reading'), [third]: done('reading', 'water') },
@@ -138,7 +142,7 @@ describe('closePendingDays', () => {
       [second, 'missed'],
       [third, 'completed'],
     ]);
-    expect(result.state).toMatchObject({ lastClosedDateKey: YESTERDAY, currentStreak: 1 });
+    expect(result.state).toMatchObject({ lastClosedDateKey: CLOSABLE, currentStreak: 1 });
     // El día sin marcas también queda cerrado, con su documento.
     expect(await read(db, paths.dailyLog(second))).toMatchObject({
       status: 'missed',
@@ -157,12 +161,12 @@ describe('closePendingDays', () => {
         createdAt: past,
         updatedAt: past,
       });
-    const twoDaysAgo = addDays(TODAY, -2);
+    const dayBefore = addDays(CLOSABLE, -1);
     await seed({ state: stateClosedDaysAgo(3, { pointsBalance: 50, lifetimePointsEarned: 50 }) });
     await seedDocs({
-      [paths.task('a')]: completedOn(twoDaysAgo, 'small'),
-      [paths.task('b')]: completedOn(YESTERDAY, 'large'),
-      [paths.task('c')]: completedOn(YESTERDAY, 'large'),
+      [paths.task('a')]: completedOn(dayBefore, 'small'),
+      [paths.task('b')]: completedOn(CLOSABLE, 'large'),
+      [paths.task('c')]: completedOn(CLOSABLE, 'large'),
       // Ya cerrado antes y todavía abierto hoy: ninguno se acredita.
       [paths.task('closed')]: completedOn(addDays(TODAY, -5), 'large'),
       [paths.task('today')]: taskDoc({ completedDateKey: TODAY, completedAt: past }),
@@ -174,9 +178,9 @@ describe('closePendingDays', () => {
 
     expect(result.closedDays.map((day) => day.pointsEarned)).toEqual([5, DAILY_TASK_POINTS_CAP]);
     expect(await transactionIds(db)).toEqual(
-      [transactionIdsOf.dayTasks(twoDaysAgo), transactionIdsOf.dayTasks(YESTERDAY)].sort(),
+      [transactionIdsOf.dayTasks(dayBefore), transactionIdsOf.dayTasks(CLOSABLE)].sort(),
     );
-    expect(await read(db, paths.transaction(transactionIdsOf.dayTasks(YESTERDAY)))).toMatchObject({
+    expect(await read(db, paths.transaction(transactionIdsOf.dayTasks(CLOSABLE)))).toMatchObject({
       type: 'task_completion',
       amount: DAILY_TASK_POINTS_CAP,
       description: 'Tareas cumplidas: 2',
@@ -236,14 +240,14 @@ describe('closePendingDays', () => {
       ...testHabit('water', 'primary'),
       target: { amount: 8, unit: 'vasos' },
     };
-    const twoDaysAgo = addDays(TODAY, -2);
+    const dayBefore = addDays(CLOSABLE, -1);
     await seed({
       state: stateClosedDaysAgo(3, { streakFreezesAvailable: 0 }),
       habits: [WATER_GLASSES],
       logs: {
         // La casilla dice cumplido, pero manda la cantidad.
-        [twoDaysAgo]: { water: { completed: true, count: 5 } },
-        [YESTERDAY]: { water: { completed: true, count: 8 } },
+        [dayBefore]: { water: { completed: true, count: 5 } },
+        [CLOSABLE]: { water: { completed: true, count: 8 } },
       },
     });
 
@@ -253,8 +257,8 @@ describe('closePendingDays', () => {
     expect(result.closedDays.map(({ status }) => status)).toEqual(['missed', 'completed']);
     expect(await transactionIds(db)).toEqual(
       [
-        transactionIdsOf.habitCompletion(YESTERDAY, 'water'),
-        transactionIdsOf.perfectDay(YESTERDAY),
+        transactionIdsOf.habitCompletion(CLOSABLE, 'water'),
+        transactionIdsOf.perfectDay(CLOSABLE),
       ].sort(),
     );
   });
@@ -271,8 +275,25 @@ describe('closePendingDays', () => {
     expect(await read(db, paths.gamification())).toMatchObject(state);
   });
 
+  it('leaves yesterday open for the grace day: closes up to two days ago only', async () => {
+    await seed({
+      state: stateClosedDaysAgo(2),
+      logs: { [CLOSABLE]: done('reading', 'water'), [YESTERDAY]: done('reading') },
+    });
+
+    const db = ownerDb();
+    const result = await closePendingDays(db, OWNER, TODAY);
+
+    expect(result.closedDays.map((day) => day.dateKey)).toEqual([CLOSABLE]);
+    expect(await read(db, paths.gamification())).toMatchObject({ lastClosedDateKey: CLOSABLE });
+    expect(await read(db, paths.dailyLog(YESTERDAY))).toMatchObject({
+      status: 'open',
+      summary: null,
+    });
+  });
+
   it('is idempotent: a second run closes nothing and duplicates nothing', async () => {
-    await seed({ state: stateClosedDaysAgo(3), logs: { [YESTERDAY]: done('reading', 'water') } });
+    await seed({ state: stateClosedDaysAgo(3), logs: { [CLOSABLE]: done('reading', 'water') } });
 
     const db = ownerDb();
     const first = await closePendingDays(db, OWNER, TODAY);
@@ -287,7 +308,7 @@ describe('closePendingDays', () => {
   });
 
   it('closes each day once when two devices run it at the same time', async () => {
-    const days = [addDays(TODAY, -3), addDays(TODAY, -2), YESTERDAY];
+    const days = [addDays(CLOSABLE, -2), addDays(CLOSABLE, -1), CLOSABLE];
     await seed({
       state: stateClosedDaysAgo(4),
       logs: Object.fromEntries(days.map((dateKey) => [dateKey, done('reading', 'water')])),
@@ -310,7 +331,7 @@ describe('closePendingDays', () => {
     // 3 días perfectos: 2 hábitos + día perfecto cada uno.
     expect(await transactionIds(db)).toHaveLength(9);
     expect(await read(db, paths.gamification())).toMatchObject({
-      lastClosedDateKey: YESTERDAY,
+      lastClosedDateKey: CLOSABLE,
       currentStreak: 3,
       pointsBalance: 3 * 20,
     });
@@ -320,11 +341,11 @@ describe('closePendingDays', () => {
     await seed({ state: stateClosedDaysAgo(1) });
     const db = ownerDb();
 
-    // Para el dispositivo ya es pasado mañana; para el servidor, hoy sigue abierto.
+    // Para el dispositivo ya pasó la gracia de ayer; para el servidor, ayer sigue abierto.
     await expect(closePendingDays(db, OWNER, addDays(TODAY, 2))).rejects.toMatchObject({
       code: 'permission-denied',
     });
-    expect(await read(db, paths.gamification())).toMatchObject({ lastClosedDateKey: YESTERDAY });
+    expect(await read(db, paths.gamification())).toMatchObject({ lastClosedDateKey: CLOSABLE });
   });
 
   it('uses a freeze on a day without activity when there is a streak to protect', async () => {
@@ -343,7 +364,7 @@ describe('closePendingDays', () => {
 
     expect(result.closedDays).toMatchObject([{ status: 'frozen', freezeUsed: true }]);
     expect(result.state).toMatchObject({ currentStreak: 4, streakFreezesAvailable: 0 });
-    expect(await read(db, paths.dailyLog(YESTERDAY))).toMatchObject({ status: 'frozen' });
+    expect(await read(db, paths.dailyLog(CLOSABLE))).toMatchObject({ status: 'frozen' });
   });
 
   it('closes a day without scheduled habits as inactive', async () => {
@@ -352,18 +373,18 @@ describe('closePendingDays', () => {
     const db = ownerDb();
     const result = await closePendingDays(db, OWNER, TODAY);
 
-    expect(result.closedDays).toMatchObject([{ dateKey: YESTERDAY, status: 'inactive' }]);
-    expect(await read(db, paths.dailyLog(YESTERDAY))).toMatchObject({ status: 'inactive' });
+    expect(result.closedDays).toMatchObject([{ dateKey: CLOSABLE, status: 'inactive' }]);
+    expect(await read(db, paths.dailyLog(CLOSABLE))).toMatchObject({ status: 'inactive' });
   });
 
   describe('check-in (fase 15)', () => {
-    const monthPath = paths.monthlySummary(toMonthKey(YESTERDAY));
+    const monthPath = paths.monthlySummary(toMonthKey(CLOSABLE));
 
     it("adds each closed day's check-in to its month and keeps it in the log", async () => {
       await seed({ state: stateClosedDaysAgo(2), habits: [READING] });
       await seedDocs({
-        [paths.dailyLog(YESTERDAY)]: {
-          ...openLogDoc(YESTERDAY, done('reading')),
+        [paths.dailyLog(CLOSABLE)]: {
+          ...openLogDoc(CLOSABLE, done('reading')),
           checkIn: { mood: 4, motivation: 2 },
         },
       });
@@ -371,7 +392,7 @@ describe('closePendingDays', () => {
       const db = ownerDb();
       await closePendingDays(db, OWNER, TODAY);
 
-      expect(await read(db, paths.dailyLog(YESTERDAY))).toMatchObject({
+      expect(await read(db, paths.dailyLog(CLOSABLE))).toMatchObject({
         status: 'completed',
         checkIn: { mood: 4, motivation: 2 },
       });
@@ -385,8 +406,8 @@ describe('closePendingDays', () => {
       const { checkInStats: _checkInStats, ...legacy } = EMPTY_MONTHLY_COUNTERS;
       await seed({ state: stateClosedDaysAgo(2), habits: [READING] });
       await seedDocs({
-        [paths.dailyLog(YESTERDAY)]: { ...openLogDoc(YESTERDAY), checkIn: { energy: 3 } },
-        [monthPath]: { monthKey: toMonthKey(YESTERDAY), ...legacy, ...created() },
+        [paths.dailyLog(CLOSABLE)]: { ...openLogDoc(CLOSABLE), checkIn: { energy: 3 } },
+        [monthPath]: { monthKey: toMonthKey(CLOSABLE), ...legacy, ...created() },
       });
 
       const db = ownerDb();
@@ -397,8 +418,8 @@ describe('closePendingDays', () => {
   });
 
   it('adds each day to the monthly summary of its own month', async () => {
-    // Desde el último día del mes anterior al de ayer hasta ayer: siempre cruza un cambio de mes.
-    const firstOfMonth = `${toMonthKey(YESTERDAY)}-01`;
+    // Desde el último día del mes anterior al del último cierre hasta él: siempre cruza un cambio de mes.
+    const firstOfMonth = `${toMonthKey(CLOSABLE)}-01`;
     const lastOfPreviousMonth = addDays(firstOfMonth, -1);
     await seed({
       state: pendingState({ lastClosedDateKey: addDays(lastOfPreviousMonth, -1) }),
@@ -417,7 +438,7 @@ describe('closePendingDays', () => {
       perfectDays: 1,
       pointsEarned: 15,
     });
-    expect(await read(db, paths.monthlySummary(toMonthKey(YESTERDAY)))).toMatchObject({
+    expect(await read(db, paths.monthlySummary(toMonthKey(CLOSABLE)))).toMatchObject({
       closedDays: daysInCurrentMonth,
       completedDays: 0,
       missedDays: daysInCurrentMonth,

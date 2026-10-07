@@ -3,7 +3,18 @@ import { deleteDoc, doc, serverTimestamp, setDoc, updateDoc } from 'firebase/fir
 import { describe, it } from 'vitest';
 
 import { ownerDb, useRulesTestEnvironment } from '../support/env';
-import { done, openLogDoc, paths, seedDocs, TODAY, TOMORROW, YESTERDAY } from '../support/fixtures';
+import {
+  done,
+  gamificationDoc,
+  openLogDoc,
+  paths,
+  pendingState,
+  seedDocs,
+  TODAY,
+  TOMORROW,
+  TWO_DAYS_AGO,
+  YESTERDAY,
+} from '../support/fixtures';
 
 useRulesTestEnvironment();
 
@@ -18,9 +29,33 @@ describe('dailyLogs create', () => {
     await assertSucceeds(setDoc(log(TODAY), openLogDoc(TODAY, done('reading'))));
   });
 
-  it('rejects creating yesterday or tomorrow (no grace period)', async () => {
-    await assertFails(setDoc(log(YESTERDAY), openLogDoc(YESTERDAY)));
+  describe('yesterday, the grace day', () => {
+    it("creates yesterday's log open while its close is still pending", async () => {
+      await seedDocs({ [paths.gamification()]: gamificationDoc(pendingState()) });
+      await assertSucceeds(setDoc(log(YESTERDAY), openLogDoc(YESTERDAY, done('reading'))));
+    });
+
+    it('rejects it once yesterday is closed: a new account starts with yesterday closed', async () => {
+      await seedDocs({
+        [paths.gamification()]: gamificationDoc(pendingState({ lastClosedDateKey: YESTERDAY })),
+      });
+      await assertFails(setDoc(log(YESTERDAY), openLogDoc(YESTERDAY, done('reading'))));
+    });
+
+    it('rejects it without an account state to tell whether yesterday is closed', async () => {
+      await assertFails(setDoc(log(YESTERDAY), openLogDoc(YESTERDAY, done('reading'))));
+    });
+
+    it('rejects a check-in on it: only habit marks are allowed', async () => {
+      await seedDocs({ [paths.gamification()]: gamificationDoc(pendingState()) });
+      await assertFails(setDoc(log(YESTERDAY), { ...openLogDoc(YESTERDAY), checkIn: { mood: 3 } }));
+    });
+  });
+
+  it('rejects creating tomorrow or two days ago', async () => {
+    await seedDocs({ [paths.gamification()]: gamificationDoc(pendingState()) });
     await assertFails(setDoc(log(TOMORROW), openLogDoc(TOMORROW)));
+    await assertFails(setDoc(log(TWO_DAYS_AGO), openLogDoc(TWO_DAYS_AGO)));
   });
 
   it('rejects a log created already closed or with a summary', async () => {
@@ -40,9 +75,34 @@ describe('dailyLogs update of entries', () => {
     await assertSucceeds(updateDoc(log(TODAY), mark('reading', false)));
   });
 
-  it("rejects marking yesterday's log, even if it is still open", async () => {
+  it("marks and unmarks habits on yesterday's open log (the grace day)", async () => {
     await seedDocs({ [paths.dailyLog(YESTERDAY)]: openLogDoc(YESTERDAY) });
+    await assertSucceeds(updateDoc(log(YESTERDAY), mark('reading')));
+    await assertSucceeds(updateDoc(log(YESTERDAY), mark('reading', false)));
+  });
+
+  it("rejects the check-in on yesterday's log", async () => {
+    await seedDocs({ [paths.dailyLog(YESTERDAY)]: openLogDoc(YESTERDAY) });
+    await assertFails(
+      updateDoc(log(YESTERDAY), { 'checkIn.mood': 3, updatedAt: serverTimestamp() }),
+    );
+  });
+
+  it('rejects marking two days ago, even if its log is still open', async () => {
+    await seedDocs({ [paths.dailyLog(TWO_DAYS_AGO)]: openLogDoc(TWO_DAYS_AGO) });
+    await assertFails(updateDoc(log(TWO_DAYS_AGO), mark('reading')));
+  });
+
+  it('rejects marking yesterday once its log is closed', async () => {
+    await seedDocs({
+      [paths.dailyLog(YESTERDAY)]: { ...openLogDoc(YESTERDAY), status: 'completed', summary: {} },
+    });
     await assertFails(updateDoc(log(YESTERDAY), mark('reading')));
+  });
+
+  it("rejects changing yesterday's status or summary with the marks", async () => {
+    await seedDocs({ [paths.dailyLog(YESTERDAY)]: openLogDoc(YESTERDAY) });
+    await assertFails(updateDoc(log(YESTERDAY), { ...mark('reading'), status: 'completed' }));
   });
 
   it('rejects changing status or summary together with the entries', async () => {
