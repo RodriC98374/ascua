@@ -132,8 +132,11 @@ function YesterdayContent({
                 : 'Ayer todavía no suma a tu racha'}
             </Text>
             <Text className="font-body text-body text-ink-muted">
-              {pending ?? 'Marcaste todo lo de ayer.'} Sumarías +{summary.pointsToday} pts, que
-              llegan a tu saldo al cerrar el día.
+              {pending ?? 'Marcaste todo lo de ayer.'}
+            </Text>
+            <Text className="font-body-semibold text-body text-ink-muted">
+              Con lo marcado, ayer suma +{summary.pointsToday} pts a tu saldo cuando se cierre el
+              día.
             </Text>
           </Card>
 

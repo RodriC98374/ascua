@@ -45,14 +45,18 @@ function ResetSheet({ onClose }: { onClose: () => void }) {
   const { user } = useSession();
   const [text, setText] = useState('');
   const [isResetting, setIsResetting] = useState(false);
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function reset() {
     if (!user?.email) return;
     setIsResetting(true);
+    setProgress(null);
     setError(null);
     try {
-      await resetAccount(db, { uid, email: user.email });
+      await resetAccount(db, { uid, email: user.email }, (done, total) =>
+        setProgress({ done, total }),
+      );
       onClose();
       router.replace('/');
     } catch (resetError) {
@@ -88,6 +92,16 @@ function ResetSheet({ onClose }: { onClose: () => void }) {
           placeholder={RESET_CONFIRMATION_WORD}
           error={error}
         />
+        {isResetting && (
+          <Text
+            accessibilityLiveRegion="polite"
+            className="font-body-semibold text-caption text-ink-muted"
+          >
+            {progress
+              ? `Borrando tus datos… ${progress.done} de ${progress.total}`
+              : 'Preparando el borrado…'}
+          </Text>
+        )}
         <Button
           label="Borrar todo y empezar de cero"
           variant="danger"

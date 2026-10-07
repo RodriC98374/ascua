@@ -28,6 +28,11 @@ export function GraceDayBand({ summary, streakDays, freezes }: GraceDayBandProps
     freezes,
   });
   if (!message) return null;
+  // Con principales sin marcar la racha está en juego (aviso cálido); con solo secundarios, no.
+  const isStreakAtStake = summary.primaryProgress.total > summary.primaryProgress.done;
+  const tone = isStreakAtStake
+    ? { container: 'bg-warning-soft', text: 'text-warning', color: colors.warning }
+    : { container: 'bg-surface-300', text: 'text-ink-muted', color: colors.inkMuted };
 
   return (
     <Pressable
@@ -35,14 +40,14 @@ export function GraceDayBand({ summary, streakDays, freezes }: GraceDayBandProps
       accessibilityLabel="Marcar ayer"
       accessibilityHint={message}
       onPress={() => router.push('/ayer')}
-      className="bg-warning-soft min-h-14 flex-row items-center gap-3 rounded-xl px-4 py-3 active:opacity-85"
+      className={`${tone.container} min-h-14 flex-row items-center gap-3 rounded-xl px-4 py-3 active:opacity-85`}
     >
-      <ClockIcon size={20} color={colors.warning} />
+      <ClockIcon size={20} color={tone.color} />
       <View className="flex-1 gap-0.5">
-        <Text className="font-body-bold text-caption text-warning">{message}</Text>
-        <Text className="font-body-extrabold text-caption text-warning">Marcar ayer</Text>
+        <Text className={`font-body-bold text-caption ${tone.text}`}>{message}</Text>
+        <Text className={`font-body-extrabold text-caption ${tone.text}`}>Marcar ayer</Text>
       </View>
-      <ChevronIcon direction="right" size={18} color={colors.warning} />
+      <ChevronIcon direction="right" size={18} color={tone.color} />
     </Pressable>
   );
 }

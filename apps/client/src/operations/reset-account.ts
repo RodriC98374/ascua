@@ -34,13 +34,21 @@ const RESET_META_DOCS = ['gamification', 'savings'] as const;
 /** Borrados por lote; Firestore admite 500 y las reglas leen el marcador una sola vez por lote. */
 const BATCH_SIZE = 200;
 
-export async function resetAccount(db: Firestore, user: AccountUser): Promise<void> {
+/**
+ * `onProgress` avisa cada vez que termina de borrarse una colección (`done` de `total`): con meses de
+ * uso son cientos de documentos y la pantalla puede mostrar por dónde va.
+ */
+export async function resetAccount(
+  db: Firestore,
+  user: AccountUser,
+  onProgress?: (done: number, total: number) => void,
+): Promise<void> {
   const { uid } = user;
   const marker = doc(db, 'users', uid, 'meta', 'reset');
   // Con la hora del servidor: las reglas solo dejan borrar durante los 15 minutos siguientes.
   await setDoc(marker, { requestedAt: serverTimestamp() });
 
-  for (const name of RESET_COLLECTIONS) {
+  for (const [index, name] of RESET_COLLECTIONS.entries()) {
     // Del servidor y no de la caché: una copia parcial dejaría datos sin borrar sin avisar.
     const snapshot = await getDocsFromServer(collection(db, 'users', uid, name));
     for (let start = 0; start < snapshot.docs.length; start += BATCH_SIZE) {
@@ -50,6 +58,7 @@ export async function resetAccount(db: Firestore, user: AccountUser): Promise<vo
       }
       await batch.commit();
     }
+    onProgress?.(index + 1, RESET_COLLECTIONS.length);
   }
   for (const name of RESET_META_DOCS) {
     await deleteDoc(doc(db, 'users', uid, 'meta', name));
