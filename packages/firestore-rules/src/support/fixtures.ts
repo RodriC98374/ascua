@@ -57,6 +57,7 @@ export const paths = {
   reflection: (weekStartDateKey: string, uid = OWNER) =>
     `users/${uid}/weeklyReflections/${weekStartDateKey}`,
   savings: (uid = OWNER) => `users/${uid}/meta/savings`,
+  reset: (uid = OWNER) => `users/${uid}/meta/reset`,
 };
 
 /** Campos comunes de todo documento nuevo. */

@@ -161,6 +161,17 @@ service cloud.firestore {
       return /databases/$(database)/documents/users/$(userId)/meta/savings;
     }
 
+    function resetPath(userId) {
+      return /databases/$(database)/documents/users/$(userId)/meta/reset;
+    }
+
+    // Reinicio de la cuenta (fase 22, D30): lo único que deja borrar el historial. La app deja primero
+    // el marcador `meta/reset` (con la hora del servidor) y borra mientras tenga menos de 15 minutos:
+    // un borrado suelto, por un error de código, no pasa. Todo `allow delete` de los datos pasa por aquí.
+    function isResetting(userId) {
+      return get(resetPath(userId)).data.requestedAt > request.time - duration.value(15, 'm');
+    }
+
     function stateBefore(userId) {
       return get(gamificationPath(userId)).data;
     }
@@ -190,6 +201,8 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow read: if isOwner(userId);
+      // Solo durante un reinicio de la cuenta (D30): ver isResetting.
+      allow delete: if isOwner(userId) && isResetting(userId);
       allow create: if isOwner(userId) && isValidProfile(incoming()) && isCreatedNow();
       allow update: if isOwner(userId)
         && onlyChanges(['displayName', 'reminderSettings', 'rewardBudget', 'updatedAt'])
@@ -219,6 +232,7 @@ service cloud.firestore {
 
       match /habits/{habitId} {
         allow read: if isOwner(userId);
+        allow delete: if isOwner(userId) && isResetting(userId);
         // Empieza hoy o después: un hábito nuevo no puede cambiar un día pasado sin cerrar.
         allow create: if isOwner(userId)
           && isValidHabit(incoming())
@@ -330,6 +344,7 @@ service cloud.firestore {
 
       match /rewards/{rewardId} {
         allow read: if isOwner(userId);
+        allow delete: if isOwner(userId) && isResetting(userId);
         allow create: if isOwner(userId)
           && isValidReward(incoming())
           && isCreatedNow()
@@ -357,6 +372,7 @@ service cloud.firestore {
 
       match /tasks/{taskId} {
         allow read: if isOwner(userId);
+        allow delete: if isOwner(userId) && isResetting(userId);
         allow create: if isOwner(userId)
           && isValidTask(incoming())
           && isCreatedNow()
@@ -399,6 +415,7 @@ service cloud.firestore {
 
       match /goals/{goalId} {
         allow read: if isOwner(userId);
+        allow delete: if isOwner(userId) && isResetting(userId);
         allow create: if isOwner(userId)
           && isValidGoal(incoming())
           && isCreatedNow()
@@ -445,6 +462,7 @@ service cloud.firestore {
 
       match /weeklyReflections/{weekStartDateKey} {
         allow read: if isOwner(userId);
+        allow delete: if isOwner(userId) && isResetting(userId);
         allow create: if isOwner(userId)
           && isValidReflection(weekStartDateKey, incoming())
           && isCreatedNow();
@@ -473,6 +491,7 @@ service cloud.firestore {
 
       match /dailyLogs/{dateKey} {
         allow read: if isOwner(userId);
+        allow delete: if isOwner(userId) && isResetting(userId);
         // Hoy se crea abierto con la primera marca o el check-in; ayer (el día de gracia), con la
         // primera marca. Un día pasado sin actividad lo crea el cierre, sin check-in. `checkIn` es
         // opcional: los registros de antes no lo traen.
@@ -569,6 +588,7 @@ service cloud.firestore {
 
       match /monthlySummaries/{monthKey} {
         allow read: if isOwner(userId);
+        allow delete: if isOwner(userId) && isResetting(userId);
         allow create: if isOwner(userId)
           && isValidMonthly(monthKey, incoming())
           && isCreatedNow()
@@ -662,6 +682,7 @@ service cloud.firestore {
 
       match /meta/gamification {
         allow read: if isOwner(userId);
+        allow delete: if isOwner(userId) && isResetting(userId);
         allow create: if isOwner(userId)
           && isValidState(incoming())
           && isCreatedNow()
@@ -751,8 +772,19 @@ service cloud.firestore {
       // --- Alcancía (fase 18, D25): puntos reservados para una recompensa. Siguen en el saldo y
       // las reglas de gasto no dejan tocarlos (ver isValidSpend) ---
 
+      // Marcador del reinicio de la cuenta (fase 22, D30): la app lo escribe antes de borrar y lo
+      // borra al final. Solo guarda cuándo se pidió, con la hora del servidor.
+      match /meta/reset {
+        allow read: if isOwner(userId);
+        allow create, update: if isOwner(userId)
+          && hasExactly(incoming(), ['requestedAt'])
+          && incoming().requestedAt == request.time;
+        allow delete: if isOwner(userId);
+      }
+
       match /meta/savings {
         allow read: if isOwner(userId);
+        allow delete: if isOwner(userId) && isResetting(userId);
         allow create: if isOwner(userId)
           && isValidSavings(incoming())
           && isCreatedNow()
@@ -795,6 +827,7 @@ service cloud.firestore {
 
       match /pointTransactions/{transactionId} {
         allow read: if isOwner(userId);
+        allow delete: if isOwner(userId) && isResetting(userId);
         allow create: if isOwner(userId)
           && isValidTransaction(incoming())
           && isCreatedNow()
@@ -880,6 +913,7 @@ service cloud.firestore {
 
       match /rewardRedemptions/{redemptionId} {
         allow read: if isOwner(userId);
+        allow delete: if isOwner(userId) && isResetting(userId);
         allow create: if isOwner(userId)
           && isCreatedNow()
           && isValidRedemption(userId, redemptionId, incoming());
